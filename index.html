@@ -388,6 +388,11 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
   background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 3px 10px rgba(189,48,59,.4)}
 .closebtn:hover:not(:disabled){border:0;filter:brightness(1.1)}
 .closebtn svg{width:14px;height:14px}
+.dtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 16px;padding:5px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
+.dtabs button{display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:10px 8px;font-weight:700;font-size:15px;color:var(--ink);box-shadow:none}
+.dtabs button:hover:not(:disabled){border:0;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.dtabs button.on,.dtabs button.on:hover:not(:disabled){background:linear-gradient(135deg,#5aa8f7,#3d8fe8);color:#0b1220;box-shadow:0 2px 8px rgba(61,143,232,.42)}
+.dtabs .dnum{width:24px;height:24px;font-size:13px;background:var(--card);color:var(--ink)}
 .dsec{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
 .dtitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:800}
 .dnum{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
@@ -465,7 +470,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
     <div class="tools">
       <button id="btnRoster" class="primary chipbtn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>
-        <span class="btxt"><span>Update</span><span>รายชื่อพนักงาน</span></span>
+        <span class="btxt"><span>Update</span><span>Data</span></span>
         <span class="cnt" id="rosterSummary"></span>
       </button>
       <div class="sidebtns">
@@ -643,12 +648,17 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
   <div class="dlg">
     <div class="dlghead">
       <span class="dlgicon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg></span>
-      <span class="dlgtitle" id="rDlgTitle">รายชื่อพนักงาน</span>
+      <span class="dlgtitle" id="rDlgTitle">Update Data</span>
       <button id="rClose" type="button" class="closebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button>
     </div>
+    <div class="dtabs" role="tablist">
+      <button id="tabEmp" role="tab" type="button" class="on" aria-selected="true"><span class="dnum">1</span>ชื่อพนักงาน</button>
+      <button id="tabTrip" role="tab" type="button" aria-selected="false"><span class="dnum">2</span>เส้นทางการแบ่ง Trip</button>
+    </div>
 
+    <div id="paneEmp">
     <section class="dsec">
-      <p class="dtitle"><span class="dnum">1</span>อัปเดตจากไฟล์</p>
+      <p class="dtitle"><span class="dnum">ก</span>อัปเดตจากไฟล์</p>
       <label class="drop" id="rDrop" for="rFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
         <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
@@ -669,7 +679,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
     </section>
 
     <section class="dsec">
-      <p class="dtitle"><span class="dnum">2</span>รายชื่อปัจจุบัน <span id="rCount" class="rcount"></span></p>
+      <p class="dtitle"><span class="dnum">ข</span>รายชื่อปัจจุบัน <span id="rCount" class="rcount"></span></p>
       <input id="rSearch" class="rsearch" type="search" placeholder="ค้นหารหัสหรือชื่อ">
       <div class="addbar">
         <span class="addlbl">เพิ่ม / แก้ทีละคน</span>
@@ -691,6 +701,41 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <button id="rClear" type="button" class="danger">ลบรายชื่อทั้งหมด</button>
       </div>
     </section>
+    </div>
+
+    <div id="paneTrip" hidden>
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">ก</span>อัปเดตจากไฟล์</p>
+      <label class="drop" id="tDrop" for="tFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+        <b>ลากไฟล์เส้นทางการแบ่ง Trip มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
+        <small>.xlsx · .csv · .tsv · .txt</small>
+      </label>
+      <input id="tFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <textarea id="tPaste" rows="4" spellcheck="false" placeholder="หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่"></textarea>
+      <p class="hint">รองรับ 2 แบบ: แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว — ใบปะหน้าจะใส่ Trip ให้ตามที่อยู่ของแต่ละออเดอร์ (ต้องนำเข้าไฟล์ Call Center ที่มีคอลัมน์ที่อยู่ในกล่องเขียว)</p>
+      <div id="tPreview" class="preview" hidden></div>
+      <div class="row dact">
+        <button id="tApply" class="primary" type="button" disabled>อัปเดตเส้นทาง Trip</button>
+        <button id="tUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button>
+      </div>
+    </section>
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">ข</span>เส้นทางปัจจุบัน <span id="tCount" class="rcount"></span></p>
+      <input id="tSearch" class="rsearch" type="search" placeholder="ค้นหาพื้นที่หรือ Trip">
+      <div class="tablewrap rlist">
+        <table>
+          <thead><tr><th>พื้นที่</th><th>Trip</th></tr></thead>
+          <tbody id="tBody"></tbody>
+        </table>
+        <div class="empty" id="tEmpty">ยังไม่มีเส้นทาง</div>
+      </div>
+      <div class="row dfoot">
+        <button id="tExport" type="button">ส่งออกเส้นทาง (.xlsx)</button>
+        <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
+      </div>
+    </section>
+    </div>
   </div>
 </dialog>
 <div class="toast" id="toast"></div>
@@ -998,7 +1043,7 @@ function render() {
   const ba = $('btnAssign');
   ba.hidden = !(unassigned && state.emp && !solo && !state.finished);
   if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${roster[state.emp] ? ' ' + roster[state.emp] : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
-  $('rosterSummary').textContent = rosterCount() ? `${rosterCount()} คน` : 'ยังไม่มี';
+  $('rosterSummary').textContent = [rosterCount() ? `${rosterCount()} คน` : '', tripCount() ? `${tripCount()} Trip` : ''].filter(Boolean).join(' · ') || 'ยังไม่มี';
 
   // batches
   const nBatches = Math.max(1, Math.ceil(d.unique / size));
@@ -1631,7 +1676,7 @@ function renderRoster() {
   $('rClear').disabled = !rosterCount(); $('rExport').disabled = !rosterCount();
 }
 
-$('btnRoster').addEventListener('click', () => { resetImport(); $('rSearch').value = ''; renderRoster(); rosterDlg.showModal(); });
+$('btnRoster').addEventListener('click', () => { resetImport(); resetTrip(); $('rSearch').value = ''; $('tSearch').value = ''; renderRoster(); showTab('emp'); rosterDlg.showModal(); });
 $('rClose').addEventListener('click', () => rosterDlg.close());
 rosterDlg.addEventListener('close', () => { render(); focusNext(); });
 $('rFile').addEventListener('change', async e => {
@@ -1695,6 +1740,123 @@ $('rExport').addEventListener('click', () => {
   const rows = [[H('รหัสพนักงาน'), H('ชื่อ'), H('ชื่อเล่น'), H('ตารางเวลางาน')]];
   Object.keys(roster).sort().forEach(id => rows.push([{ v: id }, { v: roster[id] || '' }, { v: (rosterInfo[id] || {}).nick || '' }, { v: (rosterInfo[id] || {}).sched || '' }]));
   download(buildXlsx([{ name: 'รายชื่อพนักงาน', widths: [16, 34, 16, 30], rows, textCols: ['A'] }]), `employees_${stamp()}.xlsx`);
+});
+
+/* ---------- เส้นทางการแบ่ง Trip (Update Data, tab 2): which area goes on which Trip ----------
+   A table {areaKey: {a: area as written, t: Trip}} imported from a file. An order's Trip is found from its address (sub-district, post code, district, province)
+   when the Call Center file imported in the green box has those columns; a "Trip Id" in that file wins. The Trip is printed on the cover sheet. */
+const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup';
+let tripMap = {};
+try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') tripMap = r; } catch (_) {}
+const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} };
+function tripCount() { return new Set(Object.values(tripMap).map(e => e.t)).size; }
+const normArea = s => String(s == null ? '' : s).toLowerCase().trim().replace(/^(เขต|แขวง|อำเภอ|ตำบล|จังหวัด|อ\.|ต\.|จ\.)\s*/, '').replace(/[\s._\-,()\/\\]/g, '');
+function tripFor(inf) {
+  if (!inf) return '';
+  if (inf.trip) return inf.trip;
+  for (const v of [inf.sd, inf.zip, inf.d, inf.pv]) { if (!v) continue; const e = tripMap[normArea(v)]; if (e) return e.t; }      // the most specific area first
+  return '';
+}
+const splitAreas = s => String(s == null ? '' : s).split(/[,;\n\/|]+/).map(x => x.trim()).filter(Boolean);
+function buildTripPending(rows, src) {
+  const cellS = x => String(x == null ? '' : x).trim();
+  rows = rows.filter(r => r.some(x => cellS(x)));
+  if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
+  const entries = new Map(), trips = new Set(); let conflicts = 0, layout = null;
+  const add = (area, trip) => { const k = normArea(area); if (!k || !trip) return; const old = entries.get(k); if (old && old.t !== trip) conflicts++; entries.set(k, { a: area, t: trip }); trips.add(trip); };
+  for (let r = 0; r < Math.min(rows.length, 10) && !layout; r++) {                // wide: the column headers are Trip names ("Trip 1", "Trip 2" ...), the areas are listed below
+    const hs = rows[r].map(cellS), cols = hs.map((h, c) => /^(trip|เส้นทาง|สาย|รอบ)\s*[-_.]?\s*\S+/i.test(h) && /\d/.test(h) ? c : -1).filter(c => c >= 0);
+    if (cols.length >= 2) { layout = { how: 'wide', n: cols.length }; for (let i = r + 1; i < rows.length; i++) cols.forEach(c => splitAreas(rows[i][c]).forEach(a => add(a, hs[c]))); }
+  }
+  const isTripH = h => /^trip|เส้นทาง|สายรถ|รอบรถ|เที่ยว|^สาย/.test(h);
+  const isAreaH = h => /เขต|แขวง|อำเภอ|ตำบล|จังหวัด|district|province|postcode|zip|ไปรษณีย์|area|พื้นที่|zone|โซน|location/.test(h);
+  for (let r = 0; r < Math.min(rows.length, 10) && !layout; r++) {                // long: a Trip column plus one or more area columns, one row per area
+    const hs = rows[r].map(normH), tc = hs.findIndex(isTripH);
+    if (tc < 0) continue;
+    let ac = hs.map((h, c) => c !== tc && isAreaH(h) ? c : -1).filter(c => c >= 0);
+    if (!ac.length) ac = hs.map((h, c) => c).filter(c => c !== tc && !/^(ลำดับ|no|#|item|seq)/.test(hs[c]) && rows.slice(r + 1, r + 30).some(x => /[A-Za-zก-๙]/.test(cellS(x[c]))));
+    layout = { how: 'long', tripLabel: cellS(rows[r][tc]), areaLabels: ac.map(c => cellS(rows[r][c])) };
+    for (let i = r + 1; i < rows.length; i++) { const t = cellS(rows[i][tc]); if (!t) continue; ac.forEach(c => splitAreas(rows[i][c]).forEach(a => add(a, t))); }
+  }
+  if (!layout && rows[0].length === 2) { layout = { how: 'pair' }; rows.forEach(r => add(cellS(r[0]), cellS(r[1]))); }      // no header: column 1 = area, column 2 = Trip
+  if (!layout || !entries.size) return { error: 'หา Trip ไม่เจอ — ตั้งหัวคอลัมน์เป็น "Trip" หรือ "เส้นทาง" แล้วมีคอลัมน์พื้นที่ (เขต / แขวง / จังหวัด / รหัสไปรษณีย์)', src };
+  return { src, layout, entries, trips, conflicts };
+}
+let tPending = null;
+function refreshTripPreview() {
+  const box = $('tPreview'), btn = $('tApply');
+  btn.disabled = true; btn.textContent = T('อัปเดตเส้นทาง Trip');
+  if (!tPending) { box.hidden = true; return; }
+  box.hidden = false;
+  if (tPending.error) { box.innerHTML = `<span class="err">${xesc(T(tPending.error))}</span>`; return; }
+  const p = tPending, L = p.layout, q = s => `"${xesc(s)}"`;
+  const src = p.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(p.src.slice(5))) : T(p.src);
+  const how = L.how === 'wide' ? T('แบบหัวคอลัมน์เป็นชื่อ Trip ({0} Trip)', L.n)
+    : L.how === 'long' ? T('แบบแถวละพื้นที่: Trip ← {0} · พื้นที่ ← {1}', q(L.tripLabel), L.areaLabels.map(q).join(', ')) : T('ไม่มีหัวตาราง: คอลัมน์ 1 = พื้นที่, คอลัมน์ 2 = Trip');
+  let html = `<div>${T('อ่านได้ {0} พื้นที่ ใน {1} Trip จาก {2}', '<b>' + p.entries.size + '</b>', p.trips.size, src)}<br><small>${how}</small></div>` +
+    `<details><summary>${T('ตัวอย่างพื้นที่')}</summary><ul>` + [...p.entries.values()].slice(0, 40).map(e => `<li>${xesc(e.a)} → ${xesc(e.t)}</li>`).join('') + (p.entries.size > 40 ? `<li>… +${p.entries.size - 40}</li>` : '') + '</ul></details>';
+  if (p.conflicts) html += `<div class="chg">${T('พื้นที่เดียวกันอยู่คนละ Trip {0} แห่ง — ใช้แถวล่างสุด', p.conflicts)}</div>`;
+  box.innerHTML = html; btn.disabled = false;
+  btn.textContent = T('อัปเดตเส้นทาง Trip ({0} พื้นที่ / {1} Trip)', p.entries.size, p.trips.size);
+}
+function renderTrip() {
+  const q = $('tSearch').value.trim().toLowerCase();
+  const list = Object.values(tripMap).sort((a, b) => a.t.localeCompare(b.t, undefined, { numeric: true }) || a.a.localeCompare(b.a)).filter(e => !q || e.a.toLowerCase().includes(q) || e.t.toLowerCase().includes(q));
+  $('tCount').textContent = T('{0} พื้นที่ · {1} Trip', Object.keys(tripMap).length, tripCount());
+  const body = $('tBody'); body.innerHTML = '';
+  list.slice(0, 300).forEach(e => { const tr = document.createElement('tr'), a = document.createElement('td'), t = document.createElement('td'); a.textContent = e.a; t.textContent = e.t; t.className = 'mono'; tr.append(a, t); body.appendChild(tr); });
+  if (list.length > 300) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 2; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${list.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
+  $('tEmpty').hidden = list.length > 0; $('tEmpty').textContent = Object.keys(tripMap).length ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีเส้นทาง';
+  let hasBak = false; try { hasBak = !!localStorage.getItem(LS_TRIP_BAK); } catch (_) {}
+  $('tUndo').hidden = !hasBak; $('tClear').disabled = !Object.keys(tripMap).length; $('tExport').disabled = !Object.keys(tripMap).length;
+}
+function resetTrip() { tPending = null; $('tFile').value = ''; $('tPaste').value = ''; refreshTripPreview(); }
+function showTab(which) {
+  const t = which === 'trip';
+  $('paneEmp').hidden = t; $('paneTrip').hidden = !t;
+  $('tabEmp').classList.toggle('on', !t); $('tabTrip').classList.toggle('on', t);
+  $('tabEmp').setAttribute('aria-selected', String(!t)); $('tabTrip').setAttribute('aria-selected', String(t));
+  if (t) renderTrip();
+}
+$('tabEmp').addEventListener('click', () => showTab('emp')); $('tabTrip').addEventListener('click', () => showTab('trip'));
+$('tFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('tPaste').value = ''; tPending = null; refreshTripPreview();
+  try { tPending = buildTripPending(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  catch (err) { tPending = { error: err.message || String(err), src: f.name }; }
+  e.target.value = ''; refreshTripPreview();
+});
+const tDropBox = $('tDrop');
+['dragenter', 'dragover'].forEach(ev => tDropBox.addEventListener(ev, e => { e.preventDefault(); tDropBox.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => tDropBox.addEventListener(ev, e => { e.preventDefault(); tDropBox.classList.remove('over'); }));
+tDropBox.addEventListener('drop', e => { const files = e.dataTransfer && e.dataTransfer.files; if (files && files.length) { $('tFile').files = files; $('tFile').dispatchEvent(new Event('change', { bubbles: true })); } });
+let tPasteT = null;
+$('tPaste').addEventListener('input', () => {
+  clearTimeout(tPasteT);
+  tPasteT = setTimeout(() => { const t = $('tPaste').value; tPending = t.trim() ? buildTripPending(parseDelimited(t), 'ข้อความที่วาง') : null; refreshTripPreview(); }, 250);
+});
+$('tApply').addEventListener('click', () => {
+  const p = tPending; if (!p || p.error) return;
+  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
+  tripMap = {}; for (const [k, e] of p.entries) tripMap[k] = e;
+  saveTrip(); toast(`อัปเดตเส้นทางแล้ว: ${p.entries.size} พื้นที่ / ${p.trips.size} Trip`);
+  resetTrip(); renderTrip(); render();
+});
+$('tUndo').addEventListener('click', () => {
+  try { const r = JSON.parse(localStorage.getItem(LS_TRIP_BAK) || 'null'); if (r && typeof r === 'object') { tripMap = r; saveTrip(); localStorage.removeItem(LS_TRIP_BAK); toast('ย้อนกลับแล้ว'); } } catch (_) {}
+  renderTrip(); render();
+});
+$('tSearch').addEventListener('input', renderTrip);
+$('tClear').addEventListener('click', async () => {
+  const n = Object.keys(tripMap).length; if (!n || !await ask(`ลบเส้นทาง Trip ทั้งหมด ${n} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
+  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
+  tripMap = {}; saveTrip(); renderTrip(); render(); toast('ลบเส้นทางทั้งหมดแล้ว');
+});
+$('tExport').addEventListener('click', () => {
+  const H = t => ({ v: t, s: 1 });
+  const rows = [[H('Trip'), H('พื้นที่')]];
+  Object.values(tripMap).sort((a, b) => a.t.localeCompare(b.t, undefined, { numeric: true }) || a.a.localeCompare(b.a)).forEach(e => rows.push([{ v: e.t }, { v: e.a }]));
+  download(buildXlsx([{ name: 'เส้นทาง Trip', widths: [16, 34], rows }]), `trip-routes_${stamp()}.xlsx`);
 });
 
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
@@ -1857,6 +2019,8 @@ function buildOrderImport(rows, src) {
   const findCol = pred => { for (let k = head.length - 1; k >= 0; k--) { const c = head[k].findIndex((x, i) => i !== ordCol && pred(normH(x))); if (c >= 0) return c; } return -1; };
   const cName = findCol(n => /customername|ชื่อลูกค้า/.test(n)), cDateN = findCol(n => n === 'newexpecteddeliverydate'), cDateO = findCol(n => n === 'originalexpecteddate' || n === 'วันที่จัดส่ง' || n === 'deliverydate');
   const cTimeN = findCol(n => n === 'newexpecteddeliverytime'), cTimeO = findCol(n => n === 'originalexpectedtime' || n === 'รอบส่ง' || n === 'slottime'), cTrip = findCol(n => n === 'tripid' || n === 'trip');
+  const cSd = findCol(n => n === 'subdistrict' || n === 'แขวง' || n === 'ตำบล' || n === 'แขวงตำบล'), cD = findCol(n => n === 'district' || n === 'เขต' || n === 'อำเภอ' || n === 'เขตอำเภอ');
+  const cPv = findCol(n => n === 'province' || n === 'จังหวัด'), cZip = findCol(n => n === 'postcode' || n === 'zipcode' || n === 'zip' || n === 'รหัสไปรษณีย์' || n === 'ไปรษณีย์');   // the address, to find the Trip from the route table
   const cell = (r, c) => c >= 0 && r[c] != null ? String(r[c]).trim() : '';
   const dateTxt = s => { const p = s.split(/\s+-\s+/); return p.length === 2 && p[0] === p[1] ? p[0] : s; };       // "08-Oct-2026 - 08-Oct-2026" -> "08-Oct-2026"
   const share = (c, re) => { const v = data.map(r => cellText(r[c])).filter(Boolean); return v.length ? v.filter(x => re.test(x)).length / v.length : 0; };
@@ -1873,8 +2037,9 @@ function buildOrderImport(rows, src) {
     if (!ORD_RE.test(o)) { bad.push({ row: first + k + 1, raw: o }); return; }
     let emp = '';
     if (layout.empCol >= 0) { emp = normEmpCell(r[layout.empCol]); if (emp && !EMP_RE.test(emp)) { bad.push({ row: first + k + 1, raw: emp }); return; } }
-    const info = { name: cell(r, cName), date: dateTxt(cell(r, cDateN) || cell(r, cDateO)), time: cell(r, cTimeN) || cell(r, cTimeO), trip: cell(r, cTrip) };
-    items.push({ order: o, emp, info: info.name || info.date || info.time || info.trip ? info : null });
+    const info = { name: cell(r, cName), date: dateTxt(cell(r, cDateN) || cell(r, cDateO)), time: cell(r, cTimeN) || cell(r, cTimeO), trip: cell(r, cTrip),
+      sd: cell(r, cSd), d: cell(r, cD), pv: cell(r, cPv), zip: cell(r, cZip) };
+    items.push({ order: o, emp, info: Object.values(info).some(Boolean) ? info : null });
   });
   return { src, items, bad, layout };
 }
@@ -2016,7 +2181,7 @@ function sheetHtml(r) {
         <div class="s-line">แช่เย็น _______ ถุง ตู้เลขที่ _________</div>
         <div class="s-line">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div>
         <div class="s-line s-sm">จำนวน............/............ LANE...................</div>
-        <div class="s-trip">Trip${inf.trip ? ' ' + xesc(inf.trip) : '____'}</div>
+        <div class="s-trip">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}</div>
       </div>
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}>${xesc(inf.time || '')}</div><div class="s-picker" style="font-size:${picker.length > 10 ? 28 : 44}pt">${xesc(picker)}</div></div>
     </div></div>`;
@@ -2327,6 +2492,33 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['นำเข้า', 'Import', 'ထည့်သွင်းရန်'],
   ['ยกเลิก', 'Cancel', 'ပယ်ဖျက်ရန်'],
   ['ตกลง', 'OK', 'ကောင်းပြီ'],
+  // Update Data: tab 2 (Trip routes)
+  ['ชื่อพนักงาน', 'Employee names', 'ဝန်ထမ်းအမည်များ'],
+  ['เส้นทางการแบ่ง Trip', 'Trip route split', 'Trip ခွဲဝေမှု လမ်းကြောင်း'],
+  ['ลากไฟล์เส้นทางการแบ่ง Trip มาวางที่นี่ หรือกดเพื่อเลือกไฟล์', 'Drop the Trip route file here, or click to choose one', 'Trip လမ်းကြောင်းဖိုင်ကို ဤနေရာသို့ ဆွဲချပါ သို့မဟုတ် နှိပ်၍ ရွေးပါ'],
+  ['หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่', 'Or copy the route table from Excel and paste it here', 'သို့မဟုတ် Excel မှ လမ်းကြောင်းဇယားကို ကူး၍ ဤနေရာတွင် ထည့်ပါ'],
+  ['รองรับ 2 แบบ: แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว — ใบปะหน้าจะใส่ Trip ให้ตามที่อยู่ของแต่ละออเดอร์ (ต้องนำเข้าไฟล์ Call Center ที่มีคอลัมน์ที่อยู่ในกล่องเขียว)',
+    'Two layouts work: one row per area (a Trip / route column plus area columns such as district, sub-district, province, post code) or column headers that are Trip names with the areas listed below — the cover sheet gets the Trip from each order\'s address (import the Call Center file with its address columns in the green box)',
+    'ပုံစံ ၂ မျိုး သုံးနိုင်သည်: ဧရိယာတစ်ခုလျှင် တစ်တန်း (Trip / လမ်းကြောင်းကော်လံနှင့် ခရိုင် / ရပ်ကွက် / ပြည်နယ် / စာတိုက်ကုဒ် စသည့် ဧရိယာကော်လံများ) သို့မဟုတ် ကော်လံခေါင်းစဉ်များသည် Trip အမည်ဖြစ်ပြီး အောက်တွင် ဧရိယာများစာရင်းပါခြင်း — အဖုံးစာရွက်သည် အော်ဒါတစ်ခုချင်းစီ၏ လိပ်စာအရ Trip ရမည် (လိပ်စာကော်လံပါသော Call Center ဖိုင်ကို အစိမ်းရောင်အကွက်တွင် ထည့်ပါ)'],
+  ['อัปเดตเส้นทาง Trip', 'Update Trip routes', 'Trip လမ်းကြောင်းများ အပ်ဒိတ်လုပ်ရန်'],
+  ['อัปเดตเส้นทาง Trip ({0} พื้นที่ / {1} Trip)', 'Update Trip routes ({0} areas / {1} Trips)', 'Trip လမ်းကြောင်းများ အပ်ဒိတ်လုပ်ရန် (ဧရိယာ {0} ခု / Trip {1} ခု)'],
+  ['เส้นทางปัจจุบัน', 'Current routes', 'လက်ရှိ လမ်းကြောင်းများ'],
+  ['ค้นหาพื้นที่หรือ Trip', 'Search area or Trip', 'ဧရိယာ သို့မဟုတ် Trip ရှာရန်'],
+  ['พื้นที่', 'Area', 'ဧရိယာ'],
+  ['ยังไม่มีเส้นทาง', 'No routes yet', 'လမ်းကြောင်း မရှိသေးပါ'],
+  ['ส่งออกเส้นทาง (.xlsx)', 'Export routes (.xlsx)', 'လမ်းကြောင်းများ ထုတ်ယူရန် (.xlsx)'],
+  ['ลบเส้นทางทั้งหมด', 'Delete all routes', 'လမ်းကြောင်းအားလုံး ဖျက်ရန်'],
+  ['{0} พื้นที่ · {1} Trip', '{0} areas · {1} Trips', 'ဧရိယာ {0} ခု · Trip {1} ခု'],
+  ['อ่านได้ {0} พื้นที่ ใน {1} Trip จาก {2}', 'Read {0} areas in {1} Trips from {2}', '{2} မှ Trip {1} ခုရှိ ဧရိယာ {0} ခု ဖတ်ရှုရသည်'],
+  ['แบบหัวคอลัมน์เป็นชื่อ Trip ({0} Trip)', 'Layout: column headers are Trip names ({0} Trips)', 'ပုံစံ: ကော်လံခေါင်းစဉ်များသည် Trip အမည်များ (Trip {0} ခု)'],
+  ['แบบแถวละพื้นที่: Trip ← {0} · พื้นที่ ← {1}', 'Layout: one row per area: Trip ← {0} · area ← {1}', 'ပုံစံ: ဧရိယာတစ်ခုလျှင် တစ်တန်း: Trip ← {0} · ဧရိယာ ← {1}'],
+  ['ไม่มีหัวตาราง: คอลัมน์ 1 = พื้นที่, คอลัมน์ 2 = Trip', 'No header row: column 1 = area, column 2 = Trip', 'ခေါင်းစဉ်တန်း မရှိ: ကော်လံ ၁ = ဧရိယာ၊ ကော်လံ ၂ = Trip'],
+  ['ตัวอย่างพื้นที่', 'Sample of the areas', 'ဧရိယာ နမူနာ'],
+  ['พื้นที่เดียวกันอยู่คนละ Trip {0} แห่ง — ใช้แถวล่างสุด', '{0} areas are listed under different Trips — the last row is used', 'ဧရိယာ {0} ခုသည် Trip မတူတစ်ခုစီတွင် ပါနေသည် — နောက်ဆုံးတန်းကို သုံးမည်'],
+  ['หา Trip ไม่เจอ — ตั้งหัวคอลัมน์เป็น "Trip" หรือ "เส้นทาง" แล้วมีคอลัมน์พื้นที่ (เขต / แขวง / จังหวัด / รหัสไปรษณีย์)', 'No Trip column found — name the header "Trip" or "เส้นทาง" and add area columns (district / sub-district / province / post code)', 'Trip ကော်လံ မတွေ့ပါ — ခေါင်းစဉ်ကို "Trip" သို့မဟုတ် "เส้นทาง" ဟုပေးပြီး ဧရိယာကော်လံများ (ခရိုင် / ရပ်ကွက် / ပြည်နယ် / စာတိုက်ကုဒ်) ထည့်ပါ'],
+  ['อัปเดตเส้นทางแล้ว: {0} พื้นที่ / {1} Trip', 'Routes updated: {0} areas / {1} Trips', 'လမ်းကြောင်းများ အပ်ဒိတ်လုပ်ပြီး: ဧရိယာ {0} ခု / Trip {1} ခု'],
+  ['ลบเส้นทาง Trip ทั้งหมด {0} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)', 'Delete all {0} Trip areas?\n(Press "Undo last change" if you slip)', 'Trip ဧရိယာ {0} ခုလုံးကို ဖျက်မလား?\n(မှားသွားပါက "နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်" ကိုနှိပ်ပါ)'],
+  ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ชื่อเล่น', 'Nickname', 'အမည်ပြောင်'],
   ['ตารางเวลางาน', 'Work schedule', 'အလုပ်ချိန်ဇယား'],
   ['ชื่อเล่น ← {0}', 'Nickname ← {0}', 'အမည်ပြောင် ← {0}'],
@@ -2497,7 +2689,8 @@ function setLang(l) {
   paintLangUi(); closeLangMenu();
   if (pending) refreshPreview();                           // parts built with T() are rebuilt in the new language
   renderImport();
-  if (rosterDlg.open) renderRoster();
+  if (tPending) refreshTripPreview();
+  if (rosterDlg.open) { renderRoster(); if (!$('paneTrip').hidden) renderTrip(); }
 }
 function initLang() {
   document.querySelectorAll('.flag[data-flag]').forEach(el => { el.innerHTML = FLAGS[el.dataset.flag]; });
