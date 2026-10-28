@@ -2432,8 +2432,8 @@ function slotStyle(time) {
 function sheetHtml(r) {
   const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
   const slip = `<div class="slip">
-    <div class="s-top"><div class="s-ref">${r.batch ? `ชุดที่ ${r.batch} · ใบที่ ${r.slot}` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}</div></div>
-    <div class="s-order">${xesc(r.order)}</div>
+    <div class="s-top"><div class="s-sdbox">${inf.sd ? `<div class="fit s-sd" data-fit="30">${xesc(inf.sd)}</div>` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch} · ใบที่ ${r.slot}</span>` : ''}</div></div>
+    <div class="s-order"><div class="s-otrip"><div class="fit s-tp" data-fit="20">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu">_______</span>')(tripFor(inf))}</div></div><div class="s-onum">${xesc(r.order)}</div></div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
     <div class="s-body">
       <div class="s-left">
@@ -2441,7 +2441,7 @@ function sheetHtml(r) {
         <div class="s-line s-chill"><div class="fit" data-fit="19">แช่เย็น _______ ถุง ตู้เลขที่ _________</div></div>
         <div class="s-line s-chill"><div class="fit" data-fit="19">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div></div>
         <div class="s-line s-sm"><div class="fit" data-fit="15">จำนวน............/............ LANE...................</div></div>
-        <div class="s-line s-trip"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip<span class="s-tu">____</span>')(tripFor(inf))}</span>${inf.sd ? `<div class="fit s-sd" data-fit="40">${xesc(inf.sd)}</div>` : ''}</div>
+        <div class="s-line s-chk"><span class="s-ck"><i class="s-cb"></i>FULL</span><span class="s-ck"><i class="s-cb"></i>OOS</span></div>
       </div>
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}><div class="fit" data-fit="27">${xesc(inf.time || '')}</div></div><div class="s-picker"><div class="fit" data-fit="54">${xesc(picker)}</div></div></div>
     </div></div>`;
@@ -2458,10 +2458,13 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .slip{height:148mm;padding:5mm 8mm;display:flex;flex-direction:column;box-sizing:border-box}
 .slip + .slip{border-top:1px dashed #999}
 .fit{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-align:center;line-height:1.35}
-.s-top{display:grid;grid-template-columns:44mm 1fr;height:15mm;border:1px solid #444;align-items:center}
-.s-ref{padding:0 3mm;font-size:9pt;color:#555}
-.s-bar{display:flex;justify-content:center;align-items:center;height:100%;border-left:1px solid #444}
-.s-order{height:19mm;line-height:19mm;text-align:center;font-size:40pt;font-weight:800;letter-spacing:.02em;background:#c4c4c4;border:1px solid #444;border-top:0}
+.s-top{display:grid;grid-template-columns:52mm 1fr;height:16mm;border:1px solid #444;align-items:center}
+.s-sdbox{display:flex;align-items:center;height:100%;padding:0 2mm;min-width:0}
+.s-bar{position:relative;display:flex;justify-content:center;align-items:center;height:100%;border-left:1px solid #444}
+.s-ref{position:absolute;right:2mm;bottom:.8mm;font-size:7.5pt;color:#555}
+.s-order{height:19mm;display:grid;grid-template-columns:52mm 1fr;align-items:center;background:#c4c4c4;border:1px solid #444;border-top:0}
+.s-otrip{display:flex;align-items:center;height:100%;padding:0 3mm;border-right:1px solid #444;min-width:0}
+.s-onum{line-height:19mm;text-align:center;font-size:40pt;font-weight:800;letter-spacing:.02em}
 .s-name{height:22mm;display:flex;align-items:center;padding:0 3mm;font-weight:900;border:1px solid #444;border-top:0}
 .s-body{flex:1;display:grid;grid-template-columns:51.5% 48.5%;border:1px solid #444;border-top:0;min-height:0}
 .s-left{display:flex;flex-direction:column;border-right:1px solid #444;min-width:0}
@@ -2471,11 +2474,12 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-weight:500;border-bottom:1px solid #ccc;min-width:0}
 .s-line .fit{text-align:left}
 .s-chill{flex:none;height:17.9mm}
-.s-sm{flex:none;height:12mm}
-.s-trip{border-bottom:0;padding:0 3mm}
-.s-tp{flex:none;max-width:55%;overflow:hidden;white-space:nowrap;font-size:22pt;font-weight:800}
+.s-chk{border-bottom:0;justify-content:space-around;padding:0 4mm;font-size:22pt;font-weight:800}
+.s-ck{display:flex;align-items:center;gap:3mm}
+.s-cb{flex:none;width:10mm;height:10mm;box-sizing:border-box;border:1.3px solid #444;background:#e0e0e0}
+.s-tp{font-weight:800;text-align:left}
 .s-tu{font-size:.65em;font-weight:500}
-.s-sd{margin-left:3mm;font-weight:900;color:#c2185b}
+.s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
 .s-slot{height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900}
 .s-picker{flex:1;display:flex;align-items:center;padding:0 3mm;font-weight:900;min-width:0}
