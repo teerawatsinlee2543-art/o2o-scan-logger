@@ -7,7 +7,7 @@
 <title>O2O Scan Logger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Noto+Sans+Myanmar:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Prompt:wght@500;800;900&family=Noto+Sans+Myanmar:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme:light;
@@ -2140,7 +2140,7 @@ function renderRpView() {
   $('rpTitle').textContent = o ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', o) : T('ตัวอย่างใบที่จะพิมพ์');
   $('rpPrint').disabled = !o;
   if (!o) { box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; $('rpNote').textContent = ''; return; }
-  box.innerHTML = `<div class="rpwrap">${sheetHtml(reprintRow(o))}</div>`; fitRpView();
+  box.innerHTML = `<div class="rpwrap">${sheetHtml(reprintRow(o))}</div>`; fitSheets(box); fitRpView();
   $('rpNote').textContent = orderInfo[o] ? '' : sheetUsable() ? 'ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';
 }
 window.addEventListener('resize', fitRpView);
@@ -2149,7 +2149,7 @@ window.addEventListener('resize', fitRpView);
 function printSheets(rows) {
   const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
   f.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;visibility:hidden';
-  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
+  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; fitSheets(f.contentDocument); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
   f.srcdoc = printFileHtml(rows.map(sheetHtml).join(''), false); document.body.appendChild(f);
 }
 async function printOrder(order) {                                         // the "พิมพ์ใบนี้" button and the automatic print both come here
@@ -2427,49 +2427,65 @@ function slotStyle(time) {
   const m = /(\d{1,2})\s*:/.exec(time || ''), c = m && SLOT_COLORS[+m[1]];
   return c ? ` style="background:${c[0]};color:${c[1]}"` : '';
 }
+/* the sheet is set in Prompt (the font of the Google Sheet "TAG New" the staff print from) at the proportions of that sheet: the name row biggest, the date row and the
+   round box very bold, the hand-written lines running the full width. Every [data-fit] text is given its biggest size (pt) and shrunk by fitSheets() when it is wider than its box. */
 function sheetHtml(r) {
   const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
   const slip = `<div class="slip">
     <div class="s-top"><div class="s-ref">${r.batch ? `ชุดที่ ${r.batch} · ใบที่ ${r.slot}` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}</div></div>
     <div class="s-order">${xesc(r.order)}</div>
-    <div class="s-name" style="font-size:${nm.length > 24 ? 22 : 30}pt">${xesc(nm)}</div>
+    <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
     <div class="s-body">
       <div class="s-left">
-        <div class="s-dt"><b>วันที่จัดส่ง</b><span>${xesc(inf.date || '')}</span><b>รอบส่ง</b></div>
-        <div class="s-line">แช่เย็น _______ ถุง ตู้เลขที่ _________</div>
-        <div class="s-line">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div>
-        <div class="s-line s-sm">จำนวน............/............ LANE...................</div>
-        <div class="s-trip">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}${inf.sd ? `<span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div>
+        <div class="s-dt"><div class="fit" data-fit="16">วันที่จัดส่ง</div><div class="fit" data-fit="16">${xesc(inf.date || '')}</div><div class="fit" data-fit="16">รอบส่ง</div></div>
+        <div class="s-line s-chill"><div class="fit" data-fit="19">แช่เย็น _______ ถุง ตู้เลขที่ _________</div></div>
+        <div class="s-line s-chill"><div class="fit" data-fit="19">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div></div>
+        <div class="s-line s-sm"><div class="fit" data-fit="15">จำนวน............/............ LANE...................</div></div>
+        <div class="s-line s-trip"><div class="fit" data-fit="28">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}${inf.sd ? `<span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div></div>
       </div>
-      <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}>${xesc(inf.time || '')}</div><div class="s-picker" style="font-size:${picker.length > 10 ? 28 : 44}pt">${xesc(picker)}</div></div>
+      <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}><div class="fit" data-fit="27">${xesc(inf.time || '')}</div></div><div class="s-picker"><div class="fit" data-fit="54">${xesc(picker)}</div></div></div>
     </div></div>`;
   return `<section class="sheet">${slip}${slip}</section>`;
 }
-const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#fff;color:#111;box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;break-after:page;font-family:Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+function fitSheets(root) {                                                  // self-contained: its source text is also put into the saved print file
+  root.querySelectorAll('[data-fit]').forEach(el => {
+    const max = +el.getAttribute('data-fit'); el.style.fontSize = max + 'pt';
+    const w = el.clientWidth, s = el.scrollWidth;
+    if (w > 0 && s > w) el.style.fontSize = (max * w / s * 0.97).toFixed(2) + 'pt';
+  });
+}
+const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#fff;color:#111;box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;break-after:page;font-family:Prompt,Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .slip{height:148mm;padding:5mm 8mm;display:flex;flex-direction:column;box-sizing:border-box}
 .slip + .slip{border-top:1px dashed #999}
-.s-top{display:grid;grid-template-columns:44mm 1fr;height:16mm;border:1px solid #444;align-items:center}
+.fit{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-align:center;line-height:1.35}
+.s-top{display:grid;grid-template-columns:44mm 1fr;height:15mm;border:1px solid #444;align-items:center}
 .s-ref{padding:0 3mm;font-size:9pt;color:#555}
 .s-bar{display:flex;justify-content:center;align-items:center;height:100%;border-left:1px solid #444}
-.s-order{height:19mm;line-height:19mm;text-align:center;font-size:42pt;font-weight:800;letter-spacing:.03em;background:#c4c4c4;border:1px solid #444;border-top:0}
-.s-name{height:19mm;line-height:19mm;text-align:center;font-weight:800;border:1px solid #444;border-top:0;white-space:nowrap;overflow:hidden}
-.s-body{flex:1;display:grid;grid-template-columns:56% 44%;border:1px solid #444;border-top:0;min-height:0}
-.s-left{display:flex;flex-direction:column;border-right:1px solid #444}
-.s-dt{display:grid;grid-template-columns:24mm 1fr 17mm;height:11mm;line-height:11mm;border-bottom:1px solid #444;font-size:11pt;text-align:center}
-.s-dt span{border-left:1px solid #444;border-right:1px solid #444;font-weight:800;font-size:11pt}
-.s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-size:12pt;font-weight:600;white-space:nowrap;border-bottom:1px solid #ccc}
-.s-sm{font-size:9.5pt}
-.s-trip{padding:1mm 4mm;font-size:20pt;font-weight:800;white-space:nowrap;overflow:hidden}
-.s-sd{margin-left:3mm;font-size:12pt;font-weight:600}
-.s-right{display:flex;flex-direction:column}
-.s-slot{height:22mm;display:flex;align-items:center;justify-content:center;background:#fff;color:#1b1b1b;font-size:19pt;font-weight:800}
-.s-picker{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;padding:0 3mm;overflow:hidden}
+.s-order{height:19mm;line-height:19mm;text-align:center;font-size:40pt;font-weight:800;letter-spacing:.02em;background:#c4c4c4;border:1px solid #444;border-top:0}
+.s-name{height:22mm;display:flex;align-items:center;padding:0 3mm;font-weight:900;border:1px solid #444;border-top:0}
+.s-body{flex:1;display:grid;grid-template-columns:51.5% 48.5%;border:1px solid #444;border-top:0;min-height:0}
+.s-left{display:flex;flex-direction:column;border-right:1px solid #444;min-width:0}
+.s-dt{display:grid;grid-template-columns:38mm 1fr 22.5mm;height:13mm;border-bottom:1px solid #444;font-weight:900}
+.s-dt > div{line-height:13mm;border-right:1px solid #444}
+.s-dt > div:last-child{border-right:0}
+.s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-weight:500;border-bottom:1px solid #ccc;min-width:0}
+.s-line .fit{text-align:left}
+.s-chill{flex:none;height:17.9mm}
+.s-trip{font-weight:800;border-bottom:0;padding:0 3mm}
+.s-sd{margin-left:.4em;font-size:.5em;font-weight:500}
+.s-right{display:flex;flex-direction:column;min-width:0}
+.s-slot{height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900}
+.s-picker{flex:1;display:flex;align-items:center;padding:0 3mm;font-weight:900;min-width:0}
 @media print{.sheet{margin:0;box-shadow:none}}`;
 { const st = document.createElement('style'); st.textContent = SHEET_CSS; document.head.appendChild(st); }
+if (document.fonts) {                                                        // the sheet font is fetched up front, and the texts are fitted again once it has arrived
+  ['500', '800', '900'].forEach(w => document.fonts.load(w + ' 20px Prompt', 'วันที่ 0123 ABC').catch(() => {}));
+  document.fonts.addEventListener('loadingdone', () => fitSheets(document));
+}
 /* a complete page with the sheets, for the claude.ai web copy where the page cannot open the print dialog: it is saved as a file, and opening that file prints it */
 function printFileHtml(sheets, interactive = true) {                  // interactive = false: just the sheets (the hidden page the automatic print uses)
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบปะหน้า O2O</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Prompt:wght@500;800;900&display=swap">
 <style>@page{size:A4;margin:0} body{margin:0;background:${interactive ? '#5b6472' : '#fff'}}
 .pbar{position:sticky;top:0;z-index:2;padding:10px 16px;background:#fff;font:600 14px Sarabun,Tahoma,sans-serif;display:flex;gap:12px;align-items:center}
 .pbar button{font:inherit;padding:6px 16px;border:0;border-radius:8px;background:#0b5cad;color:#fff;cursor:pointer}
@@ -2477,12 +2493,14 @@ function printFileHtml(sheets, interactive = true) {                  // interac
 ${SHEET_CSS}</style></head><body>
 ${interactive ? '<div class="pbar"><button onclick="window.print()">พิมพ์ (Ctrl+P)</button><span>เลือกเครื่องพิมพ์ ขนาดกระดาษ A4 ไม่ต้องเว้นขอบ</span></div>' : ''}
 ${sheets}
+<script>${fitSheets.toString()}
+window.addEventListener('load',function(){fitSheets(document);if(document.fonts)document.fonts.ready.then(function(){fitSheets(document)})})<\/script>
 ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(function(){window.print()},600)})<\/script>' : ''}</body></html>`;
 }
 const pvRows = () => { const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b)); };
 function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
-  $('pvPages').innerHTML = rows.map(sheetHtml).join('');
+  $('pvPages').innerHTML = rows.map(sheetHtml).join(''); fitSheets($('pvPages'));
   $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
   $('pvNote').textContent = miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '';
   $('pvPrint').disabled = !rows.length;
