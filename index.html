@@ -748,6 +748,10 @@ const LS_KEY = 'o2o-scan-logger-v1';
 const LS_BAK = 'o2o-scan-logger-v1-backup';
 const EMP_RE = /^\d{4}$/;
 const ORD_RE = /^(\d{10}[A-Z]|\d{11})$/;      // 10 ตัวเลข + ตัวอักษรท้าย (A/C…) หรือเลขล้วน 11 หลัก
+/* A QR code (or a long barcode) can carry more than the order number: a link, JSON, a line of text. The order number is found inside it: 10 digits + a letter, or 11 digits,
+   standing on their own (not part of a longer run of letters / digits). Written without a lookbehind so that older iPhones still parse the page. */
+const ORD_FIND = /(^|[^0-9A-Za-z])(\d{10}[A-Za-z]|\d{11})(?![0-9A-Za-z])/;
+const extractOrder = s => { const m = ORD_FIND.exec(String(s)); return m ? m[2].toUpperCase() : null; };
 const DATA_FIRST_ROW = 3;                     // ใบปะหน้า: DATA!B3 เป็นใบแรก
 
 /* ---------- state ---------- */
@@ -888,7 +892,8 @@ function rejectFlash() {
 
 /* ---------- scan handling ---------- */
 function handleScan(raw) {
-  const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+  let v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+  if (!EMP_RE.test(v) && !ORD_RE.test(v)) v = extractOrder(v) || v;          // a QR / long barcode: take the order number out of it
   if (!v) return;
   if (state.finished) {
     sfx.bad();
@@ -970,7 +975,7 @@ function wire(el, ownRe, normalize) {
       const v = el.value.trim().toUpperCase();
       if (v.length < 4) return;
       const fast = (tLast - tFirst) / Math.max(1, v.length - 1) < 35;
-      if (fast && (EMP_RE.test(v) || ORD_RE.test(v))) { submitFrom(el); return; }
+      if (fast && (EMP_RE.test(v) || ORD_RE.test(v) || (v.length > 11 && extractOrder(v)))) { submitFrom(el); return; }
       if (ownRe.test(v)) { const snap = el.value; t2 = setTimeout(() => { if (el.value === snap) submitFrom(el); }, 260); }
     }, 140);
   });
@@ -1862,7 +1867,7 @@ $('tExport').addEventListener('click', () => {
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
 const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
 const assignIn = $('assignIn'), reprintIn = $('reprintIn');
-const cleanScan = raw => String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+const cleanScan = raw => { const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase(); return ORD_RE.test(v) ? v : (extractOrder(v) || v); };
 function sideMsg(which, kind, text) { const m = $(which + 'Msg'); m.className = 'pmsg ' + kind; m.textContent = text; }
 const empLabel = (e, n) => e + (n ? ' ' + n : '');
 
