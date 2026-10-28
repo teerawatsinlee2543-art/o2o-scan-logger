@@ -413,6 +413,7 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
 .dtabs .dico{flex:none;width:22px;height:22px}
 .dtabs .dbadge{position:absolute;top:-10px;right:14px;padding:1px 10px;border-radius:99px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.14);font-size:12.5px;font-weight:800;line-height:1.5;font-variant-numeric:tabular-nums}
 .dtabs .dbadge.zero{color:var(--muted);font-weight:600}
+.dtabs .dbadge.live{background:#1f9d57;border-color:#1f9d57;color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(31,157,87,.45)}
 .dsec{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
 .dtitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:800}
 .dnum{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
@@ -2028,7 +2029,7 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
 }
 function renderDb() {
   const on = sheetUsable();
-  $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on);
+  $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on); $('tabDbCnt').classList.toggle('live', on);   // green when connected, no colour when not
   $('dbOff').hidden = !sheetCfg; $('dbLink').value = $('dbLink').value || (sheetCfg ? sheetCfg.link : '');
   $('dbConnect').disabled = IN_VIEWER; $('dbTestGo').disabled = !sheetUsable();
   if (IN_VIEWER) { $('dbStatus').hidden = false; $('dbStatus').innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; }
