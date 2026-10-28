@@ -2441,7 +2441,7 @@ function sheetHtml(r) {
         <div class="s-line s-chill"><div class="fit" data-fit="19">แช่เย็น _______ ถุง ตู้เลขที่ _________</div></div>
         <div class="s-line s-chill"><div class="fit" data-fit="19">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div></div>
         <div class="s-line s-sm"><div class="fit" data-fit="15">จำนวน............/............ LANE...................</div></div>
-        <div class="s-line s-trip"><div class="fit" data-fit="28">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}${inf.sd ? `<span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div></div>
+        <div class="s-line s-trip"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip<span class="s-tu">____</span>')(tripFor(inf))}</span>${inf.sd ? `<div class="fit s-sd" data-fit="40">${xesc(inf.sd)}</div>` : ''}</div>
       </div>
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}><div class="fit" data-fit="27">${xesc(inf.time || '')}</div></div><div class="s-picker"><div class="fit" data-fit="54">${xesc(picker)}</div></div></div>
     </div></div>`;
@@ -2471,8 +2471,11 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-weight:500;border-bottom:1px solid #ccc;min-width:0}
 .s-line .fit{text-align:left}
 .s-chill{flex:none;height:17.9mm}
-.s-trip{font-weight:800;border-bottom:0;padding:0 3mm}
-.s-sd{margin-left:.4em;font-size:.5em;font-weight:500}
+.s-sm{flex:none;height:12mm}
+.s-trip{border-bottom:0;padding:0 3mm}
+.s-tp{flex:none;max-width:55%;overflow:hidden;white-space:nowrap;font-size:22pt;font-weight:800}
+.s-tu{font-size:.65em;font-weight:500}
+.s-sd{margin-left:3mm;font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
 .s-slot{height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900}
 .s-picker{flex:1;display:flex;align-items:center;padding:0 3mm;font-weight:900;min-width:0}
