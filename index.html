@@ -404,7 +404,7 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
   background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 3px 10px rgba(189,48,59,.4)}
 .closebtn:hover:not(:disabled){border:0;filter:brightness(1.1)}
 .closebtn svg{width:14px;height:14px}
-.dtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 16px;padding:5px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
+.dtabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 16px;padding:5px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
 .dtabs button{display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:10px 8px;font-weight:700;font-size:15px;color:var(--ink);box-shadow:none}
 .dtabs button:hover:not(:disabled){border:0;background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .dtabs button.on,.dtabs button.on:hover:not(:disabled){background:linear-gradient(135deg,#5aa8f7,#3d8fe8);color:#0b1220;box-shadow:0 2px 8px rgba(61,143,232,.42)}
@@ -692,6 +692,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <button id="tabTrip" role="tab" type="button" aria-selected="false">
         <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>เส้นทางการแบ่ง Trip<span class="dbadge" id="tabTripCnt"></span>
       </button>
+      <button id="tabDb" role="tab" type="button" aria-selected="false">
+        <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V5.5M4 12v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V12"/></svg>ฐานข้อมูลออเดอร์<span class="dbadge zero" id="tabDbCnt"></span>
+      </button>
     </div>
 
     <div id="paneEmp">
@@ -772,6 +775,27 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <button id="tExport" type="button">ส่งออกเส้นทาง (.xlsx)</button>
         <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
       </div>
+    </section>
+    </div>
+
+    <div id="paneDb" hidden>
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">ก</span>ลิงก์ Google Sheet <span class="rcount">อ่านอย่างเดียว</span></p>
+      <input id="dbLink" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ Google Sheet ที่แชร์แบบ &quot;ทุกคนที่มีลิงก์ดูได้&quot;">
+      <p class="hint">โปรแกรมอ่านชีตอย่างเดียว ไม่แก้ ไม่ลบ ไม่เพิ่มอะไรในชีต — ส่งไปค้นหาเฉพาะเลขออเดอร์ที่สแกน แล้วเก็บผลไว้ในเบราว์เซอร์นี้. ใช้คอลัมน์ Order Number (เลขออเดอร์), Customer Name (ชื่อลูกค้า), Original Expected Date (วันที่), Original Expected Time (เวลา) และ Sub District (แขวง / เส้นถนน) — ค้นหาจากแท็บที่ลิงก์ชี้อยู่</p>
+      <div class="row dact">
+        <button id="dbConnect" class="primary" type="button">เชื่อมต่อและทดสอบ</button>
+        <button id="dbOff" type="button" class="danger" hidden>ตัดการเชื่อมต่อ</button>
+      </div>
+      <div id="dbStatus" class="preview" hidden></div>
+    </section>
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">ข</span>ลองค้นหาออเดอร์</p>
+      <div class="row">
+        <input id="dbTest" type="text" spellcheck="false" autocomplete="off" placeholder="เลขออเดอร์ 11 ตัว" style="flex:1;min-width:160px">
+        <button id="dbTestGo" type="button">ค้นหา</button>
+      </div>
+      <div id="dbTestOut" class="preview" hidden></div>
     </section>
     </div>
   </div>
@@ -1008,6 +1032,7 @@ function handleScan(raw) {
     const emp = noEmp ? '' : state.emp;
     state.rows.push({ ts: Date.now(), emp, name: roster[emp] || '', order: v });
     save();
+    if (sheetUsable()) ensureInfo([v]).then(ch => { if (ch) render(); });       // customer name / date / round / sub-district from the Google Sheet, when one is connected
     if (dupOf) {
       sfx.dup();
       feedback('warn', 'ซ้ำ ' + v,
@@ -1123,6 +1148,7 @@ function render() {
   if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${roster[state.emp] ? ' ' + roster[state.emp] : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
   $('tabEmpCnt').textContent = `${rosterCount()} คน`; $('tabEmpCnt').classList.toggle('zero', !rosterCount());          // the counts sit on the corner of the two tabs of the Update Data window
   $('tabTripCnt').textContent = `${tripCount()} Trip`; $('tabTripCnt').classList.toggle('zero', !tripCount());
+  renderDb();
 
   // batches
   const nBatches = Math.max(1, Math.ceil(d.unique / size));
@@ -1892,13 +1918,12 @@ function renderTrip() {
 }
 function resetTrip() { tPending = null; $('tFile').value = ''; $('tPaste').value = ''; refreshTripPreview(); }
 function showTab(which) {
-  const t = which === 'trip';
-  $('paneEmp').hidden = t; $('paneTrip').hidden = !t;
-  $('tabEmp').classList.toggle('on', !t); $('tabTrip').classList.toggle('on', t);
-  $('tabEmp').setAttribute('aria-selected', String(!t)); $('tabTrip').setAttribute('aria-selected', String(t));
-  if (t) renderTrip();
+  const panes = { emp: ['paneEmp', 'tabEmp'], trip: ['paneTrip', 'tabTrip'], db: ['paneDb', 'tabDb'] };
+  for (const [k, [p, t]] of Object.entries(panes)) { $(p).hidden = k !== which; $(t).classList.toggle('on', k === which); $(t).setAttribute('aria-selected', String(k === which)); }
+  if (which === 'trip') renderTrip();
+  if (which === 'db') renderDb();
 }
-$('tabEmp').addEventListener('click', () => showTab('emp')); $('tabTrip').addEventListener('click', () => showTab('trip'));
+$('tabEmp').addEventListener('click', () => showTab('emp')); $('tabTrip').addEventListener('click', () => showTab('trip')); $('tabDb').addEventListener('click', () => showTab('db'));
 $('tFile').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   $('tPaste').value = ''; tPending = null; refreshTripPreview();
@@ -1938,6 +1963,105 @@ $('tExport').addEventListener('click', () => {
   Object.values(tripMap).sort((a, b) => a.t.localeCompare(b.t, undefined, { numeric: true }) || a.a.localeCompare(b.a)).forEach(e => rows.push([{ v: e.t }, { v: e.a }]));
   download(buildXlsx([{ name: 'เส้นทาง Trip', widths: [16, 34], rows }]), `trip-routes_${stamp()}.xlsx`);
 });
+
+/* ---------- ฐานข้อมูลออเดอร์ (Update Data, tab 3): a Google Sheet used as a READ-ONLY database ----------
+   The sheet must be shared "anyone with the link can view". Only GET requests go to Google's gviz query address, each one asking for the rows of a few order numbers and a few
+   columns (order, customer name, Original Expected Date / Time, Sub District); nothing is ever written to the sheet. What comes back is kept in this browser (orderInfo). */
+const LS_SHEET = 'o2o-sheet-v1';
+let sheetCfg = null;                           // {id, gid, link, cols:{order,name,date,time,sd}} (column letters), saved in this browser only
+try { const r = JSON.parse(localStorage.getItem(LS_SHEET) || 'null'); if (r && r.id && r.cols && r.cols.order) sheetCfg = r; } catch (_) {}
+const rangeOne = s => { const p = String(s).split(/\s+-\s+/); return p.length === 2 && p[0] === p[1] ? p[0] : String(s); };      // "29-Oct-2026 - 29-Oct-2026" -> "29-Oct-2026"
+const sheetMiss = new Map();                   // order -> time it was not found (asked again after a minute)
+const sheetUsable = () => !!sheetCfg && !IN_VIEWER;
+async function gviz(cfg, tq) {
+  const u = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq?gid=${cfg.gid}&tqx=out:csv&tq=${encodeURIComponent(tq)}`;
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch(u, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = await r.text();
+    if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared');         // Google answered with a sign-in page
+    return text;
+  } finally { clearTimeout(timer); }
+}
+const csvRows = text => text.split(/\r?\n/).filter(l => l.trim()).map(l => splitLine(l, ','));
+async function connectSheet(link) {
+  const m = /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(link), g = /[#&?]gid=(\d+)/.exec(link);
+  if (!m) throw new Error('bad-link');
+  const cfg = { id: m[1], gid: g ? g[1] : '0', link };
+  const head = (csvRows(await gviz(cfg, 'select * limit 1'))[0] || []).map(normH);
+  const idx = k => head.indexOf(k);
+  const want = { order: 'ordernumber', name: 'customername', date: 'originalexpecteddate', time: 'originalexpectedtime', sd: 'subdistrict' };
+  cfg.cols = {}; const missing = [];
+  for (const [k, h] of Object.entries(want)) { const i = idx(h); cfg.cols[k] = i >= 0 ? colName(i) : null; if (i < 0) missing.push(k); }
+  if (!cfg.cols.order) throw new Error('no-order-col');
+  return { cfg, missing, nCols: head.length };
+}
+async function sheetLookup(orders) {            // Map order -> {name, date, time, sd}
+  const c = sheetCfg.cols, keys = ['order', 'name', 'date', 'time', 'sd'].filter(k => c[k]);
+  const cond = orders.map(o => /^\d+$/.test(o) ? `${c.order} = '${o}' or ${c.order} = ${o}` : `${c.order} = '${o}'`).join(' or ');
+  const rows = csvRows(await gviz(sheetCfg, `select ${keys.map(k => c[k]).join(', ')} where ${cond}`));
+  const got = new Map();
+  for (const r of rows) {
+    const o = cellText(r[0]); if (!ORD_RE.test(o) || got.has(o)) continue;     // (a header row is skipped here)
+    const v = {}; keys.forEach((k, i) => { if (k !== 'order') v[k] = k === 'date' ? rangeOne((r[i] || '').trim()) : (r[i] || '').trim(); });
+    got.set(o, v);
+  }
+  return got;
+}
+async function ensureInfo(orders) {             // fills orderInfo from the sheet for the orders that have no data yet; true when something new arrived
+  if (!sheetUsable()) return false;
+  const now = Date.now(), need = [...new Set(orders)].filter(o => ORD_RE.test(o) && !(orderInfo[o] && (orderInfo[o].name || orderInfo[o].time)) && !(sheetMiss.get(o) > now - 60000));
+  let changed = false;
+  for (let i = 0; i < need.length; i += 25) {
+    const chunk = need.slice(i, i + 25);
+    try {
+      const got = await sheetLookup(chunk);
+      for (const o of chunk) {
+        const v = got.get(o); if (!v) { sheetMiss.set(o, Date.now()); continue; }
+        const cur = orderInfo[o] || {}; orderInfo[o] = Object.assign({}, cur, Object.fromEntries(Object.entries(v).filter(([, x]) => x))); changed = true;
+      }
+    } catch (_) { break; }                       // offline / not shared / blocked: the sheet is just skipped, scanning goes on
+  }
+  if (changed) saveInfo();
+  return changed;
+}
+function renderDb() {
+  const on = sheetUsable();
+  $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on);
+  $('dbOff').hidden = !sheetCfg; $('dbLink').value = $('dbLink').value || (sheetCfg ? sheetCfg.link : '');
+  $('dbConnect').disabled = IN_VIEWER; $('dbTestGo').disabled = !sheetUsable();
+  if (IN_VIEWER) { $('dbStatus').hidden = false; $('dbStatus').innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; }
+}
+const DB_NAMES = { order: 'Order Number', name: 'Customer Name', date: 'Original Expected Date', time: 'Original Expected Time', sd: 'Sub District' };
+$('dbConnect').addEventListener('click', async () => {
+  const box = $('dbStatus'), link = $('dbLink').value.trim(); box.hidden = false;
+  if (!link) { box.innerHTML = `<span class="err">${T('วางลิงก์ Google Sheet ก่อน')}</span>`; return; }
+  $('dbConnect').disabled = true; box.innerHTML = T('กำลังเชื่อมต่อ …');
+  try {
+    const { cfg, missing, nCols } = await connectSheet(link);
+    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {}
+    const cols = Object.entries(DB_NAMES).map(([k, n]) => cfg.cols[k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', cfg.cols[k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
+    box.innerHTML = `<div class="add">${T('เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', nCols)}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>` + (missing.length ? `<div class="chg">${T('ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า')}</div>` : '');
+  } catch (e) {
+    const m = String(e && e.message);
+    const why = m === 'bad-link' ? 'ลิงก์นี้ไม่ใช่ลิงก์ Google Sheet (ต้องมี /spreadsheets/d/…)' : m === 'no-order-col' ? 'ไม่พบคอลัมน์ Order Number ในแท็บที่ลิงก์ชี้อยู่ (ตรวจ gid หรือหัวคอลัมน์แถวแรก)'
+      : m === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : 'เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต';
+    box.innerHTML = `<span class="err">${T(why)}</span>`;
+  }
+  $('dbConnect').disabled = IN_VIEWER; renderDb(); render();
+});
+$('dbOff').addEventListener('click', () => { sheetCfg = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+$('dbTestGo').addEventListener('click', async () => {
+  const o = cleanScan($('dbTest').value), out = $('dbTestOut'); out.hidden = false;
+  if (!ORD_RE.test(o)) { out.innerHTML = `<span class="err">${T('ใส่เลขออเดอร์ 11 ตัว')}</span>`; return; }
+  out.textContent = T('กำลังค้นหา …');
+  try {
+    const got = await sheetLookup([o]), v = got.get(o);
+    out.innerHTML = v ? `<div class="add">${xesc(o)}</div><ul style="margin:4px 0 0;padding-left:18px">${['name', 'date', 'time', 'sd'].map(k => `<li><b>${DB_NAMES[k]}</b>: ${xesc(v[k] || '—')}</li>`).join('')}</ul>` : `<span class="chg">${T('ไม่พบออเดอร์นี้ในชีต')}</span>`;
+  } catch (_) { out.innerHTML = `<span class="err">${T('ค้นหาไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต')}</span>`; }
+});
+$('dbTest').addEventListener('keydown', e => { if (e.key === 'Enter') $('dbTestGo').click(); });
 
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
 const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
@@ -1988,7 +2112,9 @@ function reprintOrder(raw) {
   save(); sfx.ok();
   sideMsg('reprint', 'ok', `✓ Re-Print ${v}` + (auto ? ' · กำลังพิมพ์' : state.autoPrint !== false ? ' · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)' : ''));
   render();
-  if (auto) setTimeout(() => autoPrintOrder(v), 60);                       // after the preview has been painted
+  // the data of the order (from the Google Sheet, if one is connected) is fetched first: the preview is refreshed when it arrives and the automatic print waits for it (at most 6 s)
+  const got = ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
+  if (auto) Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => autoPrintOrder(v), 60));
 }
 
 /* ---- the cover sheet that is about to be printed, shown on the right half of the zoomed Re-Print box ---- */
@@ -2014,7 +2140,7 @@ function renderRpView() {
   $('rpPrint').disabled = !o;
   if (!o) { box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; $('rpNote').textContent = ''; return; }
   box.innerHTML = `<div class="rpwrap">${sheetHtml(reprintRow(o))}</div>`; fitRpView();
-  $('rpNote').textContent = orderInfo[o] ? '' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว';
+  $('rpNote').textContent = orderInfo[o] ? '' : sheetUsable() ? 'ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';
 }
 window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
@@ -2294,7 +2420,7 @@ function barcodeSvg(text) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:${(total * 0.5).toFixed(1)}mm;height:11mm"><rect width="${total}" height="1" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
 }
 /* the round (time slot) box has one solid colour per slot, as on the cover sheets in the workbook: 05-08 green, 08-12 red, 12-16 orange, 16-20 blue (the first hour of the slot decides);
-   anything else (or no time) stays grey */
+   anything else — the 20:00-22:00 round included, or no time — has no colour (white) */
 const SLOT_COLORS = { 5: ['#00ff00', '#ffffff'], 8: ['#ff0000', '#ffffff'], 12: ['#ff9900', '#000000'], 16: ['#4a86e8', '#ffffff'] };   // [background, text]
 function slotStyle(time) {
   const m = /(\d{1,2})\s*:/.exec(time || ''), c = m && SLOT_COLORS[+m[1]];
@@ -2312,7 +2438,7 @@ function sheetHtml(r) {
         <div class="s-line">แช่เย็น _______ ถุง ตู้เลขที่ _________</div>
         <div class="s-line">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div>
         <div class="s-line s-sm">จำนวน............/............ LANE...................</div>
-        <div class="s-trip">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}</div>
+        <div class="s-trip">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip____')(tripFor(inf))}${inf.sd ? `<span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div>
       </div>
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}>${xesc(inf.time || '')}</div><div class="s-picker" style="font-size:${picker.length > 10 ? 28 : 44}pt">${xesc(picker)}</div></div>
     </div></div>`;
@@ -2332,9 +2458,10 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .s-dt span{border-left:1px solid #444;border-right:1px solid #444;font-weight:800;font-size:11pt}
 .s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-size:12pt;font-weight:600;white-space:nowrap;border-bottom:1px solid #ccc}
 .s-sm{font-size:9.5pt}
-.s-trip{padding:1mm 4mm;font-size:20pt;font-weight:800}
+.s-trip{padding:1mm 4mm;font-size:20pt;font-weight:800;white-space:nowrap;overflow:hidden}
+.s-sd{margin-left:3mm;font-size:12pt;font-weight:600}
 .s-right{display:flex;flex-direction:column}
-.s-slot{height:22mm;display:flex;align-items:center;justify-content:center;background:#d9d9d9;color:#1b1b1b;font-size:19pt;font-weight:800}
+.s-slot{height:22mm;display:flex;align-items:center;justify-content:center;background:#fff;color:#1b1b1b;font-size:19pt;font-weight:800}
 .s-picker{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;padding:0 3mm;overflow:hidden}
 @media print{.sheet{margin:0;box-shadow:none}}`;
 { const st = document.createElement('style'); st.textContent = SHEET_CSS; document.head.appendChild(st); }
@@ -2352,12 +2479,20 @@ ${sheets}
 ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(function(){window.print()},600)})<\/script>' : ''}</body></html>`;
 }
 const pvRows = () => { const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b)); };
-function pvRender() {
+function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
   $('pvPages').innerHTML = rows.map(sheetHtml).join('');
   $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
   $('pvNote').textContent = miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '';
   $('pvPrint').disabled = !rows.length;
+}
+function pvRender() {
+  pvDraw();
+  if (!sheetUsable()) return;
+  const need = pvRows().map(r => r.order).filter(o => !(orderInfo[o] && (orderInfo[o].name || orderInfo[o].time)));
+  if (!need.length) return;                                                    // the Google Sheet is asked for the sheets that still have no data; printing waits for the answer
+  $('pvPrint').disabled = true; $('pvNote').textContent = T('กำลังดึงข้อมูลจาก Google Sheet …');
+  ensureInfo(need).then(() => { if (!$('printView').hidden) pvDraw(); });
 }
 function openPrint() {
   const d = derive(); if (!d.unique) return;
@@ -2623,6 +2758,40 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['นำเข้า', 'Import', 'ထည့်သွင်းရန်'],
   ['ยกเลิก', 'Cancel', 'ပယ်ဖျက်ရန်'],
   ['ตกลง', 'OK', 'ကောင်းပြီ'],
+  // Update Data tab 3: Google Sheet as a read-only order database
+  ['ฐานข้อมูลออเดอร์', 'Order database', 'အော်ဒါဒေတာဘေ့စ်'],
+  ['เชื่อมต่อแล้ว', 'Connected', 'ချိတ်ဆက်ပြီး'],
+  ['ยังไม่เชื่อม', 'Not connected', 'မချိတ်ဆက်ရသေးပါ'],
+  ['ลิงก์ Google Sheet', 'Google Sheet link', 'Google Sheet လင့်ခ်'],
+  ['อ่านอย่างเดียว', 'Read only', 'ဖတ်ရုံသာ'],
+  ['วางลิงก์ Google Sheet ที่แชร์แบบ "ทุกคนที่มีลิงก์ดูได้"', 'Paste a Google Sheet link shared as "anyone with the link can view"', '"လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" ဟု မျှဝေထားသော Google Sheet လင့်ခ်ကို ထည့်ပါ'],
+  ['โปรแกรมอ่านชีตอย่างเดียว ไม่แก้ ไม่ลบ ไม่เพิ่มอะไรในชีต — ส่งไปค้นหาเฉพาะเลขออเดอร์ที่สแกน แล้วเก็บผลไว้ในเบราว์เซอร์นี้. ใช้คอลัมน์ Order Number (เลขออเดอร์), Customer Name (ชื่อลูกค้า), Original Expected Date (วันที่), Original Expected Time (เวลา) และ Sub District (แขวง / เส้นถนน) — ค้นหาจากแท็บที่ลิงก์ชี้อยู่',
+    'The program only reads the sheet: it never edits, deletes or adds anything. Only the scanned order numbers are sent to look them up, and the results are kept in this browser. It uses the columns Order Number, Customer Name, Original Expected Date, Original Expected Time and Sub District — from the tab the link points to',
+    'ပရိုဂရမ်သည် စာရွက်ကို ဖတ်ရုံသာ လုပ်သည် — ပြင်ခြင်း၊ ဖျက်ခြင်း၊ ထည့်ခြင်း မလုပ်ပါ။ ရှာဖွေရန် စကင်န်ဖတ်ထားသော အော်ဒါနံပါတ်များကိုသာ ပို့ပြီး ရလဒ်ကို ဤဘရောက်ဇာတွင် သိမ်းထားသည်။ Order Number, Customer Name, Original Expected Date, Original Expected Time နှင့် Sub District ကော်လံများကို လင့်ခ်ညွှန်ပြသော တက်ဘ်မှ အသုံးပြုသည်'],
+  ['เชื่อมต่อและทดสอบ', 'Connect and test', 'ချိတ်ဆက်၍ စမ်းသပ်ရန်'],
+  ['ตัดการเชื่อมต่อ', 'Disconnect', 'ချိတ်ဆက်မှု ဖြတ်ရန်'],
+  ['ตัดการเชื่อมต่อแล้ว', 'Disconnected', 'ချိတ်ဆက်မှု ဖြတ်ပြီးပါပြီ'],
+  ['ลองค้นหาออเดอร์', 'Try looking up an order', 'အော်ဒါတစ်ခု စမ်းရှာကြည့်ရန်'],
+  ['เลขออเดอร์ 11 ตัว', '11-character order number', 'စာလုံး ၁၁ လုံး အော်ဒါနံပါတ်'],
+  ['ค้นหา', 'Search', 'ရှာရန်'],
+  ['หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง', 'The Claude web page cannot connect to Google Sheets directly — use the GitHub Pages link or the file on this PC', 'Claude ဝဘ်စာမျက်နှာသည် Google Sheets ကို တိုက်ရိုက် မချိတ်နိုင်ပါ — GitHub Pages လင့်ခ် သို့မဟုတ် စက်ထဲရှိ ဖိုင်ကို သုံးပါ'],
+  ['วางลิงก์ Google Sheet ก่อน', 'Paste the Google Sheet link first', 'Google Sheet လင့်ခ်ကို ဦးစွာ ထည့်ပါ'],
+  ['กำลังเชื่อมต่อ …', 'Connecting …', 'ချိတ်ဆက်နေသည် …'],
+  ['คอลัมน์ {0}', 'column {0}', 'ကော်လံ {0}'],
+  ['ไม่พบคอลัมน์นี้', 'column not found', 'ကော်လံ မတွေ့ပါ'],
+  ['เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', 'Connected — the sheet has {0} columns', 'ချိတ်ဆက်နိုင်သည် — စာရွက်တွင် ကော်လံ {0} ခုရှိသည်'],
+  ['ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า', 'Data without a column stays empty on the cover sheet', 'ကော်လံမရှိသော အချက်အလက်များသည် အဖုံးစာရွက်တွင် ဗလာဖြစ်နေမည်'],
+  ['ลิงก์นี้ไม่ใช่ลิงก์ Google Sheet (ต้องมี /spreadsheets/d/…)', 'This is not a Google Sheet link (it must contain /spreadsheets/d/…)', 'ဤလင့်ခ်သည် Google Sheet လင့်ခ် မဟုတ်ပါ (/spreadsheets/d/… ပါရမည်)'],
+  ['ไม่พบคอลัมน์ Order Number ในแท็บที่ลิงก์ชี้อยู่ (ตรวจ gid หรือหัวคอลัมน์แถวแรก)', 'No Order Number column in the tab the link points to (check the gid or the first-row headers)', 'လင့်ခ်ညွှန်ပြသော တက်ဘ်တွင် Order Number ကော်လံ မတွေ့ပါ (gid သို့မဟုတ် ပထမတန်းခေါင်းစဉ်များကို စစ်ပါ)'],
+  ['อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"', 'The sheet cannot be read — set sharing to "anyone with the link can view"', 'စာရွက်ကို မဖတ်နိုင်ပါ — မျှဝေမှုကို "လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" ဟု ပြောင်းပါ'],
+  ['เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต', 'Could not connect — check the internet and the sharing of the sheet', 'မချိတ်ဆက်နိုင်ပါ — အင်တာနက်နှင့် စာရွက်၏ မျှဝေမှုကို စစ်ပါ'],
+  ['ใส่เลขออเดอร์ 11 ตัว', 'Enter an 11-character order number', 'စာလုံး ၁၁ လုံး အော်ဒါနံပါတ် ထည့်ပါ'],
+  ['กำลังค้นหา …', 'Searching …', 'ရှာဖွေနေသည် …'],
+  ['ไม่พบออเดอร์นี้ในชีต', 'This order is not in the sheet', 'ဤအော်ဒါသည် စာရွက်တွင် မရှိပါ'],
+  ['ค้นหาไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต', 'Search failed — check the internet and the sharing of the sheet', 'ရှာဖွေ၍ မရပါ — အင်တာနက်နှင့် စာရွက်၏ မျှဝေမှုကို စစ်ပါ'],
+  ['กำลังดึงข้อมูลจาก Google Sheet …', 'Fetching the data from the Google Sheet …', 'Google Sheet မှ အချက်အလက် ယူနေသည် …'],
+  ['ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)', 'No data for this order in the sheet yet (or still searching)', 'ဤအော်ဒါ၏ အချက်အလက်ကို စာရွက်တွင် မတွေ့သေးပါ (သို့မဟုတ် ရှာနေဆဲ)'],
+  ['ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet', 'No customer name / date / round for this order yet — import the Call Center file in the green box, or connect a Google Sheet', 'ဤအော်ဒါအတွက် ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ် မရှိသေးပါ — အစိမ်းရောင်အကွက်တွင် Call Center ဖိုင်ထည့်ပါ သို့မဟုတ် Google Sheet ချိတ်ပါ'],
   // Re-Print preview + automatic print
   ['ตัวอย่างใบที่จะพิมพ์ — {0}', 'Sheet to be printed — {0}', 'ပုံနှိပ်မည့်စာရွက် — {0}'],
   ['ตัวอย่างใบที่จะพิมพ์', 'Sheet to be printed', 'ပုံနှိပ်မည့်စာရွက်'],
