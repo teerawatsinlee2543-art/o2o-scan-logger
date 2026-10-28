@@ -103,6 +103,8 @@ button svg{width:18px;height:18px;flex:none}
 .chipbtn .btxt span:first-child{font-size:12px;font-weight:600;letter-spacing:.05em;opacity:.9}
 .chipbtn .btxt span:last-child{font-size:15px;font-weight:700}
 .chipbtn .cnt{background:color-mix(in srgb,var(--accent-ink) 22%,transparent);border-radius:99px;padding:0 9px;font-size:13px;font-variant-numeric:tabular-nums}
+.chipbtn .btnicons{display:flex;align-items:center;gap:6px}
+.chipbtn .btnicons svg{width:20px;height:20px}
 input[type=text],input[type=search],input[type=number],textarea{font:inherit;color:var(--ink);background:var(--bg);
   border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
 input[type=text]:focus,input[type=search]:focus,input[type=number]:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
@@ -406,7 +408,11 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
 .dtabs button{display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:10px 8px;font-weight:700;font-size:15px;color:var(--ink);box-shadow:none}
 .dtabs button:hover:not(:disabled){border:0;background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .dtabs button.on,.dtabs button.on:hover:not(:disabled){background:linear-gradient(135deg,#5aa8f7,#3d8fe8);color:#0b1220;box-shadow:0 2px 8px rgba(61,143,232,.42)}
-.dtabs .dnum{width:24px;height:24px;font-size:13px;background:var(--card);color:var(--ink)}
+.dtabs{margin-top:12px}
+.dtabs button{position:relative}
+.dtabs .dico{flex:none;width:22px;height:22px}
+.dtabs .dbadge{position:absolute;top:-10px;right:14px;padding:1px 10px;border-radius:99px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.14);font-size:12.5px;font-weight:800;line-height:1.5;font-variant-numeric:tabular-nums}
+.dtabs .dbadge.zero{color:var(--muted);font-weight:600}
 .dsec{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
 .dtitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:800}
 .dnum{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
@@ -483,9 +489,11 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
     <div class="tiles" id="stats"></div>
     <div class="tools">
       <button id="btnRoster" class="primary chipbtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>
+        <span class="btnicons" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>
+        </span>
         <span class="btxt"><span>Update</span><span>Data</span></span>
-        <span class="cnt" id="rosterSummary"></span>
       </button>
       <div class="sidebtns">
       <div class="langwrap" id="langWrap">
@@ -678,8 +686,12 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <button id="rClose" type="button" class="closebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button>
     </div>
     <div class="dtabs" role="tablist">
-      <button id="tabEmp" role="tab" type="button" class="on" aria-selected="true"><span class="dnum">1</span>ชื่อพนักงาน</button>
-      <button id="tabTrip" role="tab" type="button" aria-selected="false"><span class="dnum">2</span>เส้นทางการแบ่ง Trip</button>
+      <button id="tabEmp" role="tab" type="button" class="on" aria-selected="true">
+        <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>ชื่อพนักงาน<span class="dbadge" id="tabEmpCnt"></span>
+      </button>
+      <button id="tabTrip" role="tab" type="button" aria-selected="false">
+        <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>เส้นทางการแบ่ง Trip<span class="dbadge" id="tabTripCnt"></span>
+      </button>
     </div>
 
     <div id="paneEmp">
@@ -1109,7 +1121,8 @@ function render() {
   const ba = $('btnAssign');
   ba.hidden = !(unassigned && state.emp && !solo && !state.finished);
   if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${roster[state.emp] ? ' ' + roster[state.emp] : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
-  $('rosterSummary').textContent = [rosterCount() ? `${rosterCount()} คน` : '', tripCount() ? `${tripCount()} Trip` : ''].filter(Boolean).join(' · ') || 'ยังไม่มี';
+  $('tabEmpCnt').textContent = `${rosterCount()} คน`; $('tabEmpCnt').classList.toggle('zero', !rosterCount());          // the counts sit on the corner of the two tabs of the Update Data window
+  $('tabTripCnt').textContent = `${tripCount()} Trip`; $('tabTripCnt').classList.toggle('zero', !tripCount());
 
   // batches
   const nBatches = Math.max(1, Math.ceil(d.unique / size));
