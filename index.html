@@ -424,6 +424,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .preview summary{cursor:pointer;color:var(--muted)}
 .preview ul{margin:4px 0 0;padding-left:18px;max-height:140px;overflow:auto}
 .rlist{max-height:280px;margin-top:10px}
+.rlist td.sched{font-size:13px;color:var(--muted);max-width:210px}
 
 .askdlg{width:min(420px,92vw);padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .askdlg::backdrop{background:rgba(16,24,40,.55)}
@@ -680,7 +681,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       </div>
       <div class="tablewrap rlist">
         <table>
-          <thead><tr><th>รหัส</th><th>ชื่อ</th><th></th></tr></thead>
+          <thead><tr><th>รหัส</th><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตารางเวลางาน</th><th></th></tr></thead>
           <tbody id="rBody"></tbody>
         </table>
         <div class="empty" id="rEmpty">ยังไม่มีรายชื่อ</div>
@@ -716,6 +717,12 @@ const LS_ROSTER = 'o2o-roster-v1', LS_ROSTER_BAK = 'o2o-roster-v1-backup';
 let roster = {};
 try { const r = JSON.parse(localStorage.getItem(LS_ROSTER) || 'null'); if (r && typeof r === 'object') roster = r; } catch (_) {}
 const saveRoster = () => { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch (_) {} };
+/* nickname + work schedule that come with an imported roster file: {id: {nick, sched}}; roster[id] itself stays the full name, so nothing else had to change */
+const LS_RINFO = 'o2o-rosterinfo-v1', LS_RINFO_BAK = 'o2o-rosterinfo-v1-backup';
+let rosterInfo = {};
+try { const r = JSON.parse(localStorage.getItem(LS_RINFO) || 'null'); if (r && typeof r === 'object') rosterInfo = r; } catch (_) {}
+const saveRInfo = () => { try { localStorage.setItem(LS_RINFO, JSON.stringify(rosterInfo)); } catch (_) {} };
+const nickOf = id => (rosterInfo[id] && rosterInfo[id].nick) || '';
 
 /* cover-sheet data per order {order: {name, date, time, trip}} — comes from an imported Call Center file, kept apart from the scan log */
 const LS_INFO = 'o2o-orderinfo-v1';
@@ -972,7 +979,7 @@ function render() {
   $('btnLogout').hidden = !state.emp;
   if (document.activeElement !== empIn) empIn.value = state.emp || '';
   const who = $('whoami');
-  if (state.emp && state.emp in roster) { who.className = 'whoami ok'; who.textContent = roster[state.emp] || '(ไม่มีชื่อในรายชื่อ)'; }
+  if (state.emp && state.emp in roster) { who.className = 'whoami ok'; who.textContent = roster[state.emp] ? roster[state.emp] + (nickOf(state.emp) ? ` (${nickOf(state.emp)})` : '') : '(ไม่มีชื่อในรายชื่อ)'; }
   else if (state.emp && rosterCount()) { who.className = 'whoami warn'; who.textContent = 'ไม่พบรหัสนี้ในรายชื่อพนักงาน'; }
   else { who.className = 'whoami'; who.textContent = ''; }
   if (state.mode === 'none') { who.className = 'whoami'; who.textContent = ''; }
@@ -1484,12 +1491,15 @@ async function fileToRows(file) {
 
 // --- find the columns: header names first (ชื่อ/Name, เลขพนักงาน/รหัสพนักงาน/Employee ID), else guess from content ---
 const normH = s => String(s == null ? '' : s).toLowerCase().replace(/[\s._\-:()\/\\*#]/g, '');
-const ID_EXACT = new Set(['id', 'code', 'รหัส', 'เลขที่', 'เลข']);
-const ID_HAS = ['รหัสพนักงาน', 'เลขพนักงาน', 'รหัสพนง', 'เลขพนง', 'เลขที่พนักงาน', 'รหัสบัตร', 'employeeid', 'employeeno', 'employeenumber', 'employeecode', 'empid', 'empno', 'empcode', 'staffid', 'staffno', 'staffcode', 'badge'];
-const LAST_HAS = ['นามสกุล', 'lastname', 'surname', 'familyname'];
+const ID_EXACT = new Set(['id', 'code', 'idno', 'idnumber', 'รหัส', 'เลขที่', 'เลข']);
+const ID_HAS = ['รหัสพนักงาน', 'เลขพนักงาน', 'รหัสพนง', 'เลขพนง', 'เลขที่พนักงาน', 'รหัสบัตร', 'รหัสประจำตัว', 'เลขประจำตัว', 'employeeid', 'employeeno', 'employeenumber', 'employeecode', 'empid', 'empno', 'empcode', 'staffid', 'staffno', 'staffcode', 'idno', 'badge'];
+const LAST_HAS = ['สกุล', 'lastname', 'lname', 'surname', 'familyname'];                      // "สกุล" also covers "นามสกุล"
 const isIdH = h => ID_EXACT.has(h) || ID_HAS.some(k => h.includes(k));
-const isLastH = h => LAST_HAS.some(k => h.includes(k));
-const isNameH = h => !isLastH(h) && !/เล่น|nick/.test(h) && (h.includes('ชื่อ') || h.includes('name'));
+const isLastH = h => LAST_HAS.some(k => h.includes(k)) && !/^(ชื่อ|name|fullname)/.test(h);     // "ชื่อ-สกุล" / "Name Surname" is one full-name column, not a surname column
+const isNickH = h => /เล่น|nick/.test(h);
+const isSchedH = h => /ตารางเวลา|ตารางงาน|ตารางกะ|เวลางาน|เวลาทำงาน|schedule|shift|workingtime|worktime|workhour/.test(h);
+const isNameH = h => !isLastH(h) && !isNickH(h) && !isSchedH(h) && (h.includes('ชื่อ') || h.includes('name'));
+const ID_LONG = /^\d{1,8}$/;                 // employee numbers in the file can have 8 digits: the last 4 are the badge code
 
 function findLayout(rows) {
   for (let r = 0; r < Math.min(rows.length, 15); r++) {
@@ -1497,33 +1507,41 @@ function findLayout(rows) {
     if (idCol < 0) continue;
     const nameCol = hs.findIndex((h, c) => c !== idCol && isNameH(h));
     const lastCol = hs.findIndex((h, c) => c !== idCol && isLastH(h));
-    return { how: 'header', idCol, nameCol, lastCol, start: r + 1, idLabel: rows[r][idCol], nameLabel: rows[r][nameCol], lastLabel: rows[r][lastCol] };
+    const nickCol = hs.findIndex((h, c) => c !== idCol && isNickH(h));
+    const schedCol = hs.findIndex((h, c) => c !== idCol && isSchedH(h));
+    return { how: 'header', idCol, nameCol, lastCol, nickCol, schedCol, start: r + 1, idLabel: rows[r][idCol], nameLabel: rows[r][nameCol], lastLabel: rows[r][lastCol], nickLabel: rows[r][nickCol], schedLabel: rows[r][schedCol] };
   }
   const sample = rows.slice(0, 40), ncol = Math.max(0, ...sample.map(r => r.length));
   const col = c => sample.map(r => r[c] || '').filter(Boolean);
   let idCol = -1, best = 0;
-  for (let c = 0; c < ncol; c++) { const v = col(c); const f = v.length ? v.filter(x => /^\d{1,4}$/.test(x)).length / v.length : 0; if (f > best) { best = f; idCol = c; } }
+  for (let c = 0; c < ncol; c++) { const v = col(c); const f = v.length ? v.filter(x => ID_LONG.test(x)).length / v.length : 0; if (f > best) { best = f; idCol = c; } }
   if (best < 0.6) return null;
   let nameCol = -1; best = 0;
   for (let c = 0; c < ncol; c++) { if (c === idCol) continue; const v = col(c); const f = v.length ? v.filter(x => /[A-Za-z฀-๿]/.test(x)).length / v.length : 0; if (f > best) { best = f; nameCol = c; } }
-  const start = Math.max(0, rows.findIndex(r => /^\d{1,4}$/.test(r[idCol] || '')));
-  return { how: 'guess', idCol, nameCol: best >= 0.6 ? nameCol : -1, lastCol: -1, start };
+  const start = Math.max(0, rows.findIndex(r => ID_LONG.test(r[idCol] || '')));
+  return { how: 'guess', idCol, nameCol: best >= 0.6 ? nameCol : -1, lastCol: -1, nickCol: -1, schedCol: -1, start };
 }
 function extractEntries(rows, L) {
-  const map = new Map(), bad = []; let dups = 0;
+  const map = new Map(), extra = new Map(), full = new Map(), bad = []; let dups = 0, clash = 0, shortened = 0;
+  const cell = (row, c) => c >= 0 && row[c] != null ? String(row[c]).replace(/\s+/g, ' ').trim() : '';
   for (let r = L.start; r < rows.length; r++) {
     const row = rows[r], rawId = (row[L.idCol] || '').trim();
     let name = L.nameCol >= 0 ? (row[L.nameCol] || '').trim() : '';
     if (L.lastCol >= 0) name += ' ' + (row[L.lastCol] || '').trim();
     name = name.replace(/\s+/g, ' ').trim();
     if (!rawId && !name) continue;
-    let id = rawId.replace(/\.0+$/, '');
+    let id = rawId.replace(/\.0+$/, '').replace(/[\s-]/g, '');
+    const fullId = id;
     if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');            // Excel drops leading zeros of numeric cells
+    else if (/^\d{5,}$/.test(id)) { id = id.slice(-4); shortened++; }      // 8-digit employee number -> the last 4 digits
     if (!EMP_RE.test(id)) { bad.push({ row: r + 1, raw: rawId }); continue; }
-    if (map.has(id)) dups++;
+    if (map.has(id)) { dups++; if (full.get(id) !== fullId) clash++; }       // same last 4 digits but a different full number = two people mixed up
+    full.set(id, fullId);
     map.set(id, name);
+    const nick = cell(row, L.nickCol), sched = cell(row, L.schedCol);
+    if (nick || sched) extra.set(id, { nick, sched }); else extra.delete(id);
   }
-  return { map, bad, dups };
+  return { map, extra, bad, dups, clash, shortened };
 }
 function buildPending(rows, src) {
   rows = rows.filter(r => r.some(Boolean));
@@ -1533,16 +1551,22 @@ function buildPending(rows, src) {
   const layout = findLayout(rows);
   if (!layout) return { error: 'หาคอลัมน์เลขพนักงานไม่เจอ — ตั้งหัวคอลัมน์เป็น "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" และชื่อเป็น "ชื่อ" / "Name"', src };
   const ex = extractEntries(rows, layout);
-  return { src, layout, entries: ex.map, bad: ex.bad, dups: ex.dups };
+  return { src, layout, entries: ex.map, extra: ex.extra, bad: ex.bad, dups: ex.dups, clash: ex.clash, shortened: ex.shortened };
 }
 
 // --- preview + apply ---
 let pending = null;
 const rMode = () => (document.querySelector('input[name=rMode]:checked') || {}).value || 'merge';
 const nameFor = (id, nm) => nm || roster[id] || '';                              // an empty name in the file never blanks a known one
-function diffRoster(entries, mode) {
+/* nickname + work schedule after the file is applied: what the file says, else what is already known (an empty cell never blanks it) */
+const infoFor = (id, ex) => { const old = rosterInfo[id] || {}; return { nick: (ex && ex.nick) || old.nick || '', sched: (ex && ex.sched) || old.sched || '' }; };
+function diffRoster(entries, mode, extra) {
   const add = [], chg = [], same = [], del = [];
-  for (const [id, nm] of entries) { if (!(id in roster)) add.push(id); else if (nameFor(id, nm) !== (roster[id] || '')) chg.push(id); else same.push(id); }
+  for (const [id, nm] of entries) {
+    if (!(id in roster)) { add.push(id); continue; }
+    const a = infoFor(id, extra && extra.get(id)), b = infoFor(id, null);
+    if (nameFor(id, nm) !== (roster[id] || '') || a.nick !== b.nick || a.sched !== b.sched) chg.push(id); else same.push(id);
+  }
   if (mode === 'replace') for (const id of Object.keys(roster)) if (!entries.has(id)) del.push(id);
   return { add, chg, same, del };
 }
@@ -1552,15 +1576,17 @@ function refreshPreview() {
   if (!pending) { box.hidden = true; return; }
   box.hidden = false;
   if (pending.error) { box.innerHTML = `<span class="err">${xesc(pending.error)}</span>`; return; }
-  const mode = rMode(), df = diffRoster(pending.entries, mode), L = pending.layout;
+  const mode = rMode(), df = diffRoster(pending.entries, mode, pending.extra), L = pending.layout;
   const q = s => `"${xesc(s)}"`;
   // sentences with several parts are built with T() so each language keeps its own word order
   const cols = L.how === 'header'
     ? T('เลขพนักงาน ← {0}', q(L.idLabel)) + ' · ' + T('ชื่อ ← {0}', L.nameCol >= 0 ? q(L.nameLabel) + (L.lastCol >= 0 ? ' + ' + q(L.lastLabel) : '') : T('(ไม่พบคอลัมน์ชื่อ)'))
+      + (L.nickCol >= 0 ? ' · ' + T('ชื่อเล่น ← {0}', q(L.nickLabel)) : '') + (L.schedCol >= 0 ? ' · ' + T('ตารางเวลางาน ← {0}', q(L.schedLabel)) : '')
     : T('ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', L.idCol + 1, L.nameCol >= 0 ? T('คอลัมน์ {0} = ชื่อ', L.nameCol + 1) : T('ไม่พบชื่อ'));
   const srcText = pending.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(pending.src.slice(5))) : T(pending.src);
   const list = (cls, title, ids, withOld) => ids.length ? `<details><summary><span class="${cls}">${title} ${ids.length}</span></summary><ul>` +
-    ids.slice(0, 60).map(id => `<li>${id} ${xesc(nameFor(id, pending.entries.get(id)) || roster[id] || '')}${withOld && roster[id] ? ' <span style="color:var(--muted)">(เดิม: ' + xesc(roster[id]) + ')</span>' : ''}</li>`).join('') +
+    ids.slice(0, 60).map(id => { const nk = infoFor(id, pending.extra && pending.extra.get(id)).nick;
+      return `<li>${id} ${xesc(nameFor(id, pending.entries.get(id)) || roster[id] || '')}${nk ? ' (' + xesc(nk) + ')' : ''}${withOld && roster[id] ? ' <span style="color:var(--muted)">(เดิม: ' + xesc(roster[id]) + ')</span>' : ''}</li>`; }).join('') +
     (ids.length > 60 ? `<li>… อีก ${ids.length - 60}</li>` : '') + '</ul></details>' : '';
   let html = `<div>${T('อ่านได้ {0} คน จาก {1}', '<b>' + pending.entries.size + '</b>', srcText)}<br><small>${cols}</small></div>` +
     `<div><span class="add">เพิ่มใหม่ ${df.add.length}</span> · <span class="chg">แก้ชื่อ ${df.chg.length}</span> · เหมือนเดิม ${df.same.length}` +
@@ -1568,6 +1594,8 @@ function refreshPreview() {
     list('add', 'เพิ่มใหม่', df.add) + list('chg', 'แก้ชื่อ', df.chg, true) + (mode === 'replace' ? list('del', 'จะถูกลบออก', df.del) : '');
   if (pending.bad.length) html += '<div class="err">' + T('ข้าม {0} แถว (รหัสไม่ใช่เลข 4 หลัก): {1}', pending.bad.length,
     pending.bad.slice(0, 4).map(b => T('แถว {0} "{1}"', b.row, xesc(b.raw))).join(', ') + (pending.bad.length > 4 ? ' …' : '')) + '</div>';
+  if (pending.shortened) html += `<div class="add">${T('เลขพนักงานยาวกว่า 4 หลัก {0} คน — ใช้ 4 ตัวท้าย', pending.shortened)}</div>`;
+  if (pending.clash) html += `<div class="err">${T('4 ตัวท้ายซ้ำกัน {0} คน (เลขเต็มไม่เหมือนกัน ถูกรวมเป็นคนเดียว) — ตรวจไฟล์', pending.clash)}</div>`;
   if (pending.dups) html += `<div class="chg">รหัสซ้ำกันในไฟล์ ${pending.dups} แถว — ใช้แถวล่างสุด</div>`;
   if (!pending.entries.size) html += '<div class="err">ไม่มีรหัสที่ใช้ได้ในไฟล์นี้</div>';
   box.innerHTML = html;
@@ -1577,25 +1605,27 @@ function refreshPreview() {
     : mode === 'replace' ? T('อัปเดตรายชื่อ (+{0} / แก้ {1} / ลบ {2})', df.add.length, df.chg.length, df.del.length)
     : T('อัปเดตรายชื่อ (+{0} / แก้ {1})', df.add.length, df.chg.length);
 }
-function backupRoster() { try { localStorage.setItem(LS_ROSTER_BAK, JSON.stringify(roster)); } catch (_) {} }
+function backupRoster() { try { localStorage.setItem(LS_ROSTER_BAK, JSON.stringify(roster)); localStorage.setItem(LS_RINFO_BAK, JSON.stringify(rosterInfo)); } catch (_) {} }
 const hasRosterBackup = () => { try { return !!localStorage.getItem(LS_ROSTER_BAK); } catch (_) { return false; } };
 function resetImport() { pending = null; $('rFile').value = ''; $('rPaste').value = ''; refreshPreview(); }
 
 function renderRoster() {
   const q = $('rSearch').value.trim().toLowerCase();
-  const ids = Object.keys(roster).sort().filter(id => !q || id.includes(q) || (roster[id] || '').toLowerCase().includes(q));
+  const ids = Object.keys(roster).sort().filter(id => { if (!q) return true; const i = rosterInfo[id] || {}; return id.includes(q) || (roster[id] || '').toLowerCase().includes(q) || (i.nick || '').toLowerCase().includes(q) || (i.sched || '').toLowerCase().includes(q); });
   $('rCount').textContent = `(${rosterCount()} คน)`;
   const body = $('rBody'); body.innerHTML = '';
   ids.slice(0, 300).forEach(id => {
-    const tr = document.createElement('tr');
+    const tr = document.createElement('tr'), info = rosterInfo[id] || {};
     const a = document.createElement('td'); a.className = 'mono'; a.textContent = id;
     const b = document.createElement('td'); b.textContent = roster[id] || '';
+    const n = document.createElement('td'); n.textContent = info.nick || '';
+    const s = document.createElement('td'); s.className = 'sched'; s.textContent = info.sched || '';
     const x = document.createElement('td'); x.className = 'x';
     const bx = document.createElement('button'); bx.type = 'button'; bx.textContent = '×'; bx.title = 'ลบคนนี้ออกจากรายชื่อ';
-    bx.addEventListener('click', () => { backupRoster(); delete roster[id]; saveRoster(); renderRoster(); render(); toast(`ลบ ${id} ออกจากรายชื่อแล้ว`); });
-    x.appendChild(bx); tr.append(a, b, x); body.appendChild(tr);
+    bx.addEventListener('click', () => { backupRoster(); delete roster[id]; delete rosterInfo[id]; saveRoster(); saveRInfo(); renderRoster(); render(); toast(`ลบ ${id} ออกจากรายชื่อแล้ว`); });
+    x.appendChild(bx); tr.append(a, b, n, s, x); body.appendChild(tr);
   });
-  if (ids.length > 300) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 3; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${ids.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
+  if (ids.length > 300) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 5; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${ids.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
   $('rEmpty').hidden = ids.length > 0; $('rEmpty').textContent = rosterCount() ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีรายชื่อ';
   $('rUndo').hidden = !hasRosterBackup();
   $('rClear').disabled = !rosterCount(); $('rExport').disabled = !rosterCount();
@@ -1628,17 +1658,23 @@ $('rPaste').addEventListener('input', () => {
 document.querySelectorAll('input[name=rMode]').forEach(r => r.addEventListener('change', refreshPreview));
 $('rApply').addEventListener('click', () => {
   if (!pending || pending.error) return;
-  const mode = rMode(), df = diffRoster(pending.entries, mode);
+  const mode = rMode(), df = diffRoster(pending.entries, mode, pending.extra);
   if (mode === 'replace' && !pending.entries.size) return;
   backupRoster();
-  const next = mode === 'replace' ? {} : Object.assign({}, roster);
-  for (const [id, nm] of pending.entries) next[id] = nameFor(id, nm);
-  roster = next; saveRoster();
+  const next = mode === 'replace' ? {} : Object.assign({}, roster), nextInfo = mode === 'replace' ? {} : Object.assign({}, rosterInfo);
+  for (const [id, nm] of pending.entries) {
+    const inf = infoFor(id, pending.extra && pending.extra.get(id));       // (read before rosterInfo is replaced)
+    next[id] = nameFor(id, nm); if (inf.nick || inf.sched) nextInfo[id] = inf; else delete nextInfo[id];
+  }
+  roster = next; rosterInfo = nextInfo; saveRoster(); saveRInfo();
   toast(`อัปเดตแล้ว: เพิ่ม ${df.add.length} · แก้ชื่อ ${df.chg.length}` + (mode === 'replace' ? ` · ลบ ${df.del.length}` : ''));
   resetImport(); renderRoster(); render();
 });
 $('rUndo').addEventListener('click', () => {
-  try { const r = JSON.parse(localStorage.getItem(LS_ROSTER_BAK) || 'null'); if (r && typeof r === 'object') { roster = r; saveRoster(); localStorage.removeItem(LS_ROSTER_BAK); toast('ย้อนกลับแล้ว'); } } catch (_) {}
+  try {
+    const r = JSON.parse(localStorage.getItem(LS_ROSTER_BAK) || 'null'), ri = JSON.parse(localStorage.getItem(LS_RINFO_BAK) || 'null');
+    if (r && typeof r === 'object') { roster = r; rosterInfo = ri && typeof ri === 'object' ? ri : {}; saveRoster(); saveRInfo(); localStorage.removeItem(LS_ROSTER_BAK); localStorage.removeItem(LS_RINFO_BAK); toast('ย้อนกลับแล้ว'); }
+  } catch (_) {}
   renderRoster(); render();
 });
 $('rSearch').addEventListener('input', renderRoster);
@@ -1652,13 +1688,13 @@ $('rAdd').addEventListener('click', () => {
 $('rAddName').addEventListener('keydown', e => { if (e.key === 'Enter') $('rAdd').click(); });
 $('rClear').addEventListener('click', async () => {
   if (!rosterCount() || !await ask(`ลบรายชื่อพนักงานทั้งหมด ${rosterCount()} คน?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
-  backupRoster(); roster = {}; saveRoster(); renderRoster(); render(); toast('ลบรายชื่อทั้งหมดแล้ว');
+  backupRoster(); roster = {}; rosterInfo = {}; saveRoster(); saveRInfo(); renderRoster(); render(); toast('ลบรายชื่อทั้งหมดแล้ว');
 });
 $('rExport').addEventListener('click', () => {
   const H = t => ({ v: t, s: 1 });
-  const rows = [[H('รหัสพนักงาน'), H('ชื่อ')]];
-  Object.keys(roster).sort().forEach(id => rows.push([{ v: id }, { v: roster[id] || '' }]));
-  download(buildXlsx([{ name: 'รายชื่อพนักงาน', widths: [16, 34], rows, textCols: ['A'] }]), `employees_${stamp()}.xlsx`);
+  const rows = [[H('รหัสพนักงาน'), H('ชื่อ'), H('ชื่อเล่น'), H('ตารางเวลางาน')]];
+  Object.keys(roster).sort().forEach(id => rows.push([{ v: id }, { v: roster[id] || '' }, { v: (rosterInfo[id] || {}).nick || '' }, { v: (rosterInfo[id] || {}).sched || '' }]));
+  download(buildXlsx([{ name: 'รายชื่อพนักงาน', widths: [16, 34, 16, 30], rows, textCols: ['A'] }]), `employees_${stamp()}.xlsx`);
 });
 
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
@@ -1969,7 +2005,7 @@ function slotStyle(time) {
   return c ? ` style="background:${c[0]};color:${c[1]}"` : '';
 }
 function sheetHtml(r) {
-  const inf = orderInfo[r.order] || {}, picker = r.name || r.emp || '', nm = inf.name || '';
+  const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
   const slip = `<div class="slip">
     <div class="s-top"><div class="s-ref">${r.batch ? `ชุดที่ ${r.batch} · ใบที่ ${r.slot}` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}</div></div>
     <div class="s-order">${xesc(r.order)}</div>
@@ -2291,6 +2327,12 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['นำเข้า', 'Import', 'ထည့်သွင်းရန်'],
   ['ยกเลิก', 'Cancel', 'ပယ်ဖျက်ရန်'],
   ['ตกลง', 'OK', 'ကောင်းပြီ'],
+  ['ชื่อเล่น', 'Nickname', 'အမည်ပြောင်'],
+  ['ตารางเวลางาน', 'Work schedule', 'အလုပ်ချိန်ဇယား'],
+  ['ชื่อเล่น ← {0}', 'Nickname ← {0}', 'အမည်ပြောင် ← {0}'],
+  ['ตารางเวลางาน ← {0}', 'Work schedule ← {0}', 'အလုပ်ချိန်ဇယား ← {0}'],
+  ['เลขพนักงานยาวกว่า 4 หลัก {0} คน — ใช้ 4 ตัวท้าย', '{0} employee numbers are longer than 4 digits — the last 4 digits are used', 'ဝန်ထမ်းနံပါတ် {0} ခုသည် ၄ လုံးထက်ပိုရှည်သည် — နောက်ဆုံး ၄ လုံးကို သုံးမည်'],
+  ['4 ตัวท้ายซ้ำกัน {0} คน (เลขเต็มไม่เหมือนกัน ถูกรวมเป็นคนเดียว) — ตรวจไฟล์', '{0} people share the same last 4 digits (their full numbers differ, so they were merged into one) — check the file', 'လူ {0} ဦးတွင် နောက်ဆုံး ၄ လုံး တူနေသည် (နံပါတ်အပြည့်အစုံ မတူ၊ တစ်ဦးတည်း ပေါင်းထားသည်) — ဖိုင်ကို စစ်ပါ'],
   ['เสียงสแกน', 'Scan sound', 'စကင်န်အသံ'],
   ['ความดัง', 'Volume', 'အသံအတိုးအကျယ်'],
   ['คมสูง (2.7 kHz)', 'Sharp, high (2.7 kHz)', 'မြင့်၍ ပြတ်သား (2.7 kHz)'],
