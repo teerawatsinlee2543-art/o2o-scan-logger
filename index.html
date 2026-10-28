@@ -1,0 +1,2498 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>O2O Scan Logger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Noto+Sans+Myanmar:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1d2433; --muted:#667085; --line:#e2e5ea; --soft:#eef1f6;
+  --accent:#0b5cad; --accent2:#1474d4; --accent-ink:#ffffff; --red:#e30613;
+  --ok:#1f7a45; --okbg:#e4f3ea; --amber:#e0a020; --warn:#8a5a00; --warnbg:#fff2d6;
+  --bad:#b42318; --badbg:#fdecec; --purple:#6d3fd0; --orange:#c75a0b; --cell:#e9edf3;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11141a; --card:#1a1f28; --ink:#e6e9ef; --muted:#98a2b3; --line:#2c333f; --soft:#222833;
+    --accent:#6aa8ff; --accent2:#4f94f0; --accent-ink:#0b1220; --red:#ff5a64;
+    --ok:#6fd49a; --okbg:#16301f; --amber:#f5c060; --warn:#f5c060; --warnbg:#372a10;
+    --bad:#ffb4ae; --badbg:#3b1c1c; --purple:#bba6ff; --orange:#ffb066; --cell:#2a303b;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11141a; --card:#1a1f28; --ink:#e6e9ef; --muted:#98a2b3; --line:#2c333f; --soft:#222833;
+  --accent:#6aa8ff; --accent2:#4f94f0; --accent-ink:#0b1220; --red:#ff5a64;
+  --ok:#6fd49a; --okbg:#16301f; --amber:#f5c060; --warn:#f5c060; --warnbg:#372a10;
+  --bad:#ffb4ae; --badbg:#3b1c1c; --purple:#bba6ff; --orange:#ffb066; --cell:#2a303b;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+}
+
+*{box-sizing:border-box}
+html{scrollbar-gutter:stable}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Sarabun,"Noto Sans Myanmar","Myanmar Text","Leelawadee UI",Tahoma,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:1520px;margin:0 auto;padding:18px 18px 44px}
+
+/* ---- header ---- */
+.top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px 20px;align-items:center;margin-bottom:18px}
+.top .tiles{gap:8px}
+/* the 4 stat boxes are exactly as tall (70px) and as round (12px) as the blue roster button beside them (2 × 32px boxes + 6px gap) */
+.top .tile{height:70px;padding:0 12px;border-left-width:5px;border-radius:12px;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.top .tile b{font-size:24px}
+.top .tile span{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1400px){ .brandbox p{max-width:300px} }
+@media (max-width:1180px){ .top{grid-template-columns:minmax(0,1fr) auto} .top .tiles{grid-column:1 / -1;order:3} }
+@media (max-width:760px){ .top{grid-template-columns:minmax(0,1fr)} .top .tools{justify-content:flex-start;flex-wrap:wrap} }
+.brandbox{display:flex;align-items:center;gap:14px;padding:8px 30px 8px 8px;border-radius:999px;color:#fff;
+  background:linear-gradient(135deg,#c2323d,#b82f3a);box-shadow:0 6px 18px rgba(189,48,59,.32)}
+.logo{flex:none;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,#0b5cad,#1474d4);box-shadow:0 0 0 3px #fff,0 4px 12px rgba(0,0,0,.28)}
+.logo svg{width:30px;height:30px}
+.brandbox h1{margin:0;font-size:25px;font-weight:800;line-height:1.1;letter-spacing:.01em}
+.brandbox p{margin:2px 0 0;font-size:13px;color:rgba(255,255,255,.9)}
+.nb{white-space:nowrap}
+.tools{display:flex;gap:10px;align-items:stretch}
+/* the blue button is two lines tall; the language box and the light/dark box sit one above the other beside it */
+.sidebtns{display:flex;flex-direction:column;justify-content:space-between;gap:6px;width:92px}
+.sidebtns .langwrap{width:100%}
+.sidebtns .langbtn{width:100%;height:32px;padding:0 8px 0 10px;justify-content:space-between;border-radius:10px}
+.sidebtns .iconbtn{width:100%;height:32px;border-radius:10px}
+.sidebtns .iconbtn svg{width:18px;height:18px}
+
+/* ---- language switch (TH / EN / MY) ---- */
+.langwrap{position:relative}
+.langbtn{display:flex;align-items:center;gap:8px;height:42px;padding:0 10px 0 12px;border-radius:12px}
+.langbtn b{font-size:14px;letter-spacing:.04em}
+.langbtn .caret{width:14px;height:14px;opacity:.6}
+.flag{display:block;flex:none;width:26px;height:17px;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.flag svg{display:block;width:100%;height:100%}
+.langmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:176px;margin:0;padding:6px;list-style:none;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(16,24,40,.22)}
+.langmenu[hidden]{display:none}
+.langitem{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:9px;background:transparent;text-align:left;box-shadow:none}
+.langitem b{width:26px;font-size:13px;letter-spacing:.04em}
+.langitem:hover:not(:disabled){background:color-mix(in srgb,var(--accent) 10%,transparent);border:0}
+.langitem.on{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+html[lang="my"] body{line-height:1.75}
+html[lang="my"] h1,html[lang="my"] h2,html[lang="my"] .big,html[lang="my"] .batchhead b,html[lang="my"] .tile b{line-height:1.45}
+
+/* ---- buttons / inputs ---- */
+button,select{font:inherit;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .05s}
+button:hover:not(:disabled),select:hover{border-color:var(--accent)}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{color:var(--accent-ink);border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 3px 10px rgba(11,92,173,.25)}
+button.primary:hover:not(:disabled){filter:brightness(1.06);border-color:transparent}
+button.danger{color:var(--bad)}
+button.mini{padding:2px 10px;font-size:12px;border-radius:8px}
+button.block{width:100%;padding:12px 16px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+button svg{width:18px;height:18px;flex:none}
+.iconbtn{width:42px;height:42px;padding:0;display:grid;place-items:center;border-radius:12px}
+.chipbtn{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 12px;border-radius:12px}
+.chipbtn .btxt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:left}
+.chipbtn .btxt span:first-child{font-size:12px;font-weight:600;letter-spacing:.05em;opacity:.9}
+.chipbtn .btxt span:last-child{font-size:15px;font-weight:700}
+.chipbtn .cnt{background:color-mix(in srgb,var(--accent-ink) 22%,transparent);border-radius:99px;padding:0 9px;font-size:13px;font-variant-numeric:tabular-nums}
+input[type=text],input[type=search],input[type=number],textarea{font:inherit;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+input[type=text]:focus,input[type=search]:focus,input[type=number]:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+label{font-weight:600}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px}
+
+/* ---- layout ---- */
+main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:18px;align-items:stretch}
+@media (max-width:920px){ main{grid-template-columns:minmax(0,1fr)} }
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);min-width:0}
+/* "ส่งออก" and the buttons / settings card are slimmer (the left column is kept as short as it can be) */
+.card.compact{padding:12px 14px;border-radius:16px}
+.card.compact .sec{margin-bottom:8px}
+.card.compact button.block{padding:8px 14px;font-size:15px}
+.card.compact .exp{margin-top:8px}
+.card.compact .exp button,.card.compact .exp select{padding:6px 12px}
+.card.compact .hint{margin:7px 2px 0;font-size:12px}
+.card.compact .row button{padding:5px 12px;font-size:14px}
+.card.compact details.settings{margin-left:auto}
+.card.compact details.settings summary{cursor:pointer;font-weight:600;padding:3px 4px}
+.card.compact details.settings[open]{margin-left:0;flex:1 1 100%}
+.card.compact details.settings .row{margin-top:8px}
+.card.fill{flex:0 0 auto}      /* (it used to stretch down to the left column; the user then asked for smaller orange / purple boxes, so the card now just wraps them) */
+/* the orange / purple boxes keep their own (small) height; only the white card around them stretches to meet the left column */
+.sec{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.between{justify-content:space-between;flex-wrap:nowrap}
+.hint{margin:10px 2px 0;color:var(--muted);font-size:13px}
+
+/* ---- employee mode switch ---- */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:16px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;border-radius:10px;padding:10px;font-weight:700;color:var(--ink);box-shadow:none}
+.seg button:hover:not(:disabled){border:0;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.seg button.on,.seg button.on:hover:not(:disabled){background:linear-gradient(135deg,#5aa8f7,#3d8fe8);color:#0b1220;box-shadow:0 2px 8px rgba(61,143,232,.42)}
+.fields.solo{grid-template-columns:minmax(0,1fr)}
+.fields.solo #empBox{display:none}
+button.assign{margin-top:12px;font-size:15px;padding:10px 14px;color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+button.assign[hidden]{display:none}
+.empnone{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--warnbg);color:var(--warn)}
+
+/* ---- scan fields ---- */
+.fields{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px}
+@media (max-width:440px){ .fields{grid-template-columns:minmax(0,1fr)} }
+.lblrow{display:flex;justify-content:space-between;align-items:center;gap:6px;height:28px;margin-bottom:6px;white-space:nowrap}
+.lblrow label{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.lblrow label small{font-weight:400;opacity:.85}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800}
+.field.set .step{background:var(--ok);color:var(--card)}
+.field.need .step{background:var(--amber);color:#1d2433}
+.field input{width:100%;height:64px;padding:0 14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);outline:none;
+  font:800 28px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;letter-spacing:.08em;font-variant-numeric:tabular-nums;
+  transition:border-color .15s,box-shadow .15s,background .15s}
+.field input::placeholder{color:var(--muted);opacity:.32;font-weight:600}
+.field.need input{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 9%,var(--card))}
+.field.set input{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,var(--card))}
+.field input:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+#empBox input{text-align:center}
+.whoami{margin-top:10px;font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px}
+.whoami:empty{display:none}
+.whoami::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.whoami.ok{color:var(--ok)}
+.whoami.warn{color:var(--warn)}
+
+/* ---- feedback ---- */
+.fb{display:flex;align-items:center;gap:14px;margin-top:14px;min-height:86px;padding:14px 16px;border-radius:14px;background:var(--soft);border:1px solid transparent}
+.fb .ico{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:800;line-height:1;background:var(--cell);color:var(--muted)}
+.fb .ico svg{width:26px;height:26px}
+.fb .txt{min-width:0}
+.fb .big{font-size:24px;font-weight:800;line-height:1.2;word-break:break-all}
+.fb .small{font-size:14px;opacity:.92}
+.fb.idle{color:var(--muted)}
+.fb.ok{background:var(--okbg);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 28%,transparent)}
+.fb.ok .ico{background:var(--ok);color:var(--card)}
+.fb.warn{background:var(--warnbg);color:var(--warn);border-color:color-mix(in srgb,var(--amber) 40%,transparent)}
+.fb.warn .ico{background:var(--amber);color:#1d2433}
+.fb.bad{background:var(--badbg);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 28%,transparent)}
+.fb.bad .ico{background:var(--bad);color:var(--card)}
+@keyframes pop{0%{transform:scale(.985)}100%{transform:scale(1)}}
+.fb.pop{animation:pop .18s ease-out}
+@media (prefers-reduced-motion:reduce){.fb.pop{animation:none}button{transition:none}}
+
+/* ---- batch ---- */
+.batchhead{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.batchhead b{font-size:22px;font-weight:800;line-height:1.1}
+.batchhead span{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:99px;background:var(--cell);overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s}
+.bar.done i{background:linear-gradient(90deg,var(--ok),color-mix(in srgb,var(--ok) 70%,#fff))}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:6px}
+.grid i{font-style:normal;font-size:12px;text-align:center;padding:7px 0;border-radius:9px;background:var(--cell);color:var(--muted);font-variant-numeric:tabular-nums;border:1px dashed transparent}
+.grid i.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-ink);font-weight:800}
+.grid i.next{border-color:var(--accent);color:var(--accent);font-weight:700}
+.full{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--okbg);color:var(--ok);font-weight:700;font-size:14px}
+
+button.finish{margin-top:12px;color:var(--card);border-color:transparent;background:linear-gradient(135deg,var(--ok),color-mix(in srgb,var(--ok) 72%,#000));box-shadow:0 3px 10px color-mix(in srgb,var(--ok) 35%,transparent)}
+button.finish:hover:not(:disabled){filter:brightness(1.07);border-color:transparent}
+button.reopen{margin-top:12px}
+.field.locked{opacity:.55}
+.field.rej input{border-color:var(--bad);background:var(--badbg);animation:shake .38s}
+.field.rej .step{background:var(--bad);color:var(--card)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){.field.rej input{animation:none}}
+.lockbadge{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none;padding:2px 10px;border-radius:99px}
+.lockbadge.shut{background:var(--warnbg);color:var(--warn)}
+.lockbadge.open{background:var(--okbg);color:var(--ok)}
+
+/* ---- export ---- */
+.exp{display:flex;align-items:stretch;margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.exp > *{border:0;border-radius:0;margin:0}
+.exp > * + *{border-left:1px solid var(--line)}
+.exp select{flex:1;min-width:0;background:color-mix(in srgb,var(--line) 35%,var(--card))}
+.exp button{padding:9px 14px;white-space:nowrap}
+details.settings summary{cursor:pointer;color:var(--muted);font-size:14px;font-weight:600}
+details.settings .row{margin-top:10px}
+details.settings label{display:flex;align-items:center;gap:8px;font-size:14px}
+details.settings input[type=number]{width:76px}
+
+/* ---- right column ---- */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:640px){ .tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.tile{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:14px;padding:11px 14px;box-shadow:var(--shadow)}
+.tile b{display:block;font-size:32px;font-weight:800;line-height:1.1;color:var(--c);font-variant-numeric:tabular-nums}
+.tile span{color:var(--muted);font-size:13px;font-weight:600}
+.t-blue{--c:var(--accent)} .t-green{--c:var(--ok)} .t-red{--c:var(--bad)} .t-purple{--c:var(--purple)}
+.cardhead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cardhead h2{margin:0;font-size:18px;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;font-weight:600;padding:2px 12px;border-radius:999px;background:var(--soft);border:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:color-mix(in srgb,var(--accent) 16%,var(--card));border-color:var(--accent);color:var(--accent)}
+.chip.filt{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tile{cursor:pointer;transition:box-shadow .15s,transform .1s}
+.tile:hover{transform:translateY(-1px)}
+.tile:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.tile.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 45%,transparent),var(--shadow);background:color-mix(in srgb,var(--c) 9%,var(--card))}
+td.nofilt{text-align:center;color:var(--muted);padding:18px}
+.tablewrap{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+/* the scan list is locked to a header + 4 rows (≈37px + 4 × 38px + borders, a few px spare so exactly 4 rows show no scrollbar): it never grows, more rows scroll inside it (newest on top) */
+.tablewrap.scanwrap{height:194px;max-height:none}
+.scanwrap .empty{padding:10px 16px}
+.scanwrap .empty svg{width:52px;height:52px;margin-bottom:2px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+th{position:sticky;top:0;z-index:1;text-align:left;padding:9px 10px;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+  background:color-mix(in srgb,var(--line) 40%,var(--card));border-bottom:1px solid var(--line)}
+td{padding:8px 10px;white-space:nowrap;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 55%,var(--card))}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+td.num,td.time{color:var(--muted);font-variant-numeric:tabular-nums}
+td.mono,.mono{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.empnm{color:var(--muted);font-weight:400}
+.slot{color:var(--muted);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.dup{background:var(--bad);color:var(--card)}
+tr.dup td{background:var(--badbg)!important;color:var(--bad)}
+tr.dup .empnm,tr.dup .slot{color:inherit}
+td.x{width:34px;text-align:center}
+
+/* ---- Assign งาน (orange) / Re-Print ใบปะหน้า (purple): two scan fields under the scan list ---- */
+.twin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){ .twin{grid-template-columns:minmax(0,1fr)} }
+/* pastel boxes (peach / lavender): light tinted gradient, deep-tone text. The inner tokens are pinned to the light palette so the
+   white input and list read the same in the dark theme too */
+.panel{--g1:#fff0e1;--g2:#ffdcbd;--pt:#7a3a06;--pbd:#f4c8a0;--dot:#f08a3c;--glow:rgba(238,144,64,.24);--k:var(--orange);
+  --card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--orange:#c75a0b;--purple:#6d3fd0;
+  padding:10px 12px;min-width:0;border-radius:14px;color:var(--pt);border:1px solid var(--pbd);
+  background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px var(--glow)}
+.panel.purple{--g1:#f3edff;--g2:#e0d5ff;--pt:#43288f;--pbd:#cfc1f6;--dot:#8b6ce2;--glow:rgba(139,108,226,.24);--k:var(--purple)}
+/* green pastel "นำไฟล์เข้า" box nested inside the orange Assign box, under its scan field (it inherits the pinned light tokens of .panel) */
+.impbox{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;--ok:#1f7a45;--warn:#8a5a00;margin:0 0 8px;padding:8px 10px;border-radius:12px;color:var(--pt);
+  border:1px solid var(--pbd);background:linear-gradient(135deg,#ecfaf1,#d3f1df)}
+.impbox .phead{margin-bottom:8px}
+.impbox .phead label{font-size:15px}
+.impbox .phead label::before{width:10px;height:10px}
+.impbox .phint{margin:8px 2px 0;font-size:12px}
+.impbox .prow{margin-top:10px}
+.impbox .prow[hidden],.impbox button[hidden]{display:none}
+.panel.zoomed .impbox .phead{margin-bottom:8px}
+.panel.zoomed .impbox .phead label{font-size:17px}
+.panel.zoomed .impbox .phead label::before{width:12px;height:12px}
+.panel.zoomed .impbox .phint{font-size:13px}
+.idrop{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-radius:10px;color:var(--pt);text-align:left;
+  border:2px dashed var(--pbd);background:rgba(255,255,255,.62);transition:background .15s,border-color .15s}
+.idrop svg{flex:none;width:24px;height:24px;color:var(--dot)}
+.idrop b{display:block;font-size:13px;line-height:1.3}
+.idrop small{display:block;font-size:11px;line-height:1.3;font-weight:500;opacity:.82}
+.idrop:hover,.idrop.over{border-color:var(--dot);background:#fff}
+.idrop:has(+ .vh:focus-visible){outline:2px solid var(--dot);outline-offset:2px}
+.idrop.locked{opacity:.5;cursor:not-allowed}
+.impprev{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.75);color:var(--ink);font-size:13px;line-height:1.55;max-height:150px;overflow:auto}   /* the preview is locked to this height and scrolls inside */
+.impprev small{color:var(--muted)}
+.impprev .ok{color:var(--ok);font-weight:700} .impprev .warn{color:var(--warn);font-weight:700} .impprev .bad{color:var(--bad);font-weight:700}
+.impprev details{margin-top:4px} .impprev summary{cursor:pointer;color:var(--muted)}
+.impprev ul{margin:4px 0 0;padding-left:18px;max-height:150px;overflow:auto}
+.prow button.go{color:#fff;border-color:transparent;background:linear-gradient(135deg,#2f9e5f,#238a50)}
+.prow button.go:hover:not(:disabled){background:linear-gradient(135deg,#34ad6b,#27995a);border-color:transparent}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.phead label{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--pt)}
+.phead label::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot)}
+.pcount{min-width:24px;text-align:center;padding:0 10px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.7);border:1px solid var(--pbd);color:var(--pt);font-variant-numeric:tabular-nums}
+.panel input[type=text]{width:100%;height:40px;padding:0 10px;border-radius:10px;outline:none;background:var(--card);color:var(--ink);
+  border:2px solid var(--pbd);font:800 17px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;letter-spacing:.06em;font-variant-numeric:tabular-nums;
+  transition:border-color .15s,box-shadow .15s}
+.panel input[type=text]::placeholder{color:var(--muted);opacity:.5;font-weight:600;font-size:13.5px;letter-spacing:0}
+.panel input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 28%,transparent)}
+.panel input[type=text]:disabled{opacity:.55}
+.pmsg{min-height:22px;margin-top:6px;font-size:13px;font-weight:700}
+.pmsg:not(:empty){padding:1px 9px;border-radius:9px;background:rgba(255,255,255,.7);color:var(--pt)}
+.pmsg.warn:not(:empty){background:#fff3cd;color:#7a4b00}
+.pmsg.bad:not(:empty){background:#fde3e3;color:#b42318}
+.pmsg.warn:not(:empty)::before{content:"! "}
+.pmsg.bad:not(:empty)::before{content:"✕ "}
+.phint{margin:4px 2px 8px;font-size:12px;color:var(--pt);opacity:.85}
+.plist{list-style:none;margin:0;padding:0;max-height:112px;overflow:auto;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--pbd)}
+.plist li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:2px 8px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.plist li:last-child{border-bottom:0}
+.plist li:nth-child(even){background:color-mix(in srgb,var(--soft) 55%,var(--card))}
+.plist .t{color:var(--muted);font-variant-numeric:tabular-nums}
+.plist .o{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.plist .e{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;min-width:0}
+.plist .k{font-size:12px;font-weight:700;color:var(--k);grid-column:2 / 4}
+.plist li button{border:none;background:none;box-shadow:none;padding:0 6px;font-size:18px;line-height:1;color:var(--muted)}
+.plist li button:hover:not(:disabled){color:var(--bad);border:none}
+.plist .none{display:block;text-align:center;color:var(--muted);padding:10px}
+.prow{display:flex;gap:8px;margin-top:8px}
+.prow button{color:var(--pt);background:rgba(255,255,255,.7);border:1px solid var(--pbd);box-shadow:none}
+.prow button.danger{color:var(--bad)}
+.prow button:hover:not(:disabled){background:#fff;border-color:var(--dot)}
+
+/* zoom: a box can fill the whole page (bigger type, long list) and go back */
+.pright{display:flex;align-items:center;gap:8px}
+.pzoom{width:28px;height:28px;padding:0;display:grid;place-items:center;border-radius:10px;color:var(--pt);background:rgba(255,255,255,.7);border:1px solid var(--pbd);box-shadow:none}
+.pzoom:hover:not(:disabled){background:#fff;border-color:var(--dot)}
+.pzoom svg{width:15px;height:15px}
+.pzoom .zout{display:none}
+.panel.zoomed .pzoom .zin{display:none}
+.panel.zoomed .pzoom .zout{display:block}
+body.has-zoom{overflow:hidden}
+html:has(body.has-zoom){scrollbar-gutter:auto}
+.panel.zoomed{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;overflow:auto;border-radius:0;border:0;box-shadow:none;
+  padding:clamp(16px,3vw,36px) max(16px,calc((100vw - 1040px) / 2))}
+.panel.zoomed .phead{margin-bottom:16px}
+.panel.zoomed .phead label{font-size:clamp(22px,2.6vw,34px)}
+.panel.zoomed .phead label::before{width:16px;height:16px}
+.panel.zoomed .pcount{font-size:18px;padding:3px 16px}
+.panel.zoomed .pzoom{width:44px;height:44px}
+.panel.zoomed .pzoom svg{width:22px;height:22px}
+.panel.zoomed input[type=text]{height:clamp(60px,9vh,84px);font-size:clamp(26px,3.4vw,40px);border-radius:16px;padding:0 18px}
+.panel.zoomed input[type=text]::placeholder{font-size:clamp(16px,1.8vw,22px)}
+.panel.zoomed .pmode{font-size:15px;padding:8px 8px 8px 14px}
+.panel.zoomed .pmsg{font-size:18px;min-height:44px;padding-top:6px;padding-bottom:6px}
+.panel.zoomed .phint{font-size:16px}
+.panel.zoomed .plist{flex:1 1 auto;min-height:140px;max-height:none}
+.panel.zoomed .plist li{font-size:18px;padding:11px 16px}
+.panel.zoomed .plist .k{font-size:14px}
+.panel.zoomed .prow button{font-size:15px;padding:9px 18px}
+
+/* Re-Print mode: everything outside the purple box goes grey and dead (inert) until the mode is left */
+.dimmed{filter:grayscale(1);opacity:.5;pointer-events:none;user-select:none;transition:filter .2s,opacity .2s}
+.panel.purple.active{box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 40%,transparent),0 10px 28px color-mix(in srgb,var(--dot) 34%,transparent)}
+.pmode{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:6px 6px 6px 12px;border-radius:10px;background:rgba(255,255,255,.7);color:var(--pt);font-size:13px;font-weight:700}
+.pmode[hidden]{display:none}
+.pmode button{flex:none;padding:3px 12px;font-size:12px;border-radius:8px;color:#fff;background:var(--purple);border:0;box-shadow:none}
+td.x button{padding:0 8px;border:none;background:none;color:var(--muted);font-size:18px;line-height:1;box-shadow:none}
+td.x button:hover{color:var(--bad)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:4px;padding:34px 16px;color:var(--muted);text-align:center}
+.empty[hidden]{display:none}
+.empty svg{width:64px;height:64px;opacity:.5;margin-bottom:6px}
+.empty b{color:var(--ink);font-size:16px}
+
+/* ---- roster dialog ---- */
+dialog{width:min(820px,94vw);max-height:92vh;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--bg);color:var(--ink);box-shadow:0 28px 80px rgba(0,0,0,.45)}
+dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
+.dlg{padding:0 20px 20px;max-height:92vh;overflow:auto}
+.dlghead{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;margin:0 -20px 16px;padding:14px 20px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,var(--card)),var(--card));border-bottom:1px solid var(--line)}
+.dlgicon{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(11,92,173,.32)}
+.dlgicon svg{width:22px;height:22px}
+.dlgtitle{flex:1;min-width:0;font-size:22px;font-weight:800;line-height:1.25}
+.closebtn{flex:none;display:flex;align-items:center;gap:7px;padding:9px 18px;border:0;border-radius:11px;color:#fff;font-weight:700;
+  background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 3px 10px rgba(189,48,59,.4)}
+.closebtn:hover:not(:disabled){border:0;filter:brightness(1.1)}
+.closebtn svg{width:14px;height:14px}
+.dsec{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.dtitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:800}
+.dnum{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
+.rcount{margin-left:auto;padding:1px 12px;border-radius:99px;background:var(--soft);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--muted)}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);border:0}
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 16px;text-align:center;cursor:pointer;border-radius:14px;
+  border:2px dashed color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 5%,var(--card));transition:background .15s,border-color .15s}
+.drop svg{width:40px;height:40px;color:var(--accent)}
+.drop b{font-size:16px}
+.drop small{color:var(--muted);font-size:13px}
+.drop:hover,.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card))}
+.drop:has(+ .vh:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Leelawadee UI",monospace;font-size:13px;resize:vertical}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+@media (max-width:640px){ .modes{grid-template-columns:minmax(0,1fr)} }
+.modecard{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;font-weight:600;font-size:14px;line-height:1.45;transition:border-color .15s,background .15s}
+.modecard input{margin-top:3px;flex:none}
+.modecard:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--card))}
+.modecard.del:has(input:checked){border-color:var(--bad);background:var(--badbg)}
+.dact{margin-top:4px}
+.dact button.primary{padding:11px 24px;font-size:16px}
+.rsearch{width:100%}
+.addbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0;padding:10px 12px;border-radius:12px;background:var(--soft);border:1px dashed var(--line)}
+.addlbl{font-size:13px;font-weight:700;color:var(--muted)}
+.addbar .row{flex:1;flex-wrap:nowrap;min-width:260px}
+.dfoot{margin-top:14px;justify-content:space-between}
+.dfoot .danger{border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.preview{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--soft);font-size:14px;line-height:1.65}
+.preview .add{color:var(--ok);font-weight:700}
+.preview .chg{color:var(--warn);font-weight:700}
+.preview .del{color:var(--bad);font-weight:700}
+.preview .err{color:var(--bad)}
+.preview details{margin-top:4px}
+.preview summary{cursor:pointer;color:var(--muted)}
+.preview ul{margin:4px 0 0;padding-left:18px;max-height:140px;overflow:auto}
+.rlist{max-height:280px;margin-top:10px}
+
+.askdlg{width:min(420px,92vw);padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.askdlg::backdrop{background:rgba(16,24,40,.55)}
+.askdlg p{margin:0 0 16px;font-size:15px;line-height:1.55;white-space:pre-line}
+.askdlg .row{justify-content:flex-end}
+/* ---- cover-sheet print view: 2 identical slips per A4 page, like the printed ones ---- */
+#printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#5b6472}
+#printView[hidden]{display:none}
+.pvbar{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px;background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
+.pvbar .sp{flex:1}
+.pvnote{flex:1 1 100%;font-size:13px;color:var(--warn);empty-cells:hide}
+.pvnote:empty{display:none}
+/* (the sheet / slip styles are in SHEET_CSS in the script: the same text is used by this page and by the saved print file) */
+@media print{
+  @page{size:A4;margin:0}
+  body.has-print .app,body.has-print .toast,body.has-print dialog{display:none!important}
+  body.has-print{overflow:visible!important;background:#fff}
+  body.has-print #printView{position:static;overflow:visible;background:#fff}
+  .pvbar{display:none}
+}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90}
+.toast.show{opacity:.96}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brandbox">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><g fill="#fff"><rect x="3" y="5" width="2" height="14" rx=".4"/><rect x="6.5" y="5" width="1" height="14"/><rect x="9" y="5" width="3" height="14" rx=".4"/><rect x="13.5" y="5" width="1" height="14"/><rect x="16" y="5" width="2" height="14" rx=".4"/><rect x="19.5" y="5" width="1.5" height="14"/></g><rect x="1.5" y="11.1" width="21" height="1.8" rx=".9" fill="#ff5a64"/></svg>
+      </div>
+      <div>
+        <h1>O2O Scan Logger</h1>
+        <p><span class="nb">สแกนพนักงาน</span> → <span class="nb">สแกนออเดอร์</span> → <span class="nb">ส่งออก Excel เข้าใบปะหน้า</span></p>
+      </div>
+    </div>
+    <div class="tiles" id="stats"></div>
+    <div class="tools">
+      <button id="btnRoster" class="primary chipbtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>
+        <span class="btxt"><span>Update</span><span>รายชื่อพนักงาน</span></span>
+        <span class="cnt" id="rosterSummary"></span>
+      </button>
+      <div class="sidebtns">
+      <div class="langwrap" id="langWrap">
+        <button id="btnLang" class="langbtn" type="button" aria-haspopup="true" aria-expanded="false" title="ภาษา / Language / ဘာသာစကား">
+          <span class="flag" id="langFlag"></span><b id="langCode">TH</b>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <ul class="langmenu" id="langMenu" role="menu" hidden>
+          <li role="none"><button type="button" role="menuitem" class="langitem" data-lang="th"><span class="flag" data-flag="th"></span><b>TH</b><span>ไทย</span></button></li>
+          <li role="none"><button type="button" role="menuitem" class="langitem" data-lang="en"><span class="flag" data-flag="en"></span><b>EN</b><span>English</span></button></li>
+          <li role="none"><button type="button" role="menuitem" class="langitem" data-lang="my"><span class="flag" data-flag="my"></span><b>MM</b><span>မြန်မာ</span></button></li>
+        </ul>
+      </div>
+      <button id="btnTheme" class="iconbtn" type="button" title="สลับโหมดสว่าง/มืด" aria-label="สลับโหมดสว่าง/มืด">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stack">
+      <div class="card">
+        <div class="seg" role="tablist" aria-label="โหมดพนักงาน">
+          <button id="modeWith" role="tab" type="button" class="on">ระบุพนักงาน</button>
+          <button id="modeNone" role="tab" type="button">ยังไม่ระบุพนักงาน</button>
+        </div>
+        <div class="fields" id="fields">
+          <div class="field need" id="empBox">
+            <div class="lblrow">
+              <label for="empIn"><span class="step">1</span> พนักงาน</label>
+              <button id="btnLogout" class="mini" type="button" hidden>เปลี่ยน</button>
+            </div>
+            <input id="empIn" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="0000" aria-label="รหัสพนักงาน 4 หลัก">
+          </div>
+          <div class="field" id="ordBox">
+            <div class="lblrow"><label for="scan"><span class="step" id="ordStep">2</span> เลขออเดอร์ <small>11 ตัว</small></label></div>
+            <input id="scan" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="8543583191A" aria-label="เลขออเดอร์ 11 ตัว">
+          </div>
+        </div>
+        <div class="whoami" id="whoami" aria-live="polite"></div>
+        <div id="fb" class="fb idle"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></svg></div><div class="txt"><div class="big">พร้อมสแกน</div><div class="small">เริ่มจากกรอกหรือสแกนรหัสพนักงานก่อน</div></div></div>
+        <button id="btnAssign" class="block assign" type="button" hidden></button>
+        <button id="btnFinish" class="block finish" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
+          <span id="finishLabel">สิ้นสุดการสแกน</span>
+        </button>
+        <p class="hint" id="scanHint"></p>
+      </div>
+
+      <div class="card">
+        <div class="batchhead"><div><p class="sec" style="margin:0 0 2px">ชุดใบปะหน้า</p><b id="batchTitle">ชุดที่ 1</b></div><span id="batchSub"></span></div>
+        <div class="bar" id="bar"><i id="barFill"></i></div>
+        <div class="grid" id="grid"></div>
+        <div class="full" id="fullMsg" hidden></div>
+      </div>
+
+      <div class="card compact">
+        <p class="sec" style="display:flex;align-items:center;justify-content:space-between">ส่งออก <span id="lockBadge" class="lockbadge shut"></span></p>
+        <button id="btnXlsx" class="primary block" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          ส่งออก Excel (.xlsx)
+        </button>
+        <div class="exp">
+          <select id="batchSel" aria-label="เลือกชุด"></select>
+          <button id="btnCopy" type="button">คัดลอกเลขออเดอร์</button>
+          <button id="btnTxt" type="button">.txt</button>
+        </div>
+        <p class="hint" id="pasteHint"></p>
+      </div>
+
+      <div class="card compact">
+        <div class="row">
+          <button id="btnUndo" type="button">ลบรายการล่าสุด</button>
+          <button id="btnClear" class="danger" type="button">ล้างข้อมูลทั้งหมด</button>
+          <button id="btnRestore" type="button" hidden>กู้คืนที่เพิ่งล้าง</button>
+          <details class="settings">
+            <summary>ตั้งค่า</summary>
+            <div class="row">
+              <label>ใบต่อชุด <input id="optSize" type="number" min="1" max="200"></label>
+              <label><input id="optSound" type="checkbox"> เสียงบี๊บ</label>
+            </div>
+            <div class="row">
+              <label>เสียงสแกน <select id="optBeep">
+                <option value="p1">คมสูง (2.7 kHz)</option>
+                <option value="p2">กลาง (2.0 kHz)</option>
+                <option value="p3">สั้นแหลม (3.5 kHz)</option>
+                <option value="p4">ยาว (2.4 kHz)</option>
+                <option value="p5">นุ่ม (1.8 kHz)</option>
+              </select></label>
+              <label>ความดัง <select id="optVol"><option value="low">เบา</option><option value="mid">กลาง</option><option value="high">ดัง</option></select></label>
+            </div>
+            <div class="row">
+              <label><input id="optStrict" type="checkbox"> รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน</label>
+            </div>
+            <div class="row">
+              <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="stack">
+      <div class="card">
+        <div class="cardhead"><h2>รายการสแกน</h2><div class="chips" id="chips"></div></div>
+        <div class="tablewrap scanwrap">
+          <table>
+            <thead><tr><th>#</th><th>เวลา</th><th>พนักงาน</th><th>เลขออเดอร์</th><th>ชุด/ใบที่</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div class="empty" id="empty">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="5" width="2" height="14" rx=".4"/><rect x="6.5" y="5" width="1" height="14"/><rect x="9" y="5" width="3" height="14" rx=".4"/><rect x="13.5" y="5" width="1" height="14"/><rect x="16" y="5" width="2" height="14" rx=".4"/><rect x="19.5" y="5" width="1.5" height="14"/></svg>
+            <b>ยังไม่มีรายการสแกน</b>
+            <span>เริ่มจากกรอกหรือสแกนรหัสพนักงาน แล้วสแกนเลขออเดอร์</span>
+          </div>
+        </div>
+      </div>
+      <div class="card fill">
+        <div class="twin">
+          <section class="panel orange" aria-label="Assign งาน">
+            <div class="phead"><label for="assignIn">Assign งาน</label><span class="pright"><span class="pcount" id="assignCount">0</span><button class="pzoom" id="assignZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
+            <input id="assignIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะ Assign" aria-label="Assign งาน: เลขออเดอร์">
+            <div class="pmsg" id="assignMsg" aria-live="polite"></div>
+            <p class="phint" id="assignHint"></p>
+            <section class="impbox" id="impBox" aria-label="นำไฟล์เข้า">
+              <div class="phead"><label for="impFile">นำไฟล์เข้า</label></div>
+              <label class="idrop" id="impDrop" for="impFile" title="ใช้พนักงานที่เข้าระบบอยู่ หรือตามคอลัมน์ &quot;รหัสพนักงาน&quot; ในไฟล์ · ข้ามออเดอร์ที่ซ้ำ · ดูตัวอย่างก่อนนำเข้าทุกครั้ง">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+                <span><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><small>.xlsx · .csv · .txt · หรือกด Ctrl+V วางจาก Excel</small></span>
+              </label>
+              <input id="impFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+              <div class="impprev" id="impPrev" aria-live="polite" hidden></div>
+              <div class="prow" id="impRow" hidden><button id="impApply" class="mini go" type="button">นำเข้า</button><button id="impCancel" class="mini" type="button">ยกเลิก</button></div>
+              <p class="phint" id="impHint"></p>
+              <div class="prow"><button id="impPrint" class="mini go" type="button">พิมพ์ใบปะหน้า</button><button id="impUndo" class="mini danger" type="button" hidden>ย้อนการนำเข้าล่าสุด</button></div>
+            </section>
+            <ul class="plist" id="assignList"></ul>
+            <div class="prow"><button id="assignCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="assignClear" class="mini danger" type="button">ล้างรายการ</button></div>
+          </section>
+          <section class="panel purple" aria-label="Re-Print ใบปะหน้า">
+            <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
+            <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
+            <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะพิมพ์ซ้ำ" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์">
+            <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
+            <p class="phint" id="reprintHint"></p>
+            <ul class="plist" id="reprintList"></ul>
+            <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="askDlg" class="askdlg" aria-labelledby="askMsg">
+  <p id="askMsg"></p>
+  <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
+</dialog>
+
+<div id="printView" hidden>
+  <div class="pvbar">
+    <b id="pvTitle"></b>
+    <select id="pvBatch" aria-label="เลือกชุด"></select>
+    <span class="sp"></span>
+    <button id="pvPrint" class="primary" type="button">พิมพ์</button>
+    <button id="pvClose" type="button">ปิด</button>
+    <span class="pvnote" id="pvNote"></span>
+  </div>
+  <div id="pvPages" data-notr></div>
+</div>
+
+<dialog id="rosterDlg" aria-labelledby="rDlgTitle">
+  <div class="dlg">
+    <div class="dlghead">
+      <span class="dlgicon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg></span>
+      <span class="dlgtitle" id="rDlgTitle">รายชื่อพนักงาน</span>
+      <button id="rClose" type="button" class="closebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button>
+    </div>
+
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">1</span>อัปเดตจากไฟล์</p>
+      <label class="drop" id="rDrop" for="rFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+        <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
+        <small>.xlsx · .csv · .tsv · .txt</small>
+      </label>
+      <input id="rFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <textarea id="rPaste" rows="4" spellcheck="false" placeholder="หรือคัดลอก 2 คอลัมน์ (เลขพนักงาน + ชื่อ) จาก Excel มาวางที่นี่ — ไฟล์ .xls/.xlsb ใช้วิธีนี้ได้"></textarea>
+      <p class="hint">อ่านคอลัมน์ ชื่อ / Name และ เลขพนักงาน / รหัสพนักงาน / Employee ID ให้เอง (ถ้ามีคอลัมน์ นามสกุล / Last name จะรวมให้) ถ้าไฟล์ไม่มีหัวตารางจะเดาจากเนื้อหา</p>
+      <div class="modes">
+        <label class="modecard"><input type="radio" name="rMode" value="merge" checked><span>เพิ่ม / แก้ชื่อ (ไม่ลบใคร)</span></label>
+        <label class="modecard del"><input type="radio" name="rMode" value="replace"><span>ตามไฟล์ทั้งหมด (คนที่ไม่อยู่ในไฟล์ = ลบออก)</span></label>
+      </div>
+      <div id="rPreview" class="preview" hidden></div>
+      <div class="row dact">
+        <button id="rApply" class="primary" type="button" disabled>อัปเดตรายชื่อ</button>
+        <button id="rUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button>
+      </div>
+    </section>
+
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">2</span>รายชื่อปัจจุบัน <span id="rCount" class="rcount"></span></p>
+      <input id="rSearch" class="rsearch" type="search" placeholder="ค้นหารหัสหรือชื่อ">
+      <div class="addbar">
+        <span class="addlbl">เพิ่ม / แก้ทีละคน</span>
+        <div class="row">
+          <input id="rAddId" type="text" inputmode="numeric" placeholder="รหัส 4 หลัก" style="width:112px">
+          <input id="rAddName" type="text" placeholder="ชื่อ" style="flex:1;min-width:120px">
+          <button id="rAdd" type="button">เพิ่ม / แก้</button>
+        </div>
+      </div>
+      <div class="tablewrap rlist">
+        <table>
+          <thead><tr><th>รหัส</th><th>ชื่อ</th><th></th></tr></thead>
+          <tbody id="rBody"></tbody>
+        </table>
+        <div class="empty" id="rEmpty">ยังไม่มีรายชื่อ</div>
+      </div>
+      <div class="row dfoot">
+        <button id="rExport" type="button">ส่งออกรายชื่อ (.xlsx)</button>
+        <button id="rClear" type="button" class="danger">ลบรายชื่อทั้งหมด</button>
+      </div>
+    </section>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+<script>
+(() => {
+'use strict';
+
+/* ---------- config ---------- */
+const LS_KEY = 'o2o-scan-logger-v1';
+const LS_BAK = 'o2o-scan-logger-v1-backup';
+const EMP_RE = /^\d{4}$/;
+const ORD_RE = /^(\d{10}[A-Z]|\d{11})$/;      // 10 ตัวเลข + ตัวอักษรท้าย (A/C…) หรือเลขล้วน 11 หลัก
+const DATA_FIRST_ROW = 3;                     // ใบปะหน้า: DATA!B3 เป็นใบแรก
+
+/* ---------- state ---------- */
+let state = { rows: [], emp: null, batchSize: 20, sound: true, beep: 'p1', vol: 'mid', requireRoster: true, autoZoom: true, finished: false, mode: 'with', assigns: [], reprints: [] };   // mode: 'with' = employee first, 'none' = scan orders before knowing who picks
+try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (s && Array.isArray(s.rows)) state = Object.assign(state, s); } catch (_) {}
+let selBatch = null;          // null = ตามชุดล่าสุด
+let importPending = null;     // order file read but not applied yet (green box "นำไฟล์เข้า")
+let lastImport = null;        // { from, orders } of the last applied import, so it can be undone while nothing else was scanned
+
+/* employee roster {id: name} — kept apart from the scan log so "ล้างข้อมูล" never wipes it */
+const LS_ROSTER = 'o2o-roster-v1', LS_ROSTER_BAK = 'o2o-roster-v1-backup';
+let roster = {};
+try { const r = JSON.parse(localStorage.getItem(LS_ROSTER) || 'null'); if (r && typeof r === 'object') roster = r; } catch (_) {}
+const saveRoster = () => { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch (_) {} };
+
+/* cover-sheet data per order {order: {name, date, time, trip}} — comes from an imported Call Center file, kept apart from the scan log */
+const LS_INFO = 'o2o-orderinfo-v1';
+let orderInfo = {};
+try { const o = JSON.parse(localStorage.getItem(LS_INFO) || 'null'); if (o && typeof o === 'object') orderInfo = o; } catch (_) {}
+function saveInfo() {
+  const ks = Object.keys(orderInfo); if (ks.length > 5000) ks.slice(0, ks.length - 5000).forEach(k => delete orderInfo[k]);
+  try { localStorage.setItem(LS_INFO, JSON.stringify(orderInfo)); } catch (_) {}
+}
+const rosterCount = () => Object.keys(roster).length;
+
+const $ = id => document.getElementById(id);
+const inp = $('scan');
+
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {} }
+const pad = n => String(n).padStart(2, '0');
+const fmtTime = ts => { const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+const fmtDate = ts => { const d = new Date(ts); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; };
+const sameDay = (a, b) => fmtDate(a) === fmtDate(b);
+
+/* ---------- scan-list filter (view only, not saved): null | {kind:'unique'|'dup'|'hasemp'} | {kind:'emp', emp} ---------- */
+let listFilter = null;
+const FILTER_LABEL = { unique: 'ออเดอร์ไม่ซ้ำ', dup: 'ซ้ำ', hasemp: 'พนักงาน' };
+const passFilter = r => !listFilter || (listFilter.kind === 'unique' ? !r.dup : listFilter.kind === 'dup' ? r.dup : listFilter.kind === 'hasemp' ? !!r.emp : r.emp === listFilter.emp);
+function setFilter(f) {
+  listFilter = f && listFilter && listFilter.kind === f.kind && listFilter.emp === f.emp ? null : f;   // the same filter again switches it off
+  render();
+}
+
+/* ---------- derived view of the log ---------- */
+function derive() {
+  const first = new Map(); const out = []; let u = 0; const size = state.batchSize;
+  state.rows.forEach((r, i) => {
+    const firstIdx = first.get(r.order);
+    const dup = firstIdx !== undefined;
+    let batch = null, slot = null;
+    if (!dup) { first.set(r.order, i); batch = Math.floor(u / size) + 1; slot = (u % size) + 1; u++; }
+    out.push(Object.assign({ i, dup, batch, slot, firstIdx }, r, { name: r.name || roster[r.emp] || '' }));
+  });
+  return { rows: out, unique: u };
+}
+
+/* ---------- audio ---------- */
+/* Sounds like a shop checkout scanner (the 7-Eleven "pip"): a short, bright square-wave beep around 2.7 kHz, like a piezo buzzer.
+   Good scan = one beep; badge = two beeps; batch full = three rising beeps; repeat / refused = lower, longer buzzes. */
+let ac = null;
+function beep(freq, ms, type, vol, delay) {
+  if (!state.sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    const t0 = ac.currentTime + (delay || 0) / 1000, d = ms / 1000;
+    const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    o.type = type || 'square'; o.frequency.value = freq;
+    f.type = 'lowpass'; f.frequency.value = Math.min(9000, freq * 2.6);            // takes the harsh edge off the square wave, keeps the buzzer character
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol || 0.14, t0 + 0.003);   // no click at the start or the end
+    g.gain.setValueAtTime(vol || 0.14, t0 + Math.max(0.004, d - 0.012)); g.gain.linearRampToValueAtTime(0, t0 + d);
+    o.connect(f); f.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + d + 0.01);
+  } catch (_) {}
+}
+/* the scan beep can be chosen in Settings (the user wanted "the 7-Eleven sound" but did not say which of the shop beeps): pitch, length and wave of the "good scan" beep;
+   the badge / batch-full / repeat / refused sounds are derived from it */
+const BEEPS = {
+  p1: { f: 2730, d: 110, type: 'square' },
+  p2: { f: 2000, d: 130, type: 'square' },
+  p3: { f: 3500, d: 70,  type: 'square' },
+  p4: { f: 2400, d: 220, type: 'square' },
+  p5: { f: 1800, d: 140, type: 'sine' },
+};
+const VOLS = { low: .06, mid: .15, high: .26 };
+const bcfg = () => BEEPS[state.beep] || BEEPS.p1, bvol = () => VOLS[state.vol] || VOLS.mid;
+const sfx = {
+  ok:   () => { const c = bcfg(); beep(c.f, c.d, c.type, bvol()); },
+  emp:  () => { const c = bcfg(), d = Math.round(c.d * .75); beep(c.f, d, c.type, bvol()); beep(c.f, d, c.type, bvol(), d + 50); },
+  full: () => { const c = bcfg(), d = Math.round(c.d * .75), g = d + 40; beep(c.f, d, c.type, bvol()); beep(c.f * 1.19, d, c.type, bvol(), g); beep(c.f * 1.43, Math.round(c.d * 1.8), c.type, bvol(), 2 * g); },
+  dup:  () => { const f = bcfg().f * .385; beep(f, 150, 'square', bvol() * .9); beep(f, 150, 'square', bvol() * .9, 210); },
+  bad:  () => beep(480, 420, 'square', bvol()),
+};
+
+/* ---------- feedback ---------- */
+const SCAN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></svg>';
+const FB_GLYPH = { ok: '✓', warn: '!', bad: '✕' };
+function feedback(kind, big, small) {
+  const fb = $('fb');
+  fb.className = 'fb ' + kind;
+  fb.innerHTML = '';
+  const ico = document.createElement('div'); ico.className = 'ico';
+  if (kind === 'idle') ico.innerHTML = SCAN_ICON; else ico.textContent = FB_GLYPH[kind] || '';
+  const txt = document.createElement('div'); txt.className = 'txt';
+  const b = document.createElement('div'); b.className = 'big'; b.textContent = big;
+  const s = document.createElement('div'); s.className = 'small'; s.textContent = small || '';
+  txt.append(b, s); fb.append(ico, txt);
+  void fb.offsetWidth; fb.classList.add('pop');
+}
+
+/* In-page yes/no question (the browser's confirm() is blocked on the claude.ai web copy). Resolves true on "ตกลง". The text is translated here. */
+function ask(msg) {
+  return new Promise(resolve => {
+    const dlg = $('askDlg'); $('askMsg').textContent = trText(String(msg));
+    const done = v => { dlg.removeEventListener('close', onClose); dlg.close(); resolve(v); };
+    const onClose = () => resolve(false);                       // Esc
+    $('askYes').onclick = () => done(true); $('askNo').onclick = () => done(false);
+    dlg.addEventListener('close', onClose, { once: true });
+    dlg.showModal(); $('askNo').focus();
+  });
+}
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* shake the employee box when a badge is refused */
+function rejectFlash() {
+  const b = $('empBox'); b.classList.remove('rej'); void b.offsetWidth; b.classList.add('rej');
+  clearTimeout(rejectFlash._t); rejectFlash._t = setTimeout(() => b.classList.remove('rej'), 700);
+}
+
+/* ---------- scan handling ---------- */
+function handleScan(raw) {
+  const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+  if (!v) return;
+  if (state.finished) {
+    sfx.bad();
+    feedback('warn', 'สิ้นสุดการสแกนแล้ว', 'กด "กลับไปสแกนต่อ" ถ้าต้องการสแกนเพิ่ม');
+    return;
+  }
+
+  if (EMP_RE.test(v)) {
+    const known = v in roster, haveRoster = rosterCount() > 0;
+    if (state.requireRoster && haveRoster && !known) {
+      // not in the roster: nobody is signed in, and focus stays on the employee field (see submitFrom/focusNext)
+      state.emp = null; save(); sfx.bad();
+      feedback('bad', 'ไม่พบรหัส ' + v + ' ในรายชื่อ', 'สแกนบัตรอีกครั้ง หรือกด "Update รายชื่อพนักงาน" เพื่อเพิ่มคนนี้');
+      render(); rejectFlash(); return;
+    }
+    state.emp = v; state.mode = 'with'; save();      // a badge scan means the employee has arrived: jump to the "ระบุพนักงาน" layout
+    const pending = state.rows.filter(r => !r.emp).length;
+    const note = pending ? ` · มี ${pending} ออเดอร์ที่ยังไม่ระบุพนักงาน กดปุ่มด้านล่างเพื่อใส่ชื่อให้` : '';
+    if (haveRoster && !known) {                       // only reachable when the roster check is switched off
+      sfx.dup();
+      feedback('warn', 'พนักงาน ' + v, 'ไม่พบรหัสนี้ในรายชื่อ — สแกนต่อได้ แต่โปรดตรวจรหัสอีกครั้ง' + note);
+    } else {
+      sfx.emp();
+      feedback('ok', 'พนักงาน ' + v + (roster[v] ? ' · ' + roster[v] : ''),
+        (haveRoster ? 'สแกนเลขออเดอร์ได้เลย' : 'ยังไม่มีรายชื่อพนักงาน จึงไม่ได้ตรวจรหัส — สแกนเลขออเดอร์ได้เลย') + note);
+    }
+    render(); return;
+  }
+
+  if (ORD_RE.test(v)) {
+    const noEmp = state.mode === 'none';
+    if (!noEmp && !state.emp) {
+      sfx.bad();
+      feedback('bad', 'สแกนบัตรพนักงานก่อน', 'ยังไม่ได้บันทึก ' + v);
+      return;
+    }
+    const before = derive();
+    const dupOf = before.rows.find(r => r.order === v && !r.dup);
+    const emp = noEmp ? '' : state.emp;
+    state.rows.push({ ts: Date.now(), emp, name: roster[emp] || '', order: v });
+    save();
+    if (dupOf) {
+      sfx.dup();
+      feedback('warn', 'ซ้ำ ' + v,
+        `สแกนไปแล้ว ${fmtTime(dupOf.ts)} ${dupOf.emp ? 'โดย ' + dupOf.emp : '(ยังไม่ระบุพนักงาน)'} · บันทึกไว้แต่ไม่นับเข้าชุด`);
+    } else {
+      const d = derive(); const me = d.rows[d.rows.length - 1];
+      const full = me.slot === state.batchSize;
+      full ? sfx.full() : sfx.ok();
+      feedback('ok', v,
+        `ชุดที่ ${me.batch} · ใบที่ ${me.slot}/${state.batchSize}` + (full ? ' · ครบชุดแล้ว' : ''));
+    }
+    render(); return;
+  }
+
+  sfx.bad();
+  feedback('bad', 'รูปแบบไม่ถูกต้อง',
+    `ได้ "${v.slice(0, 24)}" (${v.length} ตัว) — ต้องเป็นรหัสพนักงาน 4 หลัก หรือเลขออเดอร์ 11 ตัว`);
+}
+
+/* Two fields, each takes a typed value or a scan. Enter / Tab ends an entry; with no suffix it ends by itself:
+   - scanner burst (<35 ms/char) that looks like a badge or an order, 140 ms after the last char
+   - typed by hand: 4 digits in the employee field / 11 valid chars in the order field, after a 400 ms pause
+   The value decides what it is, so a scan landing in the "wrong" field still goes to the right place. */
+const empIn = $('empIn');
+const resets = new Map();
+function wire(el, ownRe, normalize) {
+  let tFirst = 0, tLast = 0, t1 = null, t2 = null;
+  const stop = () => { clearTimeout(t1); clearTimeout(t2); };
+  resets.set(el, () => { tFirst = 0; stop(); });
+  el.addEventListener('input', () => {
+    const now = performance.now();
+    stop();
+    if (normalize) el.value = normalize(el.value);
+    if (!el.value) { tFirst = 0; return; }
+    if (!tFirst) tFirst = now;
+    tLast = now;
+    t1 = setTimeout(() => {
+      const v = el.value.trim().toUpperCase();
+      if (v.length < 4) return;
+      const fast = (tLast - tFirst) / Math.max(1, v.length - 1) < 35;
+      if (fast && (EMP_RE.test(v) || ORD_RE.test(v))) { submitFrom(el); return; }
+      if (ownRe.test(v)) { const snap = el.value; t2 = setTimeout(() => { if (el.value === snap) submitFrom(el); }, 260); }
+    }, 140);
+  });
+  el.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === 'Tab') && (el.value || e.key === 'Enter')) { e.preventDefault(); submitFrom(el); }
+    else if (e.key === 'Escape') { el.value = el === empIn ? (state.emp || '') : ''; resets.get(el)(); }
+  });
+}
+// a badge is exactly 4 digits: typing/scanning into a field that still shows the current badge replaces it instead of appending
+wire(empIn, EMP_RE, v => (state.emp && v.length > state.emp.length && v.startsWith(state.emp)) ? v.slice(state.emp.length) : v);
+wire(inp, ORD_RE);
+
+let reprintMode = false;             // true while the purple Re-Print field owns the screen (see "Re-Print mode" below)
+let zoomedEl = null;                 // the Assign / Re-Print box that currently fills the whole page, if any
+function focusNext() {
+  if ($('rosterDlg').open) return;
+  if (zoomedEl) { const zi = zoomedEl.querySelector('input[type=text]'); if (!zi.disabled) zi.focus(); return; }
+  if (reprintMode) { $('reprintIn').focus(); return; }
+  (state.mode === 'none' || state.emp ? inp : empIn).focus();
+}
+const sideHandlers = new Map();      // Assign / Re-Print fields: their own handler, and focus stays so several orders can be scanned in a row
+function submitFrom(el) {
+  resets.get(el)();
+  const v = el.value; el.value = '';
+  if (sideHandlers.has(el)) { sideHandlers.get(el)(v); el.focus(); return; }
+  handleScan(v);
+  empIn.value = state.emp || '';
+  focusNext();
+}
+let selectOnUp = false;
+empIn.addEventListener('focus', () => { empIn.select(); selectOnUp = true; });
+empIn.addEventListener('mouseup', e => { if (selectOnUp) { e.preventDefault(); selectOnUp = false; } });   // keep the select-all after a mouse click
+empIn.addEventListener('blur', () => {            // typed 4 digits then clicked away -> still counts
+  selectOnUp = false;
+  const v = empIn.value.trim();
+  if (EMP_RE.test(v) && v !== state.emp) handleScan(v);
+  empIn.value = state.emp || '';
+});
+
+/* keep focus in a field so the scanner always types somewhere useful */
+document.addEventListener('click', e => { if (!e.target.closest('input,select,textarea,summary,label')) focusNext(); });
+window.addEventListener('focus', focusNext);
+[inp, empIn].forEach(el => el.addEventListener('blur', () => setTimeout(() => { const a = document.activeElement; if (!a || a === document.body) focusNext(); }, 60)));
+
+/* ---------- rendering ---------- */
+function render() {
+  const d = derive(); const size = state.batchSize;
+
+  // employee field
+  $('empBox').className = 'field ' + (state.emp ? 'set' : 'need');
+  $('btnLogout').hidden = !state.emp;
+  if (document.activeElement !== empIn) empIn.value = state.emp || '';
+  const who = $('whoami');
+  if (state.emp && state.emp in roster) { who.className = 'whoami ok'; who.textContent = roster[state.emp] || '(ไม่มีชื่อในรายชื่อ)'; }
+  else if (state.emp && rosterCount()) { who.className = 'whoami warn'; who.textContent = 'ไม่พบรหัสนี้ในรายชื่อพนักงาน'; }
+  else { who.className = 'whoami'; who.textContent = ''; }
+  if (state.mode === 'none') { who.className = 'whoami'; who.textContent = ''; }
+
+  // employee mode: "ระบุพนักงาน" (badge first) or "ยังไม่ระบุพนักงาน" (orders only; the badge can come later)
+  const solo = state.mode === 'none';
+  $('modeWith').classList.toggle('on', !solo); $('modeNone').classList.toggle('on', solo);
+  $('modeWith').setAttribute('aria-selected', String(!solo)); $('modeNone').setAttribute('aria-selected', String(solo));
+  $('modeWith').disabled = $('modeNone').disabled = !!state.finished;
+  $('fields').classList.toggle('solo', solo);
+  $('ordStep').textContent = solo ? '1' : '2';
+  $('scanHint').textContent = solo
+    ? 'สแกนออเดอร์ได้เลยโดยยังไม่ระบุพนักงาน · เมื่อพนักงานมา สแกนบัตรได้ทันที ระบบจะสลับไปโหมด "ระบุพนักงาน" ให้เอง แล้วใส่ชื่อให้ออเดอร์ที่สแกนไว้ได้'
+    : 'กรอกหรือสแกนได้ทั้ง 2 ช่อง · ครบแล้วเด้งไปช่องถัดไปเอง · เปลี่ยนคนแค่สแกนบัตรใหม่ · รหัสที่ไม่อยู่ในรายชื่อจะไม่ผ่านไปช่องออเดอร์';
+  const unassigned = state.rows.filter(r => !r.emp).length;
+  const ba = $('btnAssign');
+  ba.hidden = !(unassigned && state.emp && !solo && !state.finished);
+  if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${roster[state.emp] ? ' ' + roster[state.emp] : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
+  $('rosterSummary').textContent = rosterCount() ? `${rosterCount()} คน` : 'ยังไม่มี';
+
+  // batches
+  const nBatches = Math.max(1, Math.ceil(d.unique / size));
+  const filled = d.unique === 0 ? 0 : d.unique - (nBatches - 1) * size;
+  $('batchTitle').textContent = 'ชุดที่ ' + nBatches;
+  $('batchSub').textContent = `${filled}/${size} ใบ · ทั้งหมด ${d.unique} ออเดอร์`;
+  $('barFill').style.width = (size ? Math.round(filled / size * 100) : 0) + '%';
+  $('bar').classList.toggle('done', d.unique > 0 && filled === size);
+  const grid = $('grid'); grid.innerHTML = '';
+  const cur = d.rows.filter(r => r.batch === nBatches);
+  let nextMarked = false;
+  for (let s = 1; s <= size; s++) {
+    const c = document.createElement('i'); c.textContent = s;
+    const hit = cur.find(r => r.slot === s);
+    if (hit) { c.className = 'on'; c.title = hit.order; }
+    else if (!nextMarked && filled < size) { c.className = 'next'; nextMarked = true; }
+    grid.appendChild(c);
+  }
+  const fm = $('fullMsg');
+  if (d.unique > 0 && filled === size) {
+    fm.hidden = false;
+    fm.textContent = `ชุดที่ ${nBatches} ครบ ${size} ใบแล้ว — ` + (state.finished ? `คัดลอกไปวางที่ DATA!B${DATA_FIRST_ROW} ได้เลย` : 'สแกนต่อได้ หรือกด "สิ้นสุดการสแกน" เมื่อครบทุกออเดอร์');
+  } else fm.hidden = true;
+
+  // batch selector
+  const sel = $('batchSel'); const want = selBatch && selBatch <= nBatches ? selBatch : nBatches;
+  sel.innerHTML = '';
+  for (let b = 1; b <= nBatches; b++) {
+    const n = d.rows.filter(r => r.batch === b).length;
+    const o = document.createElement('option'); o.value = b; o.textContent = `ชุดที่ ${b} (${n} ใบ)`; sel.appendChild(o);
+  }
+  sel.value = want;
+  $('pasteHint').textContent = state.finished
+    ? `คัดลอกแล้วไปวางที่ DATA!B${DATA_FIRST_ROW} ในไฟล์ใบปะหน้า (ลงมาถึง B${DATA_FIRST_ROW + size - 1})`
+    : 'สแกนออเดอร์ให้ครบทีละใบ แล้วกด "สิ้นสุดการสแกน" ปุ่มส่งออกจึงจะใช้ได้';
+
+  // stats + per-employee chips
+  const dupN = d.rows.filter(r => r.dup).length;
+  const emps = new Map();
+  d.rows.forEach(r => { const e = emps.get(r.emp) || { n: 0, d: 0, name: '' }; r.dup ? e.d++ : e.n++; e.name = e.name || r.name; emps.set(r.emp, e); });
+  $('stats').innerHTML = '';
+  // the four tiles are filters for the scan list: click one to show only those rows, click it again (or the first tile) to show everything
+  [['สแกนทั้งหมด', d.rows.length, 't-blue', null], ['ออเดอร์ไม่ซ้ำ', d.unique, 't-green', { kind: 'unique' }], ['ซ้ำ', dupN, 't-red', { kind: 'dup' }],
+    ['พนักงาน', emps.size - (emps.has('') ? 1 : 0), 't-purple', { kind: 'hasemp' }]].forEach(([l, n, cls, f]) => {
+    const on = !!f && !!listFilter && listFilter.kind === f.kind;
+    const s = document.createElement('div'); s.className = 'tile ' + cls + (on ? ' sel' : '');
+    s.setAttribute('role', 'button'); s.tabIndex = 0; s.setAttribute('aria-pressed', String(on)); s.title = 'กดเพื่อกรองรายการสแกน';
+    s.innerHTML = '<b></b><span></span>'; s.firstChild.textContent = n; s.lastChild.textContent = l;
+    const act = () => setFilter(f);
+    s.addEventListener('click', act); s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    $('stats').appendChild(s);
+  });
+  $('chips').innerHTML = '';
+  if (listFilter) {                                          // what is being filtered, and a way out
+    const f = document.createElement('button'); f.type = 'button'; f.className = 'chip filt';
+    const nm = listFilter.kind === 'emp' ? (listFilter.emp || 'ยังไม่ระบุพนักงาน') : FILTER_LABEL[listFilter.kind];
+    f.textContent = T('ตัวกรอง: {0} ✕', T(nm)); f.title = 'ล้างตัวกรอง'; f.addEventListener('click', () => setFilter(null)); $('chips').appendChild(f);
+  }
+  [...emps.entries()].sort((a, b) => b[1].n - a[1].n).forEach(([e, v]) => {
+    const on = !!listFilter && listFilter.kind === 'emp' && listFilter.emp === e;
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (on ? ' on' : ''); c.setAttribute('aria-pressed', String(on)); c.title = 'กดเพื่อกรองรายการสแกน';
+    c.textContent = `${e || 'ยังไม่ระบุพนักงาน'}${v.name ? ' ' + v.name : ''} · ${v.n}` + (v.d ? ` (ซ้ำ ${v.d})` : '');
+    c.addEventListener('click', () => setFilter({ kind: 'emp', emp: e }));
+    $('chips').appendChild(c);
+  });
+
+  // table (newest first, cap 400 rows)
+  const tb = $('tbody'); tb.innerHTML = '';
+  const shown = d.rows.filter(passFilter).reverse().slice(0, 400);
+  if (listFilter && !shown.length && d.rows.length) {
+    const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 7; td.className = 'nofilt'; td.textContent = 'ไม่มีรายการที่ตรงกับตัวกรอง';
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+  const now = Date.now();
+  shown.forEach(r => {
+    const tr = document.createElement('tr'); if (r.dup) tr.className = 'dup';
+    const cells = [
+      [r.i + 1, 'num'],
+      [(sameDay(r.ts, now) ? '' : fmtDate(r.ts) + ' ') + fmtTime(r.ts), 'time'],
+      [null, ''], [r.order, 'mono'],
+      [r.dup ? '—' : `${r.batch} / ${r.slot}`, 'slot'],
+      [r.dup ? `ซ้ำ (ใบที่ ${d.rows[r.firstIdx].i + 1})` : 'ปกติ', ''],
+    ];
+    cells.forEach(([t, cls], ci) => {
+      const td = document.createElement('td');
+      if (ci === 2) {                                   // employee: id + name
+        const id = document.createElement('span');
+        if (r.emp) { id.className = 'mono'; id.textContent = r.emp; } else { id.className = 'empnone'; id.textContent = 'ยังไม่ระบุ'; }
+        td.appendChild(id);
+        if (r.name) { const nm = document.createElement('span'); nm.className = 'empnm'; nm.textContent = ' ' + r.name; td.appendChild(nm); }
+      } else if (ci === 5) {                            // status pill
+        const p = document.createElement('span'); p.className = 'pill ' + (r.dup ? 'dup' : 'ok'); p.textContent = t; td.appendChild(p);
+      } else td.textContent = t;
+      if (cls) td.className = cls;
+      tr.appendChild(td);
+    });
+    const x = document.createElement('td'); x.className = 'x';
+    if (!state.finished) {                              // the list is locked once the scan is finished
+      const bx = document.createElement('button'); bx.type = 'button'; bx.textContent = '×'; bx.title = 'ลบรายการนี้';
+      bx.addEventListener('click', () => { state.rows.splice(r.i, 1); save(); render(); toast('ลบรายการแล้ว'); });
+      x.appendChild(bx);
+    }
+    tr.appendChild(x);
+    tb.appendChild(tr);
+  });
+  $('empty').hidden = d.rows.length > 0;
+
+  $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom;
+  $('btnRestore').hidden = !hasBackup();
+  // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
+  const fin = !!state.finished;
+  empIn.disabled = fin; inp.disabled = fin;
+  $('empBox').classList.toggle('locked', fin); $('ordBox').classList.toggle('locked', fin);
+  const bf = $('btnFinish');
+  bf.className = 'block ' + (fin ? 'reopen' : 'finish');
+  $('finishLabel').textContent = fin ? 'กลับไปสแกนต่อ' : `สิ้นสุดการสแกน${d.unique ? ' (' + d.unique + ' ออเดอร์)' : ''}`;
+  const hasData = state.rows.length > 0 || state.assigns.length > 0 || state.reprints.length > 0;
+  bf.disabled = !fin && !hasData;
+  const lb = $('lockBadge'); lb.className = 'lockbadge ' + (fin ? 'open' : 'shut'); lb.textContent = fin ? 'พร้อมส่งออก' : 'รอสิ้นสุดการสแกน';
+  $('btnUndo').disabled = fin || state.rows.length === 0;
+  $('btnXlsx').disabled = !fin || !hasData;
+  $('batchSel').disabled = !fin;
+  $('btnCopy').disabled = !fin || d.unique === 0; $('btnTxt').disabled = !fin || d.unique === 0;
+  renderSide(); renderImport();
+}
+
+/* ---------- buttons ---------- */
+$('btnLogout').addEventListener('click', () => {
+  state.emp = null; save(); empIn.value = '';
+  feedback('idle', 'พร้อมสแกน', 'กรอกหรือสแกนรหัสพนักงานคนถัดไป'); render(); empIn.focus();
+});
+$('btnUndo').addEventListener('click', () => { const r = state.rows.pop(); save(); render(); if (r) toast('ลบ ' + r.order + ' แล้ว'); });
+$('batchSel').addEventListener('change', e => { selBatch = +e.target.value; });
+$('optSize').addEventListener('change', e => { state.batchSize = Math.min(200, Math.max(1, parseInt(e.target.value, 10) || 20)); save(); render(); });
+$('optBeep').addEventListener('change', e => { state.beep = e.target.value; save(); sfx.ok(); });          // choosing a sound / volume plays it once
+$('optVol').addEventListener('change', e => { state.vol = e.target.value; save(); sfx.ok(); });
+$('optSound').addEventListener('change', e => { state.sound = e.target.checked; save(); if (state.sound) sfx.ok(); });      // ticking the box plays the beep once, so the volume / pitch can be checked
+$('optStrict').addEventListener('change', e => { state.requireRoster = e.target.checked; save(); });
+$('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
+function setFinished(f) {
+  state.finished = f; save();
+  sideMsg('assign', '', '');                        // drop a stale "สิ้นสุดการสแกนแล้ว…" line from the Assign panel
+  if (f) {
+    const d = derive(), emps = new Set(d.rows.map(r => r.emp).filter(Boolean)).size, un = d.rows.filter(r => !r.emp).length;
+    sfx.full();
+    feedback(un ? 'warn' : 'ok', 'สิ้นสุดการสแกนแล้ว', `${d.unique} ออเดอร์ · ${emps} พนักงาน` + (un ? ` · มี ${un} ออเดอร์ที่ยังไม่ระบุพนักงาน (กด "กลับไปสแกนต่อ" เพื่อใส่ชื่อ)` : '') + ' — ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง');
+  } else {
+    feedback('idle', 'พร้อมสแกนต่อ', state.emp ? `พนักงาน ${state.emp} — สแกนเลขออเดอร์ได้เลย` : 'กรอกหรือสแกนรหัสพนักงานก่อน');
+  }
+  render();
+  if (!f) focusNext();
+}
+$('btnFinish').addEventListener('click', () => setFinished(!state.finished));
+
+function setMode(m) {
+  if (state.finished || state.mode === m) return;
+  state.mode = m; save();
+  feedback('idle', 'พร้อมสแกน', m === 'none' ? 'โหมดยังไม่ระบุพนักงาน — สแกนเลขออเดอร์ได้เลย'
+    : (state.emp ? `พนักงาน ${state.emp} — สแกนเลขออเดอร์ได้เลย` : 'กรอกหรือสแกนรหัสพนักงานก่อน'));
+  render(); focusNext();
+}
+$('modeWith').addEventListener('click', () => setMode('with'));
+$('modeNone').addEventListener('click', () => setMode('none'));
+$('btnAssign').addEventListener('click', async () => {
+  if (!state.emp || state.finished) return;
+  const n = state.rows.filter(r => !r.emp).length; if (!n) return;
+  const nm = roster[state.emp] || '';
+  if (!await ask(`ใส่พนักงาน ${state.emp}${nm ? ' ' + nm : ''} ให้ ${n} ออเดอร์ที่ยังไม่ระบุพนักงาน?`)) return;
+  state.rows.forEach(r => { if (!r.emp) { r.emp = state.emp; r.name = nm; } });
+  save(); feedback('ok', `ใส่พนักงาน ${state.emp} แล้ว`, `${n} ออเดอร์${nm ? ' · ' + nm : ''}`);
+  render(); toast(`ใส่พนักงานให้ ${n} ออเดอร์แล้ว`); focusNext();
+});
+
+function hasBackup() { try { return !!localStorage.getItem(LS_BAK); } catch (_) { return false; } }
+$('btnClear').addEventListener('click', async () => {
+  if (!state.rows.length) return;
+  if (!await ask(`ล้างรายการสแกนทั้งหมด ${state.rows.length} รายการ?\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)`)) return;
+  try { localStorage.setItem(LS_BAK, JSON.stringify(state.rows)); } catch (_) {}
+  state.rows = []; selBatch = null; listFilter = null; state.finished = false; save(); render(); toast('ล้างแล้ว'); focusNext();
+});
+$('btnRestore').addEventListener('click', async () => {
+  try {
+    const rows = JSON.parse(localStorage.getItem(LS_BAK) || 'null');
+    if (Array.isArray(rows) && (!state.rows.length || await ask('รายการปัจจุบันจะถูกแทนที่ ตกลงไหม?'))) {
+      state.rows = rows; state.finished = false; localStorage.removeItem(LS_BAK); save(); render(); toast('กู้คืนแล้ว');
+    }
+  } catch (_) {}
+});
+
+function batchOrders(b) { return derive().rows.filter(r => r.batch === b).map(r => r.order); }
+function selectedBatch() { return +$('batchSel').value || 1; }
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (_) {
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); let ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove(); return ok;
+  }
+}
+$('btnCopy').addEventListener('click', async () => {
+  const b = selectedBatch(); const list = batchOrders(b);
+  const ok = await copyText(list.join('\r\n'));
+  toast(ok ? `คัดลอกชุดที่ ${b} (${list.length} ใบ) แล้ว` : 'คัดลอกไม่สำเร็จ');
+});
+$('btnTxt').addEventListener('click', () => {
+  const b = selectedBatch(); const list = batchOrders(b);
+  download(new Blob([list.join('\r\n') + '\r\n'], { type: 'text/plain' }), `orders_batch${b}_${stamp()}.txt`);
+});
+$('btnXlsx').addEventListener('click', async () => {
+  if (await download(buildXlsx(), `O2O-scan_${stamp()}.xlsx`)) toast('ส่งออก Excel แล้ว');
+});
+function stamp() { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`; }
+/* Saves a file. On the claude.ai web copy the page's own downloads are blocked, so the platform's "downloads" capability is used there
+   (the viewer confirms the save); everywhere else a normal download link. Resolves true when the file was handed over. */
+const IN_VIEWER = !!(window.claude && window.claude.use);
+async function download(blob, name) {
+  if (IN_VIEWER) {
+    try {
+      const dl = await window.claude.use('downloads');
+      if (dl) { await dl.save({ filename: name, data: blob }); return true; }
+    } catch (e) { if (!e || e.code !== 'declined') toast('บันทึกไฟล์ไม่สำเร็จ'); return false; }
+    toast('บันทึกไฟล์ไม่ได้ในหน้านี้'); return false;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  return true;
+}
+
+/* ---------- xlsx writer (no libraries) ---------- */
+const crcTable = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+
+function zipStore(files) {
+  const enc = new TextEncoder(); const parts = [], central = []; let offset = 0;
+  const d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of files) {
+    const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data), size = data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + size;
+  }
+  const cdSize = central.reduce((n, c) => n + c.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+const xesc = s => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+  .replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function colName(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+
+// style ids: 0 normal, 1 header, 2 date, 3 time, 4 dup text, 5 dup date, 6 dup time, 7 date+time, 8 orange header (Assign), 9 purple header (Re-Print)
+function sheetXml(sh) {
+  const lastCol = colName(sh.widths.length - 1), lastRow = sh.rows.length;
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="15"/><cols>' +
+    sh.widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols><sheetData>';
+  sh.rows.forEach((row, r) => {
+    x += `<row r="${r + 1}">`;
+    row.forEach((c, ci) => {
+      if (c == null || c.v == null || c.v === '') return;
+      const ref = colName(ci) + (r + 1), s = c.s ? ` s="${c.s}"` : '';
+      x += typeof c.v === 'number'
+        ? `<c r="${ref}"${s}><v>${c.v}</v></c>`
+        : `<c r="${ref}"${s} t="inlineStr"><is><t>${xesc(c.v)}</t></is></c>`;
+    });
+    x += '</row>';
+  });
+  x += '</sheetData>';
+  if (lastRow > 1) x += `<autoFilter ref="A1:${lastCol}${lastRow}"/>`;
+  if (sh.textCols && lastRow > 1) {
+    x += '<ignoredErrors>' + sh.textCols.map(c => `<ignoredError sqref="${c}2:${c}${lastRow}" numberStoredAsText="1"/>`).join('') + '</ignoredErrors>';
+  }
+  return x + '</worksheet>';
+}
+
+const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+  '<numFmts count="3"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/><numFmt numFmtId="165" formatCode="hh:mm:ss"/>' +
+  '<numFmt numFmtId="166" formatCode="dd/mm/yyyy hh:mm:ss"/></numFmts>' +
+  '<fonts count="3">' +
+  '<font><sz val="11"/><name val="Tahoma"/></font>' +
+  '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font>' +
+  '<font><sz val="11"/><color rgb="FFC62828"/><name val="Tahoma"/></font></fonts>' +
+  '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FF1F5FD1"/><bgColor indexed="64"/></patternFill></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFFDE3E3"/><bgColor indexed="64"/></patternFill></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFC75A0B"/><bgColor indexed="64"/></patternFill></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FF6D3FD0"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+  '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+  '<cellXfs count="10">' +
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+  '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+  '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '<xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+  '<xf numFmtId="164" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+  '<xf numFmtId="165" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+  '<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '<xf numFmtId="0" fontId="1" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+  '<xf numFmtId="0" fontId="1" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+  '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+
+function serial(ts) {
+  const d = new Date(ts);
+  const days = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()) / 86400000 + 25569;
+  return { date: Math.floor(days), time: days - Math.floor(days) };
+}
+
+function buildSheets() {
+  const d = derive(); const H = t => ({ v: t, s: 1 });
+
+  // 1) full scan log – every scan, duplicates flagged
+  const HA = t => ({ v: t, s: 8 }), HP = t => ({ v: t, s: 9 });       // orange / purple headers, same colours as the table
+  const log = [[H('ลำดับ'), H('วันที่'), H('เวลา'), H('รหัสพนักงาน'), H('ชื่อพนักงาน'), H('เลขออเดอร์'), H('ชุดที่'), H('ใบที่'), H('สถานะ')]];
+  d.rows.forEach(r => {
+    const t = serial(r.ts), k = r.dup ? 4 : 0;
+    log.push([{ v: r.i + 1, s: k }, { v: t.date, s: r.dup ? 5 : 2 }, { v: t.time, s: r.dup ? 6 : 3 },
+      { v: r.emp, s: k }, { v: r.name, s: k }, { v: r.order, s: k },
+      r.dup ? { v: '', s: k } : { v: r.batch, s: k }, r.dup ? { v: '', s: k } : { v: r.slot, s: k },
+      { v: r.dup ? 'ซ้ำ (ใบที่ ' + (d.rows[r.firstIdx].i + 1) + ')' : 'ปกติ', s: k }]);
+  });
+
+  // 2) feed for the cover-sheet workbook / Auto step – unique orders only, with the DATA row they belong to
+  const feed = [[H('ชุดที่'), H('แถวใน DATA'), H('เลขออเดอร์'), H('รหัสพนักงาน'), H('ชื่อพนักงาน'), HP('Re-Print ใบปะหน้า')]];
+  const rpSet = new Set((state.reprints || []).map(x => x.order));
+  d.rows.filter(r => !r.dup).forEach(r => feed.push([{ v: r.batch }, { v: DATA_FIRST_ROW + r.slot - 1 }, { v: r.order }, { v: r.emp }, { v: r.name }, { v: rpSet.has(r.order) ? 'Re-Print' : '' }]));
+
+  // 2b) the two side lists, each only when it has entries (headers use the same orange / purple as the screen)
+  const asg = [[HA('ลำดับ'), HA('วันที่'), HA('เวลา'), HA('เลขออเดอร์'), HA('รหัสพนักงาน'), HA('ชื่อพนักงาน'), HA('รายละเอียด')]];
+  (state.assigns || []).forEach((a, n) => { const t = serial(a.ts); asg.push([{ v: n + 1 }, { v: t.date, s: 2 }, { v: t.time, s: 3 }, { v: a.order }, { v: a.emp }, { v: a.name }, { v: ASSIGN_KIND[a.kind] || '' }]); });
+  const rpr = [[HP('ลำดับ'), HP('วันที่'), HP('เวลา'), HP('เลขออเดอร์'), HP('รหัสพนักงาน'), HP('ชื่อพนักงาน')]];
+  (state.reprints || []).forEach((a, n) => { const t = serial(a.ts); rpr.push([{ v: n + 1 }, { v: t.date, s: 2 }, { v: t.time, s: 3 }, { v: a.order }, { v: a.emp }, { v: a.name }]); });
+
+  // 3) per-employee summary
+  const m = new Map();
+  d.rows.forEach(r => {
+    const e = m.get(r.emp) || { n: 0, dup: 0, a: r.ts, b: r.ts, name: '' };
+    r.dup ? e.dup++ : e.n++; e.a = Math.min(e.a, r.ts); e.b = Math.max(e.b, r.ts); e.name = e.name || r.name; m.set(r.emp, e);
+  });
+  const sum = [[H('รหัสพนักงาน'), H('ชื่อพนักงาน'), H('จำนวนออเดอร์'), H('ซ้ำ'), H('สแกนแรก'), H('สแกนล่าสุด')]];
+  [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([emp, e]) => {
+    const a = serial(e.a), b = serial(e.b);
+    sum.push([{ v: emp || '(ยังไม่ระบุ)' }, { v: e.name }, { v: e.n }, { v: e.dup }, { v: a.date + a.time, s: 7 }, { v: b.date + b.time, s: 7 }]);
+  });
+
+  return [
+    { name: 'Scan Log', widths: [8, 12, 11, 14, 24, 16, 9, 8, 16], rows: log, textCols: ['D', 'F'] },
+    { name: 'Auto-DATA', widths: [9, 13, 16, 14, 24, 20], rows: feed, textCols: ['C', 'D'] },
+    ...(asg.length > 1 ? [{ name: 'Assign', widths: [8, 12, 11, 16, 14, 24, 30], rows: asg, textCols: ['D', 'E'] }] : []),
+    ...(rpr.length > 1 ? [{ name: 'Re-Print', widths: [8, 12, 11, 16, 14, 24], rows: rpr, textCols: ['D', 'E'] }] : []),
+    { name: 'สรุปพนักงาน', widths: [14, 24, 14, 8, 20, 20], rows: sum, textCols: ['A'] },
+  ];
+}
+
+function buildXlsx(sheetsArg) {
+  const sheets = sheetsArg || buildSheets();
+
+  const NS = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+  const R = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const files = [
+    { name: '[Content_Types].xml', text: head + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
+    { name: '_rels/.rels', text: head + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+    { name: 'xl/workbook.xml', text: head + `<workbook ${NS} ${R}><sheets>` +
+      sheets.map((s, i) => `<sheet name="${xesc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets></workbook>' },
+    { name: 'xl/_rels/workbook.xml.rels', text: head + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+      `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: 'xl/styles.xml', text: STYLES },
+    ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: sheetXml(s) })),
+  ];
+  return zipStore(files);
+}
+
+/* ---------- roster: read a file / pasted text -> preview -> apply ---------- */
+const rosterDlg = $('rosterDlg');
+
+// --- readers: .xlsx (zip + inflate in the browser), csv/tsv/txt (utf-8, utf-16, Thai windows-874) ---
+async function inflateRaw(u8) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('เบราว์เซอร์เก่าเกินไปที่จะอ่าน .xlsx — ใช้ Edge/Chrome รุ่นใหม่ หรือคัดลอกจาก Excel มาวาง');
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function unzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('ไฟล์นี้ไม่ใช่ .xlsx');
+  const n = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  const files = new Map(), dec = new TextDecoder();
+  for (let k = 0; k < n && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    files.set(dec.decode(u8.subarray(p + 46, p + 46 + nlen)), { method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), lho: dv.getUint32(p + 42, true) });
+    p += 46 + nlen + elen + clen;
+  }
+  return {
+    has: name => files.has(name),
+    async text(name) {
+      const f = files.get(name); if (!f) return null;
+      const start = f.lho + 30 + dv.getUint16(f.lho + 26, true) + dv.getUint16(f.lho + 28, true);
+      const raw = u8.subarray(start, start + f.csize);
+      return new TextDecoder('utf-8').decode(f.method === 0 ? raw : await inflateRaw(raw));
+    },
+  };
+}
+const colIndex = letters => letters.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+async function readXlsx(u8) {
+  const z = unzip(u8);
+  if (!z.has('xl/workbook.xml')) throw new Error(z.has('xl/workbook.bin') ? 'ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง' : 'ไม่ใช่ไฟล์ Excel (.xlsx)');
+  const P = s => new DOMParser().parseFromString(s, 'application/xml');
+  const wb = P(await z.text('xl/workbook.xml')), rels = P(await z.text('xl/_rels/workbook.xml.rels'));
+  const sheet = wb.getElementsByTagName('sheet')[0];
+  const rid = sheet.getAttribute('r:id') || sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+  const rel = [...rels.getElementsByTagName('Relationship')].find(r => r.getAttribute('Id') === rid);
+  const target = rel ? rel.getAttribute('Target') : 'worksheets/sheet1.xml';
+  const sheetXmlText = await z.text(target.startsWith('/') ? target.slice(1) : 'xl/' + target);
+  if (!sheetXmlText) throw new Error('ไม่พบข้อมูลในชีตแรก');
+  const sst = [];
+  if (z.has('xl/sharedStrings.xml')) {
+    for (const si of P(await z.text('xl/sharedStrings.xml')).getElementsByTagName('si')) {
+      let t = ''; for (const x of si.getElementsByTagName('t')) if (x.parentNode.nodeName !== 'rPh') t += x.textContent; sst.push(t);
+    }
+  }
+  const rows = [];
+  for (const r of P(sheetXmlText).getElementsByTagName('row')) {
+    const arr = [];
+    for (const c of r.getElementsByTagName('c')) {
+      const col = colIndex((c.getAttribute('r') || 'A1').replace(/\d+/g, '')), t = c.getAttribute('t'); let v = '';
+      if (t === 'inlineStr') v = [...c.getElementsByTagName('t')].map(x => x.textContent).join('');
+      else { const ve = c.getElementsByTagName('v')[0]; v = ve ? ve.textContent : ''; if (t === 's') v = sst[+v] || ''; }
+      arr[col] = v;
+    }
+    rows.push(Array.from(arr, x => (x == null ? '' : String(x).trim())));
+  }
+  return rows;
+}
+function decodeText(u8) {
+  if (u8[0] === 0xFF && u8[1] === 0xFE) return new TextDecoder('utf-16le').decode(u8).replace(/^﻿/, '');   // Excel "Unicode Text"
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^﻿/, ''); }
+  catch (_) { return new TextDecoder('windows-874').decode(u8); }                                              // Thai Excel "CSV" = ANSI
+}
+function splitLine(line, d) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === d) { out.push(cur.trim()); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur.trim()); return out;
+}
+function parseDelimited(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const sample = lines.slice(0, 5).join('\n');
+  const d = ['\t', ',', ';', '|'].map(x => [x, sample.split(x).length]).sort((a, b) => b[1] - a[1])[0][0];
+  return lines.map(l => splitLine(l, d));
+}
+async function fileToRows(file) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  if (u8[0] === 0x50 && u8[1] === 0x4B) return readXlsx(u8);
+  if (u8[0] === 0xD0 && u8[1] === 0xCF) throw new Error('ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง');
+  return parseDelimited(decodeText(u8));
+}
+
+// --- find the columns: header names first (ชื่อ/Name, เลขพนักงาน/รหัสพนักงาน/Employee ID), else guess from content ---
+const normH = s => String(s == null ? '' : s).toLowerCase().replace(/[\s._\-:()\/\\*#]/g, '');
+const ID_EXACT = new Set(['id', 'code', 'รหัส', 'เลขที่', 'เลข']);
+const ID_HAS = ['รหัสพนักงาน', 'เลขพนักงาน', 'รหัสพนง', 'เลขพนง', 'เลขที่พนักงาน', 'รหัสบัตร', 'employeeid', 'employeeno', 'employeenumber', 'employeecode', 'empid', 'empno', 'empcode', 'staffid', 'staffno', 'staffcode', 'badge'];
+const LAST_HAS = ['นามสกุล', 'lastname', 'surname', 'familyname'];
+const isIdH = h => ID_EXACT.has(h) || ID_HAS.some(k => h.includes(k));
+const isLastH = h => LAST_HAS.some(k => h.includes(k));
+const isNameH = h => !isLastH(h) && !/เล่น|nick/.test(h) && (h.includes('ชื่อ') || h.includes('name'));
+
+function findLayout(rows) {
+  for (let r = 0; r < Math.min(rows.length, 15); r++) {
+    const hs = rows[r].map(normH), idCol = hs.findIndex(isIdH);
+    if (idCol < 0) continue;
+    const nameCol = hs.findIndex((h, c) => c !== idCol && isNameH(h));
+    const lastCol = hs.findIndex((h, c) => c !== idCol && isLastH(h));
+    return { how: 'header', idCol, nameCol, lastCol, start: r + 1, idLabel: rows[r][idCol], nameLabel: rows[r][nameCol], lastLabel: rows[r][lastCol] };
+  }
+  const sample = rows.slice(0, 40), ncol = Math.max(0, ...sample.map(r => r.length));
+  const col = c => sample.map(r => r[c] || '').filter(Boolean);
+  let idCol = -1, best = 0;
+  for (let c = 0; c < ncol; c++) { const v = col(c); const f = v.length ? v.filter(x => /^\d{1,4}$/.test(x)).length / v.length : 0; if (f > best) { best = f; idCol = c; } }
+  if (best < 0.6) return null;
+  let nameCol = -1; best = 0;
+  for (let c = 0; c < ncol; c++) { if (c === idCol) continue; const v = col(c); const f = v.length ? v.filter(x => /[A-Za-z฀-๿]/.test(x)).length / v.length : 0; if (f > best) { best = f; nameCol = c; } }
+  const start = Math.max(0, rows.findIndex(r => /^\d{1,4}$/.test(r[idCol] || '')));
+  return { how: 'guess', idCol, nameCol: best >= 0.6 ? nameCol : -1, lastCol: -1, start };
+}
+function extractEntries(rows, L) {
+  const map = new Map(), bad = []; let dups = 0;
+  for (let r = L.start; r < rows.length; r++) {
+    const row = rows[r], rawId = (row[L.idCol] || '').trim();
+    let name = L.nameCol >= 0 ? (row[L.nameCol] || '').trim() : '';
+    if (L.lastCol >= 0) name += ' ' + (row[L.lastCol] || '').trim();
+    name = name.replace(/\s+/g, ' ').trim();
+    if (!rawId && !name) continue;
+    let id = rawId.replace(/\.0+$/, '');
+    if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');            // Excel drops leading zeros of numeric cells
+    if (!EMP_RE.test(id)) { bad.push({ row: r + 1, raw: rawId }); continue; }
+    if (map.has(id)) dups++;
+    map.set(id, name);
+  }
+  return { map, bad, dups };
+}
+function buildPending(rows, src) {
+  rows = rows.filter(r => r.some(Boolean));
+  if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
+  if (Math.max(...rows.map(r => r.filter(Boolean).length)) <= 1)                // one cell per line: "1234 สมชาย ใจดี"
+    rows = rows.map(r => { const m = /^\s*(\S+)\s+(.+?)\s*$/.exec(r[0] || ''); return m ? [m[1], m[2]] : [r[0] || '']; });
+  const layout = findLayout(rows);
+  if (!layout) return { error: 'หาคอลัมน์เลขพนักงานไม่เจอ — ตั้งหัวคอลัมน์เป็น "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" และชื่อเป็น "ชื่อ" / "Name"', src };
+  const ex = extractEntries(rows, layout);
+  return { src, layout, entries: ex.map, bad: ex.bad, dups: ex.dups };
+}
+
+// --- preview + apply ---
+let pending = null;
+const rMode = () => (document.querySelector('input[name=rMode]:checked') || {}).value || 'merge';
+const nameFor = (id, nm) => nm || roster[id] || '';                              // an empty name in the file never blanks a known one
+function diffRoster(entries, mode) {
+  const add = [], chg = [], same = [], del = [];
+  for (const [id, nm] of entries) { if (!(id in roster)) add.push(id); else if (nameFor(id, nm) !== (roster[id] || '')) chg.push(id); else same.push(id); }
+  if (mode === 'replace') for (const id of Object.keys(roster)) if (!entries.has(id)) del.push(id);
+  return { add, chg, same, del };
+}
+function refreshPreview() {
+  const box = $('rPreview'), btn = $('rApply');
+  btn.disabled = true; btn.textContent = 'อัปเดตรายชื่อ';
+  if (!pending) { box.hidden = true; return; }
+  box.hidden = false;
+  if (pending.error) { box.innerHTML = `<span class="err">${xesc(pending.error)}</span>`; return; }
+  const mode = rMode(), df = diffRoster(pending.entries, mode), L = pending.layout;
+  const q = s => `"${xesc(s)}"`;
+  // sentences with several parts are built with T() so each language keeps its own word order
+  const cols = L.how === 'header'
+    ? T('เลขพนักงาน ← {0}', q(L.idLabel)) + ' · ' + T('ชื่อ ← {0}', L.nameCol >= 0 ? q(L.nameLabel) + (L.lastCol >= 0 ? ' + ' + q(L.lastLabel) : '') : T('(ไม่พบคอลัมน์ชื่อ)'))
+    : T('ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', L.idCol + 1, L.nameCol >= 0 ? T('คอลัมน์ {0} = ชื่อ', L.nameCol + 1) : T('ไม่พบชื่อ'));
+  const srcText = pending.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(pending.src.slice(5))) : T(pending.src);
+  const list = (cls, title, ids, withOld) => ids.length ? `<details><summary><span class="${cls}">${title} ${ids.length}</span></summary><ul>` +
+    ids.slice(0, 60).map(id => `<li>${id} ${xesc(nameFor(id, pending.entries.get(id)) || roster[id] || '')}${withOld && roster[id] ? ' <span style="color:var(--muted)">(เดิม: ' + xesc(roster[id]) + ')</span>' : ''}</li>`).join('') +
+    (ids.length > 60 ? `<li>… อีก ${ids.length - 60}</li>` : '') + '</ul></details>' : '';
+  let html = `<div>${T('อ่านได้ {0} คน จาก {1}', '<b>' + pending.entries.size + '</b>', srcText)}<br><small>${cols}</small></div>` +
+    `<div><span class="add">เพิ่มใหม่ ${df.add.length}</span> · <span class="chg">แก้ชื่อ ${df.chg.length}</span> · เหมือนเดิม ${df.same.length}` +
+    (mode === 'replace' ? ` · <span class="del">ลบออก ${df.del.length}</span>` : '') + '</div>' +
+    list('add', 'เพิ่มใหม่', df.add) + list('chg', 'แก้ชื่อ', df.chg, true) + (mode === 'replace' ? list('del', 'จะถูกลบออก', df.del) : '');
+  if (pending.bad.length) html += '<div class="err">' + T('ข้าม {0} แถว (รหัสไม่ใช่เลข 4 หลัก): {1}', pending.bad.length,
+    pending.bad.slice(0, 4).map(b => T('แถว {0} "{1}"', b.row, xesc(b.raw))).join(', ') + (pending.bad.length > 4 ? ' …' : '')) + '</div>';
+  if (pending.dups) html += `<div class="chg">รหัสซ้ำกันในไฟล์ ${pending.dups} แถว — ใช้แถวล่างสุด</div>`;
+  if (!pending.entries.size) html += '<div class="err">ไม่มีรหัสที่ใช้ได้ในไฟล์นี้</div>';
+  box.innerHTML = html;
+  const changes = df.add.length + df.chg.length + df.del.length;
+  btn.disabled = !changes || !pending.entries.size;
+  btn.textContent = !changes ? T('ไม่มีอะไรเปลี่ยน')
+    : mode === 'replace' ? T('อัปเดตรายชื่อ (+{0} / แก้ {1} / ลบ {2})', df.add.length, df.chg.length, df.del.length)
+    : T('อัปเดตรายชื่อ (+{0} / แก้ {1})', df.add.length, df.chg.length);
+}
+function backupRoster() { try { localStorage.setItem(LS_ROSTER_BAK, JSON.stringify(roster)); } catch (_) {} }
+const hasRosterBackup = () => { try { return !!localStorage.getItem(LS_ROSTER_BAK); } catch (_) { return false; } };
+function resetImport() { pending = null; $('rFile').value = ''; $('rPaste').value = ''; refreshPreview(); }
+
+function renderRoster() {
+  const q = $('rSearch').value.trim().toLowerCase();
+  const ids = Object.keys(roster).sort().filter(id => !q || id.includes(q) || (roster[id] || '').toLowerCase().includes(q));
+  $('rCount').textContent = `(${rosterCount()} คน)`;
+  const body = $('rBody'); body.innerHTML = '';
+  ids.slice(0, 300).forEach(id => {
+    const tr = document.createElement('tr');
+    const a = document.createElement('td'); a.className = 'mono'; a.textContent = id;
+    const b = document.createElement('td'); b.textContent = roster[id] || '';
+    const x = document.createElement('td'); x.className = 'x';
+    const bx = document.createElement('button'); bx.type = 'button'; bx.textContent = '×'; bx.title = 'ลบคนนี้ออกจากรายชื่อ';
+    bx.addEventListener('click', () => { backupRoster(); delete roster[id]; saveRoster(); renderRoster(); render(); toast(`ลบ ${id} ออกจากรายชื่อแล้ว`); });
+    x.appendChild(bx); tr.append(a, b, x); body.appendChild(tr);
+  });
+  if (ids.length > 300) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 3; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${ids.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
+  $('rEmpty').hidden = ids.length > 0; $('rEmpty').textContent = rosterCount() ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีรายชื่อ';
+  $('rUndo').hidden = !hasRosterBackup();
+  $('rClear').disabled = !rosterCount(); $('rExport').disabled = !rosterCount();
+}
+
+$('btnRoster').addEventListener('click', () => { resetImport(); $('rSearch').value = ''; renderRoster(); rosterDlg.showModal(); });
+$('rClose').addEventListener('click', () => rosterDlg.close());
+rosterDlg.addEventListener('close', () => { render(); focusNext(); });
+$('rFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('rPaste').value = '';
+  pending = null; refreshPreview();                 // nothing can be applied while the new file is still being read
+  try { pending = buildPending(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  catch (err) { pending = { error: err.message || String(err), src: f.name }; }
+  e.target.value = ''; refreshPreview();
+});
+// drag & drop a file onto the dashed box (clicking it opens the normal file chooser through the label)
+const dropBox = $('rDrop');
+['dragenter', 'dragover'].forEach(ev => dropBox.addEventListener(ev, e => { e.preventDefault(); dropBox.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => dropBox.addEventListener(ev, e => { e.preventDefault(); dropBox.classList.remove('over'); }));
+dropBox.addEventListener('drop', e => {
+  const files = e.dataTransfer && e.dataTransfer.files;
+  if (files && files.length) { $('rFile').files = files; $('rFile').dispatchEvent(new Event('change', { bubbles: true })); }
+});
+let pasteT = null;
+$('rPaste').addEventListener('input', () => {
+  clearTimeout(pasteT);
+  pasteT = setTimeout(() => { const t = $('rPaste').value; pending = t.trim() ? buildPending(parseDelimited(t), 'ข้อความที่วาง') : null; refreshPreview(); }, 250);
+});
+document.querySelectorAll('input[name=rMode]').forEach(r => r.addEventListener('change', refreshPreview));
+$('rApply').addEventListener('click', () => {
+  if (!pending || pending.error) return;
+  const mode = rMode(), df = diffRoster(pending.entries, mode);
+  if (mode === 'replace' && !pending.entries.size) return;
+  backupRoster();
+  const next = mode === 'replace' ? {} : Object.assign({}, roster);
+  for (const [id, nm] of pending.entries) next[id] = nameFor(id, nm);
+  roster = next; saveRoster();
+  toast(`อัปเดตแล้ว: เพิ่ม ${df.add.length} · แก้ชื่อ ${df.chg.length}` + (mode === 'replace' ? ` · ลบ ${df.del.length}` : ''));
+  resetImport(); renderRoster(); render();
+});
+$('rUndo').addEventListener('click', () => {
+  try { const r = JSON.parse(localStorage.getItem(LS_ROSTER_BAK) || 'null'); if (r && typeof r === 'object') { roster = r; saveRoster(); localStorage.removeItem(LS_ROSTER_BAK); toast('ย้อนกลับแล้ว'); } } catch (_) {}
+  renderRoster(); render();
+});
+$('rSearch').addEventListener('input', renderRoster);
+$('rAdd').addEventListener('click', () => {
+  let id = $('rAddId').value.trim(); const nm = $('rAddName').value.replace(/\s+/g, ' ').trim();
+  if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');
+  if (!EMP_RE.test(id)) { toast('รหัสพนักงานต้องเป็นเลข 4 หลัก'); $('rAddId').focus(); return; }
+  backupRoster(); const had = id in roster; roster[id] = nm || roster[id] || ''; saveRoster();
+  $('rAddId').value = ''; $('rAddName').value = ''; renderRoster(); render(); toast(had ? `แก้ ${id} แล้ว` : `เพิ่ม ${id} แล้ว`); $('rAddId').focus();
+});
+$('rAddName').addEventListener('keydown', e => { if (e.key === 'Enter') $('rAdd').click(); });
+$('rClear').addEventListener('click', async () => {
+  if (!rosterCount() || !await ask(`ลบรายชื่อพนักงานทั้งหมด ${rosterCount()} คน?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
+  backupRoster(); roster = {}; saveRoster(); renderRoster(); render(); toast('ลบรายชื่อทั้งหมดแล้ว');
+});
+$('rExport').addEventListener('click', () => {
+  const H = t => ({ v: t, s: 1 });
+  const rows = [[H('รหัสพนักงาน'), H('ชื่อ')]];
+  Object.keys(roster).sort().forEach(id => rows.push([{ v: id }, { v: roster[id] || '' }]));
+  download(buildXlsx([{ name: 'รายชื่อพนักงาน', widths: [16, 34], rows, textCols: ['A'] }]), `employees_${stamp()}.xlsx`);
+});
+
+/* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
+const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
+const assignIn = $('assignIn'), reprintIn = $('reprintIn');
+const cleanScan = raw => String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+function sideMsg(which, kind, text) { const m = $(which + 'Msg'); m.className = 'pmsg ' + kind; m.textContent = text; }
+const empLabel = (e, n) => e + (n ? ' ' + n : '');
+
+/* Assign: the order goes to the employee who is signed in. Already scanned -> the employee is filled in (or changed after a confirm);
+   not scanned yet -> it is added to the scan list for that employee. Every Assign is listed and can be undone. */
+async function assignOrder(raw) {
+  const v = cleanScan(raw); if (!v) return;
+  if (state.finished) { sfx.bad(); return sideMsg('assign', 'warn', 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน'); }
+  if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('assign', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
+  if (!state.emp) { sfx.bad(); return sideMsg('assign', 'bad', 'ยังไม่มีพนักงาน — สแกนบัตรพนักงานที่ช่อง 1 ก่อน'); }
+  const emp = state.emp, name = roster[emp] || '', rows = state.rows.filter(r => r.order === v);
+  let kind, prev = null, rowTs = null;
+  if (!rows.length) { rowTs = Date.now(); state.rows.push({ ts: rowTs, emp, name, order: v }); kind = 'new'; }
+  else if (rows.every(r => r.emp === emp)) { sfx.dup(); return sideMsg('assign', 'warn', `${v} Assign ให้ ${empLabel(emp, name)} อยู่แล้ว`); }
+  else {
+    const other = rows.find(r => r.emp && r.emp !== emp);
+    if (other) {
+      if (!await ask(`ออเดอร์ ${v} Assign ให้ ${empLabel(other.emp, other.name)} อยู่แล้ว\nเปลี่ยนเป็น ${empLabel(emp, name)} ?`)) return;
+      kind = 'change'; prev = { emp: other.emp, name: other.name || '' };
+    } else kind = 'fill';
+    rows.forEach(r => { r.emp = emp; r.name = name; });
+  }
+  state.assigns.push({ ts: Date.now(), order: v, emp, name, kind, prev, rowTs });
+  save(); sfx.ok(); sideMsg('assign', 'ok', `✓ Assign ${v} → ${empLabel(emp, name)}`);
+  render();
+}
+function undoAssign(i) {
+  const a = state.assigns[i]; if (!a || state.finished) return;
+  if (a.kind === 'new') state.rows = state.rows.filter(r => !(r.order === a.order && r.ts === a.rowTs));
+  else state.rows.forEach(r => { if (r.order === a.order) { r.emp = a.prev ? a.prev.emp : ''; r.name = a.prev ? a.prev.name : ''; } });
+  state.assigns.splice(i, 1); save(); render(); toast(`ยกเลิก Assign ${a.order}`);
+}
+
+/* Re-Print: just a list of orders whose cover sheet has to be printed again (no employee needed; the signed-in one is noted if there is one) */
+function reprintOrder(raw) {
+  const v = cleanScan(raw); if (!v) return;
+  if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
+  if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
+  const emp = state.mode === 'none' ? '' : (state.emp || '');
+  state.reprints.push({ ts: Date.now(), order: v, emp, name: roster[emp] || '' });
+  save(); sfx.ok(); sideMsg('reprint', 'ok', `✓ Re-Print ${v}`);
+  render();
+}
+
+function renderList(ul, items, build) {
+  ul.innerHTML = '';
+  if (!items.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีรายการ'; ul.appendChild(li); return; }
+  items.map((x, i) => [x, i]).reverse().slice(0, 150).forEach(([x, i]) => ul.appendChild(build(x, i)));
+}
+function sideItem(x, onDelete, delTitle, extra) {
+  const li = document.createElement('li');
+  const t = document.createElement('span'); t.className = 't'; t.textContent = fmtTime(x.ts);
+  const o = document.createElement('span'); o.className = 'o'; o.textContent = x.order;
+  const e = document.createElement('span'); e.className = 'e'; e.textContent = x.emp ? empLabel(x.emp, x.name) : ''; e.title = e.textContent;
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.title = delTitle; b.disabled = !!(extra && extra.locked);
+  b.addEventListener('click', onDelete);
+  li.append(t, o, e, b);
+  if (extra && extra.kind) { const k = document.createElement('span'); k.className = 'k'; k.textContent = extra.kind; li.appendChild(k); }
+  return li;
+}
+function renderSide() {
+  const fin = !!state.finished;
+  assignIn.disabled = fin;
+  $('assignCount').textContent = state.assigns.length; $('reprintCount').textContent = state.reprints.length;
+  $('assignHint').textContent = fin ? 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม'
+    : (state.emp ? `จะ Assign ให้ ${empLabel(state.emp, roster[state.emp])}` : 'ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1');
+  $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
+  renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
+  renderList($('reprintList'), state.reprints, (a, i) => sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print'));
+  $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
+  $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
+}
+/* Re-Print mode: clicking into the purple field greys out and disables everything else, so a scan can only land here.
+   Leave with Esc, the "เสร็จสิ้น" button, or a click anywhere outside the purple box. */
+const lockTargets = () => [document.querySelector('header.top'), document.querySelector('main > .stack:first-child'),
+  document.querySelector('main > .stack:nth-child(2) > .card:first-child'), document.querySelector('.panel.orange')];
+function enterReprint() {
+  if (reprintMode) return; reprintMode = true;
+  lockTargets().forEach(el => { el.inert = true; el.classList.add('dimmed'); });
+  document.querySelector('.panel.purple').classList.add('active'); $('reprintMode').hidden = false;
+}
+function exitReprint() {
+  if (!reprintMode) return; reprintMode = false;
+  lockTargets().forEach(el => { el.inert = false; el.classList.remove('dimmed'); });
+  document.querySelector('.panel.purple').classList.remove('active'); $('reprintMode').hidden = true;
+  if (document.activeElement === reprintIn) reprintIn.blur();
+  focusNext();
+}
+reprintIn.addEventListener('focus', enterReprint);
+/* Zoom: the button in a box's corner makes that box fill the whole page (bigger type, long list, scanning keeps working); press it again or Esc to go back */
+function setZoom(panel, on) {
+  if (on && zoomedEl && zoomedEl !== panel) setZoom(zoomedEl, false);
+  zoomedEl = on ? panel : (zoomedEl === panel ? null : zoomedEl);
+  panel.classList.toggle('zoomed', on);
+  document.body.classList.toggle('has-zoom', !!zoomedEl);
+  const b = panel.querySelector('.pzoom'), label = on ? 'ย่อกลับ' : 'ขยายเต็มหน้า';
+  b.setAttribute('title', label); b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
+  if (on) { const i = panel.querySelector('input[type=text]'); if (!i.disabled) i.focus(); }
+  else { if (panel.classList.contains('purple')) exitReprint(); else focusNext(); }      // zooming out of Re-Print also leaves its mode
+}
+const collapseZoom = () => { if (zoomedEl) setZoom(zoomedEl, false); };
+document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () => { const p = b.closest('.panel'); setZoom(p, !p.classList.contains('zoomed')); }));
+// auto zoom: clicking (or tabbing) into one of the two scan fields opens its box full page — no need to press the zoom button (Settings can switch this off)
+[assignIn, reprintIn].forEach(i => i.addEventListener('focus', () => {
+  const p = i.closest('.panel');
+  if (state.autoZoom && !p.classList.contains('zoomed')) setZoom(p, true);
+}));
+$('reprintDone').addEventListener('click', () => { collapseZoom(); exitReprint(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (zoomedEl) collapseZoom(); else if (reprintMode) exitReprint();
+});
+document.addEventListener('click', e => {          // capture phase: the first click outside only leaves the mode, it never reaches the control underneath
+  if (reprintMode && !e.target.closest('.panel.purple')) { e.preventDefault(); e.stopPropagation(); exitReprint(); }
+}, true);
+
+wire(assignIn, ORD_RE); wire(reprintIn, ORD_RE);
+sideHandlers.set(assignIn, assignOrder); sideHandlers.set(reprintIn, reprintOrder);
+async function copyList(items, label) {
+  const ok = await copyText(items.map(x => x.order).join('\r\n'));
+  toast(ok ? T('คัดลอก {0} ({1} ใบ) แล้ว', T(label), items.length) : T('คัดลอกไม่สำเร็จ'));
+}
+$('assignCopy').addEventListener('click', () => copyList(state.assigns, 'Assign งาน'));
+$('reprintCopy').addEventListener('click', () => copyList(state.reprints, 'Re-Print ใบปะหน้า'));
+$('assignClear').addEventListener('click', async () => {
+  if (state.assigns.length && await ask(`ล้างรายการ Assign ${state.assigns.length} รายการ?\n(ไม่ย้อนการ Assign ที่ทำไปแล้วในรายการสแกน — ถ้าจะย้อนให้กด × ทีละรายการ)`)) { state.assigns = []; save(); render(); toast('ล้างรายการ Assign แล้ว'); }
+});
+$('reprintClear').addEventListener('click', async () => {
+  if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { state.reprints = []; save(); render(); toast('ล้างรายการ Re-Print แล้ว'); }
+});
+
+/* ---------- นำไฟล์เข้า (green box): a file / pasted column of order numbers becomes rows in the scan list ----------
+   The order column is the one whose cells look like orders; an employee column is used only when its header says so ("รหัสพนักงาน" / "Employee ID" …,
+   so a file exported by this app can be loaded back), otherwise the employee who is signed in gets the orders. Orders already scanned, or repeated in the
+   file, are skipped. Nothing is added before the preview is confirmed, and the last import can be undone until something else is scanned. */
+const impFile = $('impFile'), impDrop = $('impDrop');
+const cellText = s => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f\s]/g, '').toUpperCase().replace(/\.0+$/, '');
+const EMP_HEAD = /พนักงาน|employee|emp|staff|picker|ผู้จัด|badge/;
+const normEmpCell = s => { const c = cellText(s); return /^\d{1,3}$/.test(c) ? c.padStart(4, '0') : c; };
+function buildOrderImport(rows, src) {
+  rows = rows.filter(r => r.some(x => String(x == null ? '' : x).trim()));
+  if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
+  const ncol = Math.max(...rows.map(r => r.length)), cnt = Array(ncol).fill(0);
+  rows.forEach(r => { for (let c = 0; c < r.length; c++) if (ORD_RE.test(cellText(r[c]))) cnt[c]++; });
+  const ordCol = cnt.indexOf(Math.max(...cnt)), items = [], bad = [];
+  if (!cnt[ordCol]) {                                              // no column of its own: take every order-looking word of the text
+    rows.forEach(r => r.join(' ').split(/[\s,;|]+/).forEach(t => { const o = cellText(t); if (ORD_RE.test(o)) items.push({ order: o, emp: '' }); }));
+    if (!items.length) return { error: 'ไม่พบเลขออเดอร์ในไฟล์ — ต้องเป็นเลข 11 ตัว (10 ตัวเลข + ตัวอักษร หรือเลข 11 หลัก)', src };
+    return { src, items, bad, layout: { how: 'text' } };
+  }
+  const first = rows.findIndex(r => ORD_RE.test(cellText(r[ordCol]))), data = rows.slice(first), head = rows.slice(Math.max(0, first - 15), first);
+  const layout = { how: 'column', ordCol, ordLabel: first > 0 ? String(rows[first - 1][ordCol] || '').trim() : '', empCol: -1, empLabel: '' };
+  // cover-sheet data that may sit beside the orders (the Call Center "Data Slot" export): customer name, delivery date, round (time slot), trip
+  const findCol = pred => { for (let k = head.length - 1; k >= 0; k--) { const c = head[k].findIndex((x, i) => i !== ordCol && pred(normH(x))); if (c >= 0) return c; } return -1; };
+  const cName = findCol(n => /customername|ชื่อลูกค้า/.test(n)), cDateN = findCol(n => n === 'newexpecteddeliverydate'), cDateO = findCol(n => n === 'originalexpecteddate' || n === 'วันที่จัดส่ง' || n === 'deliverydate');
+  const cTimeN = findCol(n => n === 'newexpecteddeliverytime'), cTimeO = findCol(n => n === 'originalexpectedtime' || n === 'รอบส่ง' || n === 'slottime'), cTrip = findCol(n => n === 'tripid' || n === 'trip');
+  const cell = (r, c) => c >= 0 && r[c] != null ? String(r[c]).trim() : '';
+  const dateTxt = s => { const p = s.split(/\s+-\s+/); return p.length === 2 && p[0] === p[1] ? p[0] : s; };       // "08-Oct-2026 - 08-Oct-2026" -> "08-Oct-2026"
+  const share = (c, re) => { const v = data.map(r => cellText(r[c])).filter(Boolean); return v.length ? v.filter(x => re.test(x)).length / v.length : 0; };
+  const idc = [], hc = [];
+  head.forEach(h => h.forEach((x, c) => { if (c === ordCol) return; const n = normH(x); if (isIdH(n)) idc.push(c); else if (EMP_HEAD.test(n)) hc.push(c); }));
+  const byHead = [...idc, ...hc].find(c => share(c, /^\d{1,4}$/) >= 0.6);
+  if (byHead !== undefined) { layout.empCol = byHead; layout.empLabel = head.map(h => h[byHead]).find(Boolean) || ''; }
+  else if (first === 0 && ncol <= 3) {                             // a bare list with no header: a column of exactly-4-digit codes next to the orders is the badge
+    const g = Array.from({ length: ncol }, (_, c) => c).find(c => c !== ordCol && share(c, /^\d{4}$/) === 1 && data.filter(r => cellText(r[c])).length >= data.length * 0.8);
+    if (g !== undefined) { layout.empCol = g; layout.guess = true; }
+  }
+  data.forEach((r, k) => {
+    const o = cellText(r[ordCol]); if (!o) return;
+    if (!ORD_RE.test(o)) { bad.push({ row: first + k + 1, raw: o }); return; }
+    let emp = '';
+    if (layout.empCol >= 0) { emp = normEmpCell(r[layout.empCol]); if (emp && !EMP_RE.test(emp)) { bad.push({ row: first + k + 1, raw: emp }); return; } }
+    const info = { name: cell(r, cName), date: dateTxt(cell(r, cDateN) || cell(r, cDateO)), time: cell(r, cTimeN) || cell(r, cTimeO), trip: cell(r, cTrip) };
+    items.push({ order: o, emp, info: info.name || info.date || info.time || info.trip ? info : null });
+  });
+  return { src, items, bad, layout };
+}
+/* what would happen if the file were applied right now (depends on who is signed in, the mode and the orders already scanned) */
+function evalImport(p) {
+  const known = new Set(state.rows.map(r => r.order)), seen = new Set();
+  const def = state.mode === 'none' ? '' : (state.emp || null);     // null = nobody to give the orders to
+  const r = { ok: [], dupFile: 0, dupLog: 0, needEmp: 0, unknown: [] };
+  for (const it of p.items) {
+    if (seen.has(it.order)) { r.dupFile++; continue; }
+    seen.add(it.order);
+    if (known.has(it.order)) { r.dupLog++; continue; }
+    let emp = it.emp;
+    if (emp) { if (state.requireRoster && rosterCount() && !(emp in roster)) { r.unknown.push(emp); continue; } }
+    else if (def === null) { r.needEmp++; continue; }
+    else emp = def;
+    r.ok.push({ order: it.order, emp });
+  }
+  return r;
+}
+function renderImport() {
+  const fin = !!state.finished, p = importPending, prev = $('impPrev');
+  $('impHint').textContent = fin ? 'สิ้นสุดการสแกนแล้ว — นำเข้าได้เฉพาะข้อมูลใบปะหน้า (ชื่อลูกค้า / วันที่ / รอบส่ง)' : '';        // the rules are in the tooltip of the drop strip (keeps the box small)
+  $('impHint').hidden = !fin;
+  const li = lastImport, n = li ? li.orders.length : 0;
+  const canUndo = !!li && !fin && state.rows.length === li.from + n && li.orders.every((o, i) => state.rows[li.from + i].order === o);
+  $('impUndo').hidden = !canUndo; if (canUndo) $('impUndo').textContent = T('ย้อนการนำเข้าล่าสุด ({0} ออเดอร์)', n);
+  const nu = derive().unique; $('impPrint').disabled = !nu; $('impPrint').textContent = nu ? T('พิมพ์ใบปะหน้า ({0} ใบ)', nu) : T('พิมพ์ใบปะหน้า');
+  if (!p) { prev.hidden = true; prev.innerHTML = ''; $('impRow').hidden = true; return; }
+  prev.hidden = false; $('impRow').hidden = false;
+  const apply = $('impApply'); apply.hidden = !!p.error; apply.disabled = true;
+  if (p.error) { prev.innerHTML = `<span class="bad">${xesc(T(p.error))}</span>`; return; }
+  const v = evalImport(p), L = p.layout, q = s => `"${xesc(s)}"`;
+  const src = p.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(p.src.slice(5))) : T(p.src);
+  const ordTxt = L.how === 'text' ? T('เลขออเดอร์ ← ค้นหาจากข้อความทั้งหมด') : T('เลขออเดอร์ ← คอลัมน์ {0}', L.ordLabel ? q(L.ordLabel) : L.ordCol + 1);
+  const empTxt = L.empCol >= 0 ? T('พนักงาน ← {0}', L.empLabel ? q(L.empLabel) : T('คอลัมน์ {0} (เดาจากเนื้อหา)', L.empCol + 1))
+    : state.mode === 'none' ? T('ยังไม่ระบุพนักงาน')
+    : state.emp ? T('ใช้พนักงานที่เข้าระบบอยู่: {0}', xesc(empLabel(state.emp, roster[state.emp]))) : T('ยังไม่มีพนักงานที่เข้าระบบ');
+  let html = `<div>${T('อ่านได้ {0} ออเดอร์ จาก {1}', '<b>' + p.items.length + '</b>', src)}<br><small>${ordTxt} · ${empTxt}</small></div>` +
+    `<div><span class="ok">${T('นำเข้าได้ {0} ออเดอร์', v.ok.length + v.needEmp)}</span>` +
+    (v.dupFile + v.dupLog ? ` · <span class="warn">${T('ข้ามที่ซ้ำ {0} (ซ้ำในไฟล์ {1} · ซ้ำกับรายการสแกน {2})', v.dupFile + v.dupLog, v.dupFile, v.dupLog)}</span>` : '') + '</div>';
+  const infoN = p.items.filter(it => it.info).length;
+  if (infoN) html += `<div><span class="ok">${T('มีข้อมูลใบปะหน้า {0} ออเดอร์ (ชื่อลูกค้า / วันที่ / รอบส่ง)', infoN)}</span></div>`;
+  if (v.ok.length) html += `<details><summary>${T('ตัวอย่างที่จะนำเข้า')}</summary><ul>` +
+    v.ok.slice(0, 40).map(x => `<li>${x.order}${x.emp ? ' · ' + xesc(empLabel(x.emp, roster[x.emp])) : ''}</li>`).join('') + (v.ok.length > 40 ? `<li>… +${v.ok.length - 40}</li>` : '') + '</ul></details>';
+  if (p.bad.length) html += `<div class="bad">${T('ข้าม {0} แถว (รูปแบบไม่ถูกต้อง): {1}', p.bad.length,
+    p.bad.slice(0, 4).map(b => T('แถว {0} "{1}"', b.row, xesc(b.raw))).join(', ') + (p.bad.length > 4 ? ' …' : ''))}</div>`;
+  if (v.unknown.length) html += `<div class="bad">${T('ข้าม {0} ออเดอร์ (รหัสพนักงานไม่อยู่ในรายชื่อ): {1}', v.unknown.length,
+    [...new Set(v.unknown)].slice(0, 5).join(', ') + (new Set(v.unknown).size > 5 ? ' …' : ''))}</div>`;
+  if (v.needEmp) html += `<div class="bad">${T('ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1 หรือสลับเป็นโหมด "ยังไม่ระบุพนักงาน" (มี {0} ออเดอร์ที่ไม่มีพนักงาน)', v.needEmp)}</div>`;
+  if (fin && v.ok.length) html += `<div class="bad">${T('สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน')}</div>`;
+  prev.innerHTML = html;
+  const m = importMode(p, v);                                      // 'rows' = add the orders, 'info' = only keep the cover-sheet data (the orders are already there, or the scan is finished)
+  apply.disabled = !m;
+  apply.textContent = m === 'info' ? T('เติมข้อมูลใบปะหน้า {0} ออเดอร์', infoN)
+    : v.ok.length + v.needEmp ? T('นำเข้า {0} ออเดอร์', v.ok.length + v.needEmp) : T('ไม่มีอะไรให้นำเข้า');
+}
+function importMode(p, v) {
+  const fin = !!state.finished, infoN = p.items.filter(it => it.info).length;
+  if (!fin && !v.needEmp && v.ok.length) return 'rows';
+  if (infoN && (fin || (!v.ok.length && !v.needEmp))) return 'info';
+  return '';
+}
+async function loadImportFile(f) {
+  importPending = null; renderImport();                          // nothing can be applied while the new file is still being read
+  try { importPending = buildOrderImport(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  catch (err) { importPending = { error: err.message || String(err), src: f.name }; }
+  renderImport();
+}
+impFile.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; await loadImportFile(f); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(ev => impDrop.addEventListener(ev, e => { e.preventDefault(); impDrop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => impDrop.addEventListener(ev, e => { e.preventDefault(); impDrop.classList.remove('over'); }));
+impDrop.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadImportFile(f); });
+['dragover', 'drop'].forEach(ev => window.addEventListener(ev, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); }));   // a file dropped beside the box must not open in the tab and leave the app
+document.addEventListener('paste', e => {                         // Ctrl+V with nothing typable focused = paste a column copied from Excel
+  if (rosterDlg.open || reprintMode || !$('printView').hidden || (zoomedEl && !zoomedEl.contains($('impBox')))) return;
+  if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+  const t = (e.clipboardData && e.clipboardData.getData('text')) || ''; if (!t.trim()) return;
+  e.preventDefault(); importPending = buildOrderImport(parseDelimited(t), 'ข้อความที่วาง'); renderImport();
+});
+$('impCancel').addEventListener('click', () => { importPending = null; renderImport(); });
+$('impApply').addEventListener('click', () => {
+  const p = importPending; if (!p || p.error) return;
+  const v = evalImport(p), mode = importMode(p, v); if (!mode) return;
+  if (mode === 'info') {
+    const n = p.items.filter(it => it.info).length;
+    p.items.forEach(it => { if (it.info) orderInfo[it.order] = it.info; }); saveInfo();
+    importPending = null; sfx.ok(); render(); toast(`เติมข้อมูลใบปะหน้า ${n} ออเดอร์แล้ว`); return;
+  }
+  const from = state.rows.length, t0 = Date.now();
+  v.ok.forEach((x, i) => state.rows.push({ ts: t0 + i, emp: x.emp, name: roster[x.emp] || '', order: x.order }));
+  lastImport = { from, orders: v.ok.map(x => x.order) };
+  p.items.forEach(it => { if (it.info) orderInfo[it.order] = it.info; }); saveInfo();      // cover-sheet data is kept for every order in the file, also the ones skipped as repeats
+  importPending = null; save(); sfx.full();
+  const d = derive(), n = v.ok.length;
+  feedback('ok', `นำเข้าแล้ว ${n} ออเดอร์`, `ตอนนี้มี ${d.unique} ออเดอร์ · ชุดที่ ${Math.max(1, Math.ceil(d.unique / state.batchSize))}`);
+  render(); toast(`เพิ่ม ${n} ออเดอร์เข้ารายการสแกนแล้ว`);
+});
+$('impUndo').addEventListener('click', () => {
+  const li = lastImport; if (!li || state.finished) return;
+  state.rows.splice(li.from, li.orders.length); lastImport = null; save(); render(); toast(`ย้อนการนำเข้า ${li.orders.length} ออเดอร์แล้ว`);
+});
+
+/* ---------- พิมพ์ใบปะหน้า: all cover sheets in one go, laid out like the printed ones (2 identical slips per A4 page) ----------
+   Each slip: barcode of the order, the order number, customer name, delivery date, round (orange), the picker's name, and the hand-written fields. */
+const C128 = ['212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222', '123122', '123221', '223211', '221132',
+  '221231', '213212', '223112', '312131', '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321', '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313',
+  '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', '313121', '211331', '231131', '213113', '213311', '213131', '311123', '311321', '331121', '312113', '312311', '332111',
+  '314111', '221411', '431111', '111224', '111422', '121124', '121421', '141122', '141221', '112214', '112412', '122114', '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111',
+  '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', '421211', '212141', '214121', '412121', '111143', '111341', '131141', '114113', '114311', '411113', '411311', '113141',
+  '114131', '311141', '411131', '211412', '211214', '211232', '2331112'];
+function code128(text) {                                          // Code 128-B -> bar/space widths, starting with a bar
+  const vals = [104]; let sum = 104;
+  [...text].forEach((ch, i) => { const v = Math.min(94, Math.max(0, ch.charCodeAt(0) - 32)); vals.push(v); sum += v * (i + 1); });
+  vals.push(sum % 103, 106);
+  return vals.map(v => C128[v]).join('').split('').map(Number);
+}
+function barcodeSvg(text) {
+  const w = code128(text), quiet = 10, total = w.reduce((a, b) => a + b, 0) + quiet * 2; let x = quiet, rects = '';
+  w.forEach((n, i) => { if (i % 2 === 0) rects += `<rect x="${x}" y="0" width="${n}" height="1"/>`; x += n; });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:${(total * 0.5).toFixed(1)}mm;height:11mm"><rect width="${total}" height="1" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
+}
+/* the round (time slot) box has one solid colour per slot, as on the cover sheets in the workbook: 05-08 green, 08-12 red, 12-16 orange, 16-20 blue (the first hour of the slot decides);
+   anything else (or no time) stays grey */
+const SLOT_COLORS = { 5: ['#00ff00', '#ffffff'], 8: ['#ff0000', '#ffffff'], 12: ['#ff9900', '#000000'], 16: ['#4a86e8', '#ffffff'] };   // [background, text]
+function slotStyle(time) {
+  const m = /(\d{1,2})\s*:/.exec(time || ''), c = m && SLOT_COLORS[+m[1]];
+  return c ? ` style="background:${c[0]};color:${c[1]}"` : '';
+}
+function sheetHtml(r) {
+  const inf = orderInfo[r.order] || {}, picker = r.name || r.emp || '', nm = inf.name || '';
+  const slip = `<div class="slip">
+    <div class="s-top"><div class="s-ref">${r.batch ? `ชุดที่ ${r.batch} · ใบที่ ${r.slot}` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}</div></div>
+    <div class="s-order">${xesc(r.order)}</div>
+    <div class="s-name" style="font-size:${nm.length > 24 ? 22 : 30}pt">${xesc(nm)}</div>
+    <div class="s-body">
+      <div class="s-left">
+        <div class="s-dt"><b>วันที่จัดส่ง</b><span>${xesc(inf.date || '')}</span><b>รอบส่ง</b></div>
+        <div class="s-line">แช่เย็น _______ ถุง ตู้เลขที่ _________</div>
+        <div class="s-line">แช่แข็ง _______ ถุง ตู้เลขที่ _________</div>
+        <div class="s-line s-sm">จำนวน............/............ LANE...................</div>
+        <div class="s-trip">Trip${inf.trip ? ' ' + xesc(inf.trip) : '____'}</div>
+      </div>
+      <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}>${xesc(inf.time || '')}</div><div class="s-picker" style="font-size:${picker.length > 10 ? 28 : 44}pt">${xesc(picker)}</div></div>
+    </div></div>`;
+  return `<section class="sheet">${slip}${slip}</section>`;
+}
+const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#fff;color:#111;box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;break-after:page;font-family:Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.slip{height:148mm;padding:5mm 8mm;display:flex;flex-direction:column;box-sizing:border-box}
+.slip + .slip{border-top:1px dashed #999}
+.s-top{display:grid;grid-template-columns:44mm 1fr;height:16mm;border:1px solid #444;align-items:center}
+.s-ref{padding:0 3mm;font-size:9pt;color:#555}
+.s-bar{display:flex;justify-content:center;align-items:center;height:100%;border-left:1px solid #444}
+.s-order{height:19mm;line-height:19mm;text-align:center;font-size:42pt;font-weight:800;letter-spacing:.03em;background:#c4c4c4;border:1px solid #444;border-top:0}
+.s-name{height:19mm;line-height:19mm;text-align:center;font-weight:800;border:1px solid #444;border-top:0;white-space:nowrap;overflow:hidden}
+.s-body{flex:1;display:grid;grid-template-columns:56% 44%;border:1px solid #444;border-top:0;min-height:0}
+.s-left{display:flex;flex-direction:column;border-right:1px solid #444}
+.s-dt{display:grid;grid-template-columns:24mm 1fr 17mm;height:11mm;line-height:11mm;border-bottom:1px solid #444;font-size:11pt;text-align:center}
+.s-dt span{border-left:1px solid #444;border-right:1px solid #444;font-weight:800;font-size:11pt}
+.s-line{flex:1;display:flex;align-items:center;padding:0 2mm;font-size:12pt;font-weight:600;white-space:nowrap;border-bottom:1px solid #ccc}
+.s-sm{font-size:9.5pt}
+.s-trip{padding:1mm 4mm;font-size:20pt;font-weight:800}
+.s-right{display:flex;flex-direction:column}
+.s-slot{height:22mm;display:flex;align-items:center;justify-content:center;background:#d9d9d9;color:#1b1b1b;font-size:19pt;font-weight:800}
+.s-picker{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;padding:0 3mm;overflow:hidden}
+@media print{.sheet{margin:0;box-shadow:none}}`;
+{ const st = document.createElement('style'); st.textContent = SHEET_CSS; document.head.appendChild(st); }
+/* a complete page with the sheets, for the claude.ai web copy where the page cannot open the print dialog: it is saved as a file, and opening that file prints it */
+function printFileHtml(sheets) {
+  return `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบปะหน้า O2O</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap">
+<style>@page{size:A4;margin:0} body{margin:0;background:#5b6472}
+.pbar{position:sticky;top:0;z-index:2;padding:10px 16px;background:#fff;font:600 14px Sarabun,Tahoma,sans-serif;display:flex;gap:12px;align-items:center}
+.pbar button{font:inherit;padding:6px 16px;border:0;border-radius:8px;background:#0b5cad;color:#fff;cursor:pointer}
+@media print{.pbar{display:none} body{background:#fff}}
+${SHEET_CSS}</style></head><body>
+<div class="pbar"><button onclick="window.print()">พิมพ์ (Ctrl+P)</button><span>เลือกเครื่องพิมพ์ ขนาดกระดาษ A4 ไม่ต้องเว้นขอบ</span></div>
+${sheets}
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print()},600)})<\/script></body></html>`;
+}
+const pvRows = () => { const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b)); };
+function pvRender() {
+  const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
+  $('pvPages').innerHTML = rows.map(sheetHtml).join('');
+  $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
+  $('pvNote').textContent = miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '';
+  $('pvPrint').disabled = !rows.length;
+}
+function openPrint() {
+  const d = derive(); if (!d.unique) return;
+  const sel = $('pvBatch'); sel.innerHTML = '';
+  const all = document.createElement('option'); all.value = 'all'; all.textContent = T('ทั้งหมด ({0} ใบ)', d.unique); sel.appendChild(all);
+  for (let b = 1; b <= Math.ceil(d.unique / state.batchSize); b++) {
+    const o = document.createElement('option'); o.value = b; o.textContent = T('ชุดที่ {0} ({1} ใบ)', b, d.rows.filter(r => r.batch === b).length); sel.appendChild(o);
+  }
+  $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
+  $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
+}
+const closePrint = () => { $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
+$('impPrint').addEventListener('click', openPrint);
+$('pvBatch').addEventListener('change', pvRender);
+$('pvPrint').addEventListener('click', async () => {
+  if (!IN_VIEWER) { window.print(); return; }                     // claude.ai web copy: no print dialog, so save a file that prints when opened
+  if (await download(new Blob([printFileHtml($('pvPages').innerHTML)], { type: 'text/html' }), `cover-sheets_${stamp()}.html`))
+    toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง');
+});
+$('pvClose').addEventListener('click', closePrint);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('printView').hidden) closePrint(); });
+
+/* ---------- language: TH (source) / EN / MY ----------
+   The UI is written in Thai. Whatever is on screen (text nodes + placeholder/title/aria-label) is translated in place from the phrase table below
+   — the static page and text the app builds later alike (a MutationObserver picks it up), so switching language never needs a re-render.
+   A message made of several parts is split at " · ", " — " and line breaks and every part is looked up on its own; {0} {1} … stand for the dynamic bits.
+   Sentences whose word order differs per language are built with T(). Excel files stay in Thai (the report language). */
+const LANGS = ['th', 'en', 'my'];
+const LS_LANG = 'o2o-lang';
+let lang = 'th';
+try { const l = localStorage.getItem(LS_LANG); if (LANGS.includes(l)) lang = l; } catch (_) {}
+const THAI = /[฀-๿]/;
+
+const LEX = [   // [Thai (source), English, Burmese]
+  // header
+  ['สแกนพนักงาน', 'Scan employee', 'ဝန်ထမ်းကတ် စကင်န်ဖတ်ရန်'],
+  ['สแกนออเดอร์', 'Scan orders', 'အော်ဒါ စကင်န်ဖတ်ရန်'],
+  ['ส่งออก Excel เข้าใบปะหน้า', 'Export Excel into the cover sheets', 'Excel ထုတ်၍ အဖုံးစာရွက်သို့ ထည့်ရန်'],
+  ['Update รายชื่อพนักงาน', 'Update employee list', 'ဝန်ထမ်းစာရင်း အပ်ဒိတ်လုပ်ရန်'],
+  ['สลับโหมดสว่าง/มืด', 'Switch light / dark mode', 'အလင်း/အမှောင် မုဒ်ပြောင်းရန်'],
+  // employee mode + scan fields
+  ['โหมดพนักงาน', 'Employee mode', 'ဝန်ထမ်းမုဒ်'],
+  ['ระบุพนักงาน', 'Specify employee', 'ဝန်ထမ်း သတ်မှတ်မည်'],
+  ['ยังไม่ระบุพนักงาน', 'No employee yet', 'ဝန်ထမ်း မသတ်မှတ်သေးပါ'],
+  ['พนักงาน', 'Employee', 'ဝန်ထမ်း'],
+  ['เปลี่ยน', 'Change', 'ပြောင်းရန်'],
+  ['รหัสพนักงาน 4 หลัก', 'Employee ID (4 digits)', 'ဝန်ထမ်းကုဒ် (4 လုံး)'],
+  ['เลขออเดอร์', 'Order no.', 'အော်ဒါနံပါတ်'],
+  ['11 ตัว', '11 chars', '11 လုံး'],
+  ['เลขออเดอร์ 11 ตัว', 'Order number (11 characters)', 'အော်ဒါနံပါတ် (11 လုံး)'],
+  ['พร้อมสแกน', 'Ready to scan', 'စကင်န်ဖတ်ရန် အသင့်'],
+  ['เริ่มจากกรอกหรือสแกนรหัสพนักงานก่อน', 'Start by entering or scanning the employee ID', 'ဦးစွာ ဝန်ထမ်းကုဒ်ကို ရိုက်ထည့်ပါ သို့မဟုတ် စကင်န်ဖတ်ပါ'],
+  ['สิ้นสุดการสแกน', 'Finish scanning', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးရန်'],
+  ['สิ้นสุดการสแกน ({0} ออเดอร์)', 'Finish scanning ({0} orders)', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးရန် (အော်ဒါ {0} ခု)'],
+  ['กลับไปสแกนต่อ', 'Resume scanning', 'စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်'],
+  ['กรอกหรือสแกนได้ทั้ง 2 ช่อง', 'Type or scan in either field', 'ကွက်နှစ်ခုလုံးတွင် ရိုက်ထည့်နိုင်သည် သို့မဟုတ် စကင်န်ဖတ်နိုင်သည်'],
+  ['ครบแล้วเด้งไปช่องถัดไปเอง', 'it jumps to the next field when complete', 'ပြည့်စုံပါက နောက်ကွက်သို့ အလိုအလျောက် ရွှေ့မည်'],
+  ['เปลี่ยนคนแค่สแกนบัตรใหม่', 'to switch person just scan a new badge', 'လူပြောင်းလိုပါက ကတ်အသစ်ကို စကင်န်ဖတ်ရုံသာ'],
+  ['รหัสที่ไม่อยู่ในรายชื่อจะไม่ผ่านไปช่องออเดอร์', 'IDs not in the list will not move on to the order field', 'စာရင်းထဲမရှိသော ကုဒ်သည် အော်ဒါကွက်သို့ မရောက်ပါ'],
+  ['สแกนออเดอร์ได้เลยโดยยังไม่ระบุพนักงาน', 'You can scan orders without specifying an employee', 'ဝန်ထမ်း မသတ်မှတ်ဘဲ အော်ဒါများကို စကင်န်ဖတ်နိုင်သည်'],
+  ['เมื่อพนักงานมา สแกนบัตรได้ทันที ระบบจะสลับไปโหมด "ระบุพนักงาน" ให้เอง แล้วใส่ชื่อให้ออเดอร์ที่สแกนไว้ได้', 'when the employee arrives, scan the badge — the app switches to "Specify employee" by itself and you can then add the name to the orders already scanned', 'ဝန်ထမ်းရောက်လာလျှင် ကတ်ကို ချက်ချင်း စကင်န်ဖတ်ပါ၊ စနစ်က "ဝန်ထမ်း သတ်မှတ်မည်" မုဒ်သို့ အလိုအလျောက် ပြောင်းပြီး စကင်န်ထားပြီးသော အော်ဒါများတွင် အမည်ထည့်နိုင်သည်'],
+  ['ใส่ {0} ให้ {1} ออเดอร์ที่ยังไม่ระบุพนักงาน', 'Assign {0} to the {1} orders with no employee', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {1} ခုကို {0} သို့ ထည့်ရန်'],
+  // scan feedback
+  ['สิ้นสุดการสแกนแล้ว', 'Scanning finished', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးပါပြီ'],
+  ['กด "กลับไปสแกนต่อ" ถ้าต้องการสแกนเพิ่ม', 'Press "Resume scanning" to scan more', 'ထပ်မံစကင်န်ဖတ်လိုပါက "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['ไม่พบรหัส {0} ในรายชื่อ', 'ID {0} is not in the list', 'ကုဒ် {0} သည် စာရင်းထဲတွင် မတွေ့ပါ'],
+  ['สแกนบัตรอีกครั้ง หรือกด "Update รายชื่อพนักงาน" เพื่อเพิ่มคนนี้', 'Scan the badge again, or press "Update employee list" to add this person', 'ကတ်ကို ထပ်စကင်န်ဖတ်ပါ သို့မဟုတ် "ဝန်ထမ်းစာရင်း အပ်ဒိတ်လုပ်ရန်" ကိုနှိပ်၍ ဤသူကို ထည့်ပါ'],
+  ['มี {0} ออเดอร์ที่ยังไม่ระบุพนักงาน กดปุ่มด้านล่างเพื่อใส่ชื่อให้', '{0} orders have no employee yet — press the button below to add the name', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {0} ခုရှိသည်၊ အောက်ပါခလုတ်ကိုနှိပ်၍ အမည်ထည့်ပါ'],
+  ['พนักงาน {0}', 'Employee {0}', 'ဝန်ထမ်း {0}'],
+  ['ไม่พบรหัสนี้ในรายชื่อ', 'This ID is not in the list', 'ဤကုဒ်သည် စာရင်းထဲတွင် မတွေ့ပါ'],
+  ['สแกนต่อได้ แต่โปรดตรวจรหัสอีกครั้ง', 'you can keep scanning, but please check the ID again', 'ဆက်စကင်န်ဖတ်နိုင်သော်လည်း ကုဒ်ကို ထပ်မံစစ်ဆေးပါ'],
+  ['สแกนเลขออเดอร์ได้เลย', 'Scan order numbers now', 'အော်ဒါနံပါတ်များကို စကင်န်ဖတ်နိုင်ပါပြီ'],
+  ['ยังไม่มีรายชื่อพนักงาน จึงไม่ได้ตรวจรหัส', 'There is no employee list yet, so IDs are not checked', 'ဝန်ထမ်းစာရင်း မရှိသေးသဖြင့် ကုဒ်ကို မစစ်ဆေးပါ'],
+  ['สแกนบัตรพนักงานก่อน', 'Scan the employee badge first', 'ဝန်ထမ်းကတ်ကို ဦးစွာ စကင်န်ဖတ်ပါ'],
+  ['ยังไม่ได้บันทึก {0}', '{0} was not saved', '{0} ကို မသိမ်းဆည်းရသေးပါ'],
+  ['ซ้ำ {0}', 'Duplicate {0}', 'ထပ်နေသည် {0}'],
+  ['สแกนไปแล้ว {0} โดย {1}', 'Already scanned at {0} by {1}', '{0} တွင် {1} က စကင်န်ဖတ်ပြီးဖြစ်သည်'],
+  ['สแกนไปแล้ว {0} (ยังไม่ระบุพนักงาน)', 'Already scanned at {0} (no employee specified)', '{0} တွင် စကင်န်ဖတ်ပြီးဖြစ်သည် (ဝန်ထမ်း မသတ်မှတ်ရသေးပါ)'],
+  ['บันทึกไว้แต่ไม่นับเข้าชุด', 'saved but not counted in the batch', 'သိမ်းထားသော်လည်း အုပ်စုတွင် မရေတွက်ပါ'],
+  ['ใบที่ {0}/{1}', 'Slot {0}/{1}', 'နံပါတ် {0}/{1}'],
+  ['ครบชุดแล้ว', 'batch complete', 'အုပ်စု ပြည့်ပြီ'],
+  ['รูปแบบไม่ถูกต้อง', 'Invalid format', 'ပုံစံ မမှန်ကန်ပါ'],
+  ['ได้ "{0}" ({1} ตัว)', 'Got "{0}" ({1} characters)', 'ရရှိသည်မှာ "{0}" ({1} လုံး)'],
+  ['ต้องเป็นรหัสพนักงาน 4 หลัก หรือเลขออเดอร์ 11 ตัว', 'it must be a 4-digit employee ID or an 11-character order number', 'ဝန်ထမ်းကုဒ် 4 လုံး သို့မဟုတ် အော်ဒါနံပါတ် 11 လုံး ဖြစ်ရမည်'],
+  ['(ไม่มีชื่อในรายชื่อ)', '(no name in the list)', '(စာရင်းထဲတွင် အမည်မရှိပါ)'],
+  ['ไม่พบรหัสนี้ในรายชื่อพนักงาน', 'This ID is not in the employee list', 'ဤကုဒ်သည် ဝန်ထမ်းစာရင်းထဲတွင် မတွေ့ပါ'],
+  ['กรอกหรือสแกนรหัสพนักงานคนถัดไป', 'Enter or scan the next employee ID', 'နောက်ဝန်ထမ်း၏ ကုဒ်ကို ရိုက်ထည့်ပါ သို့မဟုတ် စကင်န်ဖတ်ပါ'],
+  ['พร้อมสแกนต่อ', 'Ready to continue', 'ဆက်စကင်န်ဖတ်ရန် အသင့်'],
+  ['กรอกหรือสแกนรหัสพนักงานก่อน', 'Enter or scan the employee ID first', 'ဦးစွာ ဝန်ထမ်းကုဒ်ကို ရိုက်ထည့်ပါ သို့မဟုတ် စကင်န်ဖတ်ပါ'],
+  ['โหมดยังไม่ระบุพนักงาน', 'No-employee mode', 'ဝန်ထမ်း မသတ်မှတ်သော မုဒ်'],
+  ['{0} ออเดอร์', '{0} orders', 'အော်ဒါ {0} ခု'],
+  ['{0} พนักงาน', '{0} employees', 'ဝန်ထမ်း {0} ဦး'],
+  ['มี {0} ออเดอร์ที่ยังไม่ระบุพนักงาน (กด "กลับไปสแกนต่อ" เพื่อใส่ชื่อ)', '{0} orders have no employee yet (press "Resume scanning" to add names)', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {0} ခုရှိသည် ("စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်၍ အမည်ထည့်ပါ)'],
+  ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง', 'you can export Excel in the "Export" box below', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်ပါပြီ'],
+  ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"', 'You can export Excel in the "Export" box below, or press "Resume scanning"', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်သည်၊ သို့မဟုတ် "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['ใส่พนักงาน {0} แล้ว', 'Employee {0} assigned', 'ဝန်ထမ်း {0} ကို ထည့်ပြီးပါပြီ'],
+  ['ใส่พนักงาน {0} ให้ {1} ออเดอร์ที่ยังไม่ระบุพนักงาน?', 'Assign employee {0} to the {1} orders with no employee?', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {1} ခုကို ဝန်ထမ်း {0} သို့ ထည့်မလား?'],
+  ['ใส่พนักงานให้ {0} ออเดอร์แล้ว', 'Employee added to {0} orders', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းထည့်ပြီးပါပြီ'],
+  // batch / export / tools
+  ['ชุดใบปะหน้า', 'Cover-sheet batch', 'အဖုံးစာရွက် အုပ်စု'],
+  ['ชุดที่ {0}', 'Batch {0}', 'အုပ်စု {0}'],
+  ['{0}/{1} ใบ', '{0}/{1} sheets', '{0}/{1} ရွက်'],
+  ['ทั้งหมด {0} ออเดอร์', '{0} orders in total', 'စုစုပေါင်း အော်ဒါ {0} ခု'],
+  ['ชุดที่ {0} ครบ {1} ใบแล้ว', 'Batch {0} is full ({1} sheets)', 'အုပ်စု {0} ပြည့်ပြီ ({1} ရွက်)'],
+  ['คัดลอกไปวางที่ DATA!B{0} ได้เลย', 'copy it and paste at DATA!B{0}', 'DATA!B{0} တွင် ကူးယူ၍ ထည့်နိုင်ပါပြီ'],
+  ['สแกนต่อได้ หรือกด "สิ้นสุดการสแกน" เมื่อครบทุกออเดอร์', 'keep scanning, or press "Finish scanning" when all orders are done', 'ဆက်စကင်န်ဖတ်နိုင်သည်၊ အော်ဒါအားလုံးပြီးလျှင် "စကင်န်ဖတ်ခြင်း ပြီးဆုံးရန်" ကိုနှိပ်ပါ'],
+  ['ชุดที่ {0} ({1} ใบ)', 'Batch {0} ({1} sheets)', 'အုပ်စု {0} ({1} ရွက်)'],
+  ['ส่งออก', 'Export', 'ထုတ်ယူရန်'],
+  ['พร้อมส่งออก', 'Ready to export', 'ထုတ်ယူရန် အသင့်'],
+  ['รอสิ้นสุดการสแกน', 'Waiting for scan to finish', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးရန် စောင့်ဆိုင်းနေသည်'],
+  ['ส่งออก Excel (.xlsx)', 'Export Excel (.xlsx)', 'Excel (.xlsx) ထုတ်ယူရန်'],
+  ['เลือกชุด', 'Choose batch', 'အုပ်စု ရွေးရန်'],
+  ['คัดลอกเลขออเดอร์', 'Copy order numbers', 'အော်ဒါနံပါတ်များ ကူးယူရန်'],
+  ['คัดลอกแล้วไปวางที่ DATA!B{0} ในไฟล์ใบปะหน้า (ลงมาถึง B{1})', 'Copy, then paste at DATA!B{0} in the cover-sheet file (down to B{1})', 'ကူးယူပြီး အဖုံးစာရွက်ဖိုင်၏ DATA!B{0} တွင် ထည့်ပါ (B{1} အထိ)'],
+  ['สแกนออเดอร์ให้ครบทีละใบ แล้วกด "สิ้นสุดการสแกน" ปุ่มส่งออกจึงจะใช้ได้', 'Scan the orders one by one, then press "Finish scanning" — only then can you export', 'အော်ဒါများကို တစ်ခုချင်း စကင်န်ဖတ်ပြီး "စကင်န်ဖတ်ခြင်း ပြီးဆုံးရန်" နှိပ်မှသာ ထုတ်ယူနိုင်မည်'],
+  ['ลบรายการล่าสุด', 'Delete last entry', 'နောက်ဆုံးစာရင်း ဖျက်ရန်'],
+  ['ล้างข้อมูลทั้งหมด', 'Clear all data', 'ဒေတာအားလုံး ရှင်းလင်းရန်'],
+  ['กู้คืนที่เพิ่งล้าง', 'Restore what was just cleared', 'ရှင်းလင်းထားသည်ကို ပြန်ယူရန်'],
+  ['ตั้งค่า', 'Settings', 'ဆက်တင်များ'],
+  ['ใบต่อชุด', 'Sheets per batch', 'တစ်အုပ်စုလျှင် ရွက်အရေအတွက်'],
+  ['เสียงบี๊บ', 'Beep sound', 'ဘီပ်အသံ'],
+  ['รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน', 'Accept only IDs in the employee list', 'ဝန်ထမ်းစာရင်းထဲရှိ ကုဒ်များကိုသာ လက်ခံမည်'],
+  ['ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print', 'Go full screen automatically when the Assign / Re-Print field is clicked', 'Assign / Re-Print ကွက်ကို နှိပ်လျှင် စာမျက်နှာအပြည့် အလိုအလျောက် ချဲ့မည်'],
+  ['ล้างรายการสแกนทั้งหมด {0} รายการ?\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)', 'Clear all {0} scan entries?\n(Export Excel first if you need it — if you slip, press "Restore what was just cleared")', 'စကင်န်စာရင်း {0} ခုလုံးကို ရှင်းလင်းမလား?\n(လိုအပ်ပါက Excel ကို ဦးစွာ ထုတ်ယူပါ — မှားသွားပါက "ရှင်းလင်းထားသည်ကို ပြန်ယူရန်" ကိုနှိပ်ပါ)'],
+  ['รายการปัจจุบันจะถูกแทนที่ ตกลงไหม?', 'The current list will be replaced. OK?', 'လက်ရှိစာရင်းကို အစားထိုးမည်၊ ရပါသလား?'],
+  ['ล้างแล้ว', 'Cleared', 'ရှင်းလင်းပြီးပါပြီ'],
+  ['กู้คืนแล้ว', 'Restored', 'ပြန်ယူပြီးပါပြီ'],
+  ['คัดลอกชุดที่ {0} ({1} ใบ) แล้ว', 'Copied batch {0} ({1} sheets)', 'အုပ်စု {0} ({1} ရွက်) ကို ကူးယူပြီးပါပြီ'],
+  ['คัดลอก {0} ({1} ใบ) แล้ว', 'Copied {0} ({1} sheets)', '{0} ({1} ရွက်) ကို ကူးယူပြီးပါပြီ'],
+  ['คัดลอกไม่สำเร็จ', 'Copy failed', 'ကူးယူ၍ မရပါ'],
+  ['ส่งออก Excel แล้ว', 'Excel exported', 'Excel ထုတ်ယူပြီးပါပြီ'],
+  // scan list
+  ['สแกนทั้งหมด', 'Scans', 'စကင်န်'],
+  ['ออเดอร์ไม่ซ้ำ', 'Unique', 'မထပ်သော'],
+  ['ซ้ำ', 'Dupes', 'ထပ်နေ'],
+  ['รายการสแกน', 'Scan list', 'စကင်န်ဖတ်ထားသော စာရင်း'],
+  ['เวลา', 'Time', 'အချိန်'],
+  ['ชุด/ใบที่', 'Batch / No.', 'အုပ်စု / နံပါတ်'],
+  ['สถานะ', 'Status', 'အခြေအနေ'],
+  ['ยังไม่มีรายการสแกน', 'No scans yet', 'စကင်န်ဖတ်ထားသော စာရင်း မရှိသေးပါ'],
+  ['เริ่มจากกรอกหรือสแกนรหัสพนักงาน แล้วสแกนเลขออเดอร์', 'Start with the employee ID, then scan order numbers', 'ဝန်ထမ်းကုဒ်ဖြင့် စတင်ပြီး အော်ဒါနံပါတ်များကို စကင်န်ဖတ်ပါ'],
+  ['ปกติ', 'Normal', 'ပုံမှန်'],
+  ['ซ้ำ (ใบที่ {0})', 'Duplicate (entry {0})', 'ထပ်နေသည် (စာရင်း {0})'],
+  ['ยังไม่ระบุ', 'Not set', 'မသတ်မှတ်ရသေး'],
+  ['ลบรายการนี้', 'Delete this entry', 'ဤစာရင်းကို ဖျက်ရန်'],
+  ['ลบรายการแล้ว', 'Entry deleted', 'စာရင်းကို ဖျက်ပြီးပါပြီ'],
+  ['ลบ {0} แล้ว', 'Deleted {0}', '{0} ကို ဖျက်ပြီးပါပြီ'],
+  ['{0} (ซ้ำ {1})', '{0} (dup {1})', '{0} (ထပ် {1})'],
+  ['{0} คน', '{0} people', '{0} ဦး'],
+  ['ยังไม่มี', 'None yet', 'မရှိသေးပါ'],
+  // Assign / Re-Print
+  ['Assign งาน', 'Assign job', 'အလုပ်တာဝန်ပေးရန် (Assign)'],
+  ['สแกนเลขออเดอร์ที่จะ Assign', 'Scan the order number to assign', 'Assign လုပ်မည့် အော်ဒါနံပါတ်ကို စကင်န်ဖတ်ပါ'],
+  ['Assign งาน: เลขออเดอร์', 'Assign job: order number', 'Assign: အော်ဒါနံပါတ်'],
+  ['ล้างรายการ', 'Clear list', 'စာရင်း ရှင်းလင်းရန်'],
+  ['Re-Print ใบปะหน้า', 'Re-Print cover sheet', 'အဖုံးစာရွက် ပြန်ပရင့်ရန် (Re-Print)'],
+  ['Re-Print ใบปะหน้า: เลขออเดอร์', 'Re-Print cover sheet: order number', 'Re-Print: အော်ဒါနံပါတ်'],
+  ['ขยายเต็มหน้า', 'Full screen', 'စာမျက်နှာအပြည့် ချဲ့ရန်'],
+  ['ย่อกลับ', 'Back to normal size', 'မူလအရွယ်သို့ ပြန်ရန်'],
+  ['สแกนเลขออเดอร์ที่จะพิมพ์ซ้ำ', 'Scan the order number to reprint', 'ပြန်ပရင့်မည့် အော်ဒါနံပါတ်ကို စကင်န်ဖတ်ပါ'],
+  ['โหมด Re-Print', 'Re-Print mode', 'Re-Print မုဒ်'],
+  ['ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย', 'other functions are off — just scan', 'အခြားလုပ်ဆောင်ချက်များ ပိတ်ထားသည်၊ စကင်န်ဖတ်ရုံသာ'],
+  ['เสร็จสิ้น (Esc)', 'Done (Esc)', 'ပြီးပါပြီ (Esc)'],
+  ['ใส่พนักงานให้ออเดอร์ที่สแกนไว้', 'Employee added to an order already scanned', 'စကင်န်ထားပြီးသော အော်ဒါတွင် ဝန်ထမ်းထည့်ထားသည်'],
+  ['เปลี่ยนพนักงาน', 'Employee changed', 'ဝန်ထမ်း ပြောင်းထားသည်'],
+  ['เพิ่มออเดอร์ใหม่เข้ารายการสแกน', 'New order added to the scan list', 'အော်ဒါအသစ်ကို စကင်န်စာရင်းသို့ ထည့်ထားသည်'],
+  ['กด "กลับไปสแกนต่อ" ก่อน', 'press "Resume scanning" first', '"စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကို ဦးစွာနှိပ်ပါ'],
+  ['รูปแบบไม่ถูกต้อง "{0}"', 'Invalid format "{0}"', 'ပုံစံ မမှန်ကန်ပါ "{0}"'],
+  ['ต้องเป็นเลขออเดอร์ 11 ตัว', 'it must be an 11-character order number', 'အော်ဒါနံပါတ် 11 လုံး ဖြစ်ရမည်'],
+  ['ยังไม่มีพนักงาน', 'No employee yet', 'ဝန်ထမ်း မရှိသေးပါ'],
+  ['สแกนบัตรพนักงานที่ช่อง 1 ก่อน', 'scan the employee badge in field 1 first', 'ကွက် 1 တွင် ဝန်ထမ်းကတ်ကို ဦးစွာ စကင်န်ဖတ်ပါ'],
+  ['{0} Assign ให้ {1} อยู่แล้ว', '{0} is already assigned to {1}', '{0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည်'],
+  ['ออเดอร์ {0} Assign ให้ {1} อยู่แล้ว\nเปลี่ยนเป็น {2} ?', 'Order {0} is already assigned to {1}.\nChange it to {2}?', 'အော်ဒါ {0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည်။\n{2} သို့ ပြောင်းမလား?'],
+  ['ยกเลิก Assign {0}', 'Assign {0} cancelled', '{0} ၏ Assign ကို ပယ်ဖျက်ပြီးပါပြီ'],
+  ['{0} อยู่ในรายการ Re-Print แล้ว', '{0} is already in the Re-Print list', '{0} သည် Re-Print စာရင်းထဲတွင် ရှိပြီးဖြစ်သည်'],
+  ['ยังไม่มีรายการ', 'No entries yet', 'စာရင်း မရှိသေးပါ'],
+  ['กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม', 'press "Resume scanning" to assign more', 'Assign ထပ်လုပ်လိုပါက "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['จะ Assign ให้ {0}', 'Will assign to {0}', '{0} သို့ Assign လုပ်မည်'],
+  ['ต้องมีพนักงานก่อน', 'An employee is needed first', 'ဦးစွာ ဝန်ထမ်း လိုအပ်သည်'],
+  ['สแกนบัตรพนักงานที่ช่อง 1', 'scan the employee badge in field 1', 'ကွက် 1 တွင် ဝန်ထမ်းကတ်ကို စကင်န်ဖတ်ပါ'],
+  ['สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ', 'Scan the order numbers whose cover sheet must be printed again', 'အဖုံးစာရွက် ပြန်ပရင့်ရမည့် အော်ဒါနံပါတ်များကို စကင်န်ဖတ်ပါ'],
+  ['ไม่ต้องมีพนักงาน', 'no employee needed', 'ဝန်ထမ်း မလိုအပ်ပါ'],
+  ['ยกเลิก Assign นี้ (คืนค่าเดิม)', 'Cancel this Assign (restore the previous value)', 'ဤ Assign ကို ပယ်ဖျက်ရန် (မူလတန်ဖိုး ပြန်ထားမည်)'],
+  ['เอาออกจากรายการ Re-Print', 'Remove from the Re-Print list', 'Re-Print စာရင်းမှ ဖယ်ရှားရန်'],
+  ['เอา {0} ออกจาก Re-Print', '{0} removed from Re-Print', '{0} ကို Re-Print မှ ဖယ်ရှားပြီးပါပြီ'],
+  ['ล้างรายการ Assign {0} รายการ?\n(ไม่ย้อนการ Assign ที่ทำไปแล้วในรายการสแกน — ถ้าจะย้อนให้กด × ทีละรายการ)', 'Clear the {0} Assign entries?\n(This does not undo the assignments already made in the scan list — to undo, press × on each entry)', 'Assign စာရင်း {0} ခုကို ရှင်းလင်းမလား?\n(စကင်န်စာရင်းတွင် လုပ်ပြီးသော Assign များကို နောက်ပြန်မပြန်ပါ — နောက်ပြန်လိုပါက တစ်ခုချင်း × ကိုနှိပ်ပါ)'],
+  ['ล้างรายการ Assign แล้ว', 'Assign list cleared', 'Assign စာရင်းကို ရှင်းလင်းပြီးပါပြီ'],
+  ['ล้างรายการ Re-Print {0} รายการ?', 'Clear the {0} Re-Print entries?', 'Re-Print စာရင်း {0} ခုကို ရှင်းလင်းမလား?'],
+  ['ล้างรายการ Re-Print แล้ว', 'Re-Print list cleared', 'Re-Print စာရင်းကို ရှင်းလင်းပြီးပါပြီ'],
+  // employee list dialog
+  ['รายชื่อพนักงาน', 'Employee list', 'ဝန်ထမ်းစာရင်း'],
+  ['ปิด', 'Close', 'ပိတ်ရန်'],
+  ['อัปเดตจากไฟล์', 'Update from a file', 'ဖိုင်မှ အပ်ဒိတ်လုပ်ရန်'],
+  ['ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์', 'Drop a file here, or click to choose one', 'ဖိုင်ကို ဤနေရာသို့ ဆွဲချပါ သို့မဟုတ် နှိပ်၍ ရွေးပါ'],
+  ['เพิ่ม / แก้ทีละคน', 'Add / edit one person', 'တစ်ဦးချင်း ထည့်/ပြင်ရန်'],
+  ['หรือคัดลอก 2 คอลัมน์ (เลขพนักงาน + ชื่อ) จาก Excel มาวางที่นี่', 'Or copy 2 columns (employee ID + name) from Excel and paste them here', 'သို့မဟုတ် Excel မှ ကော်လံ 2 ခု (ဝန်ထမ်းကုဒ် + အမည်) ကို ကူးယူ၍ ဤနေရာတွင် ထည့်ပါ'],
+  ['ไฟล์ .xls/.xlsb ใช้วิธีนี้ได้', 'this works for .xls/.xlsb files too', '.xls/.xlsb ဖိုင်များအတွက်လည်း ဤနည်းကို သုံးနိုင်သည်'],
+  ['อ่านคอลัมน์ ชื่อ / Name และ เลขพนักงาน / รหัสพนักงาน / Employee ID ให้เอง (ถ้ามีคอลัมน์ นามสกุล / Last name จะรวมให้) ถ้าไฟล์ไม่มีหัวตารางจะเดาจากเนื้อหา', 'The Name and Employee ID columns are detected automatically (a Last name column is merged in if there is one). If the file has no header row, the columns are guessed from the content.', 'အမည် / Name နှင့် ဝန်ထမ်းကုဒ် / Employee ID ကော်လံများကို အလိုအလျောက် ဖတ်ပေးမည် (အမည်နောက်ဆက်တွဲ / Last name ကော်လံရှိပါက ပေါင်းပေးမည်)။ ခေါင်းစဉ်အတန်း မရှိပါက အကြောင်းအရာကိုကြည့်၍ ခန့်မှန်းမည်'],
+  ['เพิ่ม / แก้ชื่อ (ไม่ลบใคร)', 'Add / edit names (nobody is deleted)', 'ထည့်ရန် / အမည်ပြင်ရန် (ဘယ်သူ့ကိုမှ မဖျက်ပါ)'],
+  ['ตามไฟล์ทั้งหมด (คนที่ไม่อยู่ในไฟล์ = ลบออก)', 'Follow the file exactly (anyone not in the file is removed)', 'ဖိုင်အတိုင်း အားလုံး (ဖိုင်ထဲမပါသူများ = ဖယ်ရှားမည်)'],
+  ['อัปเดตรายชื่อ', 'Update list', 'စာရင်း အပ်ဒိတ်လုပ်ရန်'],
+  ['ย้อนกลับครั้งล่าสุด', 'Undo last change', 'နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်'],
+  ['รายชื่อปัจจุบัน', 'Current list', 'လက်ရှိစာရင်း'],
+  ['({0} คน)', '({0} people)', '({0} ဦး)'],
+  ['ค้นหารหัสหรือชื่อ', 'Search ID or name', 'ကုဒ် သို့မဟုတ် အမည် ရှာရန်'],
+  ['รหัส 4 หลัก', '4-digit ID', 'ကုဒ် 4 လုံး'],
+  ['ชื่อ', 'Name', 'အမည်'],
+  ['เพิ่ม / แก้', 'Add / edit', 'ထည့်/ပြင်ရန်'],
+  ['รหัส', 'ID', 'ကုဒ်'],
+  ['ยังไม่มีรายชื่อ', 'No employees yet', 'ဝန်ထမ်းစာရင်း မရှိသေးပါ'],
+  ['ส่งออกรายชื่อ (.xlsx)', 'Export list (.xlsx)', 'စာရင်း ထုတ်ယူရန် (.xlsx)'],
+  ['ลบรายชื่อทั้งหมด', 'Delete entire list', 'စာရင်းအားလုံး ဖျက်ရန်'],
+  ['อ่านได้ {0} คน จาก {1}', 'Read {0} people from {1}', '{1} မှ ဝန်ထမ်း {0} ဦး ဖတ်ရှုရသည်'],
+  ['ไฟล์ {0}', 'file {0}', 'ဖိုင် {0}'],
+  ['ข้อความที่วาง', 'pasted text', 'ကူးထည့်ထားသော စာသား'],
+  ['เลขพนักงาน ← {0}', 'Employee ID ← {0}', 'ဝန်ထမ်းကုဒ် ← {0}'],
+  ['ชื่อ ← {0}', 'Name ← {0}', 'အမည် ← {0}'],
+  ['(ไม่พบคอลัมน์ชื่อ)', '(no name column found)', '(အမည်ကော်လံ မတွေ့ပါ)'],
+  ['ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', 'No header row — guessed from the content: column {0} = ID, {1}', 'ခေါင်းစဉ်အတန်း မရှိပါ၊ အကြောင်းအရာကိုကြည့်၍ ခန့်မှန်းသည်: ကော်လံ {0} = ကုဒ်, {1}'],
+  ['คอลัมน์ {0} = ชื่อ', 'column {0} = name', 'ကော်လံ {0} = အမည်'],
+  ['ไม่พบชื่อ', 'no name found', 'အမည် မတွေ့ပါ'],
+  ['เพิ่มใหม่ {0}', 'New {0}', 'အသစ် {0}'],
+  ['แก้ชื่อ {0}', 'Renamed {0}', 'အမည်ပြင် {0}'],
+  ['เหมือนเดิม {0}', 'Unchanged {0}', 'မပြောင်းလဲ {0}'],
+  ['ลบออก {0}', 'Removed {0}', 'ဖယ်ရှား {0}'],
+  ['จะถูกลบออก {0}', 'Will be removed {0}', 'ဖယ်ရှားမည့်သူ {0}'],
+  ['(เดิม: {0})', '(was: {0})', '(မူလ: {0})'],
+  ['… อีก {0}', '… {0} more', '… နောက်ထပ် {0}'],
+  ['ข้าม {0} แถว (รหัสไม่ใช่เลข 4 หลัก): {1}', 'Skipped {0} rows (ID is not 4 digits): {1}', 'အတန်း {0} ခုကို ကျော်သည် (ကုဒ်သည် 4 လုံး မဟုတ်ပါ): {1}'],
+  ['แถว {0} "{1}"', 'row {0} "{1}"', 'အတန်း {0} "{1}"'],
+  ['รหัสซ้ำกันในไฟล์ {0} แถว', 'Duplicate IDs in the file: {0} rows', 'ဖိုင်ထဲတွင် ကုဒ်ထပ်နေသည်: အတန်း {0} ခု'],
+  ['ใช้แถวล่างสุด', 'the last row is used', 'နောက်ဆုံးအတန်းကို သုံးသည်'],
+  ['ไม่มีรหัสที่ใช้ได้ในไฟล์นี้', 'No usable IDs in this file', 'ဤဖိုင်တွင် အသုံးပြုနိုင်သော ကုဒ် မရှိပါ'],
+  ['อัปเดตรายชื่อ (+{0} / แก้ {1})', 'Update list (+{0} / edit {1})', 'စာရင်း အပ်ဒိတ်လုပ်ရန် (+{0} / ပြင် {1})'],
+  ['อัปเดตรายชื่อ (+{0} / แก้ {1} / ลบ {2})', 'Update list (+{0} / edit {1} / remove {2})', 'စာရင်း အပ်ဒိတ်လုပ်ရန် (+{0} / ပြင် {1} / ဖယ်ရှား {2})'],
+  ['ไม่มีอะไรเปลี่ยน', 'Nothing to change', 'ပြောင်းလဲစရာ မရှိပါ'],
+  ['ลบคนนี้ออกจากรายชื่อ', 'Remove this person from the list', 'ဤသူကို စာရင်းမှ ဖယ်ရှားရန်'],
+  ['ลบ {0} ออกจากรายชื่อแล้ว', '{0} removed from the list', '{0} ကို စာရင်းမှ ဖယ်ရှားပြီးပါပြီ'],
+  ['แสดง 300 จาก {0}', 'Showing 300 of {0}', '{0} မှ 300 ကို ပြသည်'],
+  ['ใช้ช่องค้นหา', 'use the search box', 'ရှာဖွေရန်ကွက်ကို သုံးပါ'],
+  ['ไม่พบที่ค้นหา', 'Nothing found', 'ရှာဖွေမှု မတွေ့ပါ'],
+  ['อัปเดตแล้ว: เพิ่ม {0}', 'Updated: new {0}', 'အပ်ဒိတ်လုပ်ပြီး: အသစ် {0}'],
+  ['ลบ {0}', 'removed {0}', 'ဖယ်ရှား {0}'],
+  ['ย้อนกลับแล้ว', 'Undone', 'နောက်ပြန်ပြီးပါပြီ'],
+  ['รหัสพนักงานต้องเป็นเลข 4 หลัก', 'The employee ID must be 4 digits', 'ဝန်ထမ်းကုဒ်သည် ဂဏန်း 4 လုံး ဖြစ်ရမည်'],
+  ['แก้ {0} แล้ว', '{0} edited', '{0} ကို ပြင်ပြီးပါပြီ'],
+  ['เพิ่ม {0} แล้ว', '{0} added', '{0} ကို ထည့်ပြီးပါပြီ'],
+  ['ลบรายชื่อพนักงานทั้งหมด {0} คน?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)', 'Delete all {0} people from the list?\n(Press "Undo last change" if you slip)', 'ဝန်ထမ်းစာရင်းမှ လူ {0} ဦးလုံးကို ဖျက်မလား?\n(မှားသွားပါက "နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်" ကိုနှိပ်ပါ)'],
+  ['ลบรายชื่อทั้งหมดแล้ว', 'The whole list was deleted', 'စာရင်းအားလုံး ဖျက်ပြီးပါပြီ'],
+  // file-reading errors
+  ['เบราว์เซอร์เก่าเกินไปที่จะอ่าน .xlsx — ใช้ Edge/Chrome รุ่นใหม่ หรือคัดลอกจาก Excel มาวาง', 'This browser is too old to read .xlsx — use a recent Edge/Chrome, or copy from Excel and paste', 'ဤဘရောက်ဇာသည် .xlsx ဖတ်ရန် ဟောင်းလွန်းသည် — Edge/Chrome ဗားရှင်းအသစ်ကို သုံးပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
+  ['ไฟล์นี้ไม่ใช่ .xlsx', 'This file is not an .xlsx', 'ဤဖိုင်သည် .xlsx မဟုတ်ပါ'],
+  ['ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', '.xlsb files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xlsb ဖိုင်ကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
+  ['ไม่ใช่ไฟล์ Excel (.xlsx)', 'This is not an Excel (.xlsx) file', 'Excel (.xlsx) ဖိုင် မဟုတ်ပါ'],
+  ['ไม่พบข้อมูลในชีตแรก', 'No data found in the first sheet', 'ပထမစာမျက်နှာတွင် ဒေတာ မတွေ့ပါ'],
+  ['ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', 'Old .xls files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xls ဖိုင်ဟောင်းကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
+  ['ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', 'No data found in the file / pasted text', 'ဖိုင်/ကူးထည့်ထားသော စာသားတွင် ဒေတာ မတွေ့ပါ'],
+  ['หาคอลัมน์เลขพนักงานไม่เจอ — ตั้งหัวคอลัมน์เป็น "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" และชื่อเป็น "ชื่อ" / "Name"', 'Could not find the employee ID column — name the header "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" and the name column "ชื่อ" / "Name"', 'ဝန်ထမ်းကုဒ်ကော်လံကို မတွေ့ပါ — ခေါင်းစဉ်ကို "Employee ID" (သို့မဟုတ် "รหัสพนักงาน" / "เลขพนักงาน") ဟုပေးပြီး အမည်ကော်လံကို "Name" (သို့မဟုတ် "ชื่อ") ဟု ပေးပါ'],
+  // green box: นำไฟล์เข้า
+  ['นำไฟล์เข้า', 'Import file', 'ဖိုင်ထည့်သွင်းရန်'],
+  ['ลากไฟล์มาวาง หรือกดเลือกไฟล์', 'Drop a file here, or click to choose one', 'ဖိုင်ကို ဆွဲချပါ သို့မဟုတ် နှိပ်၍ ရွေးပါ'],
+  ['หรือกด Ctrl+V วางจาก Excel', 'or press Ctrl+V to paste from Excel', 'သို့မဟုတ် Ctrl+V နှိပ်၍ Excel မှ ကူးထည့်ပါ'],
+  ['นำเข้า', 'Import', 'ထည့်သွင်းရန်'],
+  ['ยกเลิก', 'Cancel', 'ပယ်ဖျက်ရန်'],
+  ['ตกลง', 'OK', 'ကောင်းပြီ'],
+  ['เสียงสแกน', 'Scan sound', 'စကင်န်အသံ'],
+  ['ความดัง', 'Volume', 'အသံအတိုးအကျယ်'],
+  ['คมสูง (2.7 kHz)', 'Sharp, high (2.7 kHz)', 'မြင့်၍ ပြတ်သား (2.7 kHz)'],
+  ['กลาง (2.0 kHz)', 'Medium (2.0 kHz)', 'အလယ်အလတ် (2.0 kHz)'],
+  ['สั้นแหลม (3.5 kHz)', 'Short, shrill (3.5 kHz)', 'တိုပြီး ကြည်လင် (3.5 kHz)'],
+  ['ยาว (2.4 kHz)', 'Long (2.4 kHz)', 'ရှည် (2.4 kHz)'],
+  ['นุ่ม (1.8 kHz)', 'Soft (1.8 kHz)', 'နူးညံ့ (1.8 kHz)'],
+  ['เบา', 'Quiet', 'အသံနိမ့်'],
+  ['กลาง', 'Medium', 'အလယ်အလတ်'],
+  ['ดัง', 'Loud', 'အသံကျယ်'],
+  ['เติมข้อมูลใบปะหน้า {0} ออเดอร์', 'Add cover-sheet data for {0} orders', 'အော်ဒါ {0} ခုအတွက် အဖုံးစာရွက်အချက်အလက် ဖြည့်ရန်'],
+  ['เติมข้อมูลใบปะหน้า {0} ออเดอร์แล้ว', 'Cover-sheet data added for {0} orders', 'အော်ဒါ {0} ခုအတွက် အဖုံးစာရွက်အချက်အလက် ဖြည့်ပြီးပါပြီ'],
+  ['สิ้นสุดการสแกนแล้ว — นำเข้าได้เฉพาะข้อมูลใบปะหน้า (ชื่อลูกค้า / วันที่ / รอบส่ง)', 'Scanning is finished — only the cover-sheet data (customer name / date / round) can be imported', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးပါပြီ — အဖုံးစာရွက်အချက်အလက် (ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ်) သာ ထည့်သွင်းနိုင်သည်'],
+  ['บันทึกเป็นไฟล์พิมพ์', 'Save as print file', 'ပုံနှိပ်ဖိုင်အဖြစ် သိမ်းရန်'],
+  ['บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง', 'File saved — open it in your browser and the print window appears by itself', 'ဖိုင်သိမ်းပြီးပါပြီ — ထိုဖိုင်ကို ဘရောက်ဇာတွင် ဖွင့်လျှင် ပုံနှိပ်ဝင်းဒိုး အလိုလိုပေါ်လာမည်'],
+  ['บันทึกไฟล์ไม่สำเร็จ', 'Could not save the file', 'ဖိုင်ကို မသိမ်းနိုင်ပါ'],
+  ['บันทึกไฟล์ไม่ได้ในหน้านี้', 'Saving files is not possible on this page', 'ဤစာမျက်နှာတွင် ဖိုင်သိမ်း၍ မရပါ'],
+  ['ย้อนการนำเข้าล่าสุด', 'Undo last import', 'နောက်ဆုံးထည့်သွင်းမှုကို နောက်ပြန်ရန်'],
+  ['ย้อนการนำเข้าล่าสุด ({0} ออเดอร์)', 'Undo last import ({0} orders)', 'နောက်ဆုံးထည့်သွင်းမှု (အော်ဒါ {0} ခု) ကို နောက်ပြန်ရန်'],
+  ['สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" เพื่อนำไฟล์เข้า', 'Scanning is finished — press "Resume scanning" to import a file', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးပါပြီ — ဖိုင်ထည့်ရန် "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน', 'Scanning is finished — press "Resume scanning" first', 'စကင်န်ဖတ်ခြင်း ပြီးဆုံးပါပြီ — ဦးစွာ "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['ใช้พนักงานที่เข้าระบบอยู่ หรือตามคอลัมน์ "รหัสพนักงาน" ในไฟล์ · ข้ามออเดอร์ที่ซ้ำ · ดูตัวอย่างก่อนนำเข้าทุกครั้ง',
+    'Uses the signed-in employee, or the "Employee ID" column of the file · repeated orders are skipped · you always get a preview before importing',
+    'ဝင်ထားသော ဝန်ထမ်းကို သုံးမည် သို့မဟုတ် ဖိုင်ထဲရှိ "ဝန်ထမ်းကုဒ်" ကော်လံအတိုင်း · ထပ်နေသော အော်ဒါများကို ကျော်မည် · မထည့်မီ နမူနာကို အမြဲကြည့်နိုင်သည်'],
+  ['ไม่พบเลขออเดอร์ในไฟล์ — ต้องเป็นเลข 11 ตัว (10 ตัวเลข + ตัวอักษร หรือเลข 11 หลัก)', 'No order numbers found in the file — they must be 11 characters (10 digits + a letter, or 11 digits)', 'ဖိုင်တွင် အော်ဒါနံပါတ် မတွေ့ပါ — စာလုံး ၁၁ လုံးဖြစ်ရမည် (ဂဏန်း ၁၀ လုံး + အက္ခရာ သို့မဟုတ် ဂဏန်း ၁၁ လုံး)'],
+  ['อ่านได้ {0} ออเดอร์ จาก {1}', 'Read {0} orders from {1}', '{1} မှ အော်ဒါ {0} ခု ဖတ်ရှုရသည်'],
+  ['เลขออเดอร์ ← ค้นหาจากข้อความทั้งหมด', 'Order number ← searched in all the text', 'အော်ဒါနံပါတ် ← စာသားအားလုံးတွင် ရှာဖွေခြင်း'],
+  ['เลขออเดอร์ ← คอลัมน์ {0}', 'Order number ← column {0}', 'အော်ဒါနံပါတ် ← ကော်လံ {0}'],
+  ['พนักงาน ← {0}', 'Employee ← {0}', 'ဝန်ထမ်း ← {0}'],
+  ['คอลัมน์ {0} (เดาจากเนื้อหา)', 'column {0} (guessed from the content)', 'ကော်လံ {0} (အကြောင်းအရာကြည့်၍ ခန့်မှန်းသည်)'],
+  ['ใช้พนักงานที่เข้าระบบอยู่: {0}', 'Using the signed-in employee: {0}', 'ဝင်ထားသော ဝန်ထမ်းကို သုံးမည်: {0}'],
+  ['ยังไม่มีพนักงานที่เข้าระบบ', 'No employee is signed in yet', 'ဝန်ထမ်း မဝင်ရသေးပါ'],
+  ['นำเข้าได้ {0} ออเดอร์', '{0} orders can be imported', 'အော်ဒါ {0} ခု ထည့်သွင်းနိုင်သည်'],
+  ['ข้ามที่ซ้ำ {0} (ซ้ำในไฟล์ {1} · ซ้ำกับรายการสแกน {2})', 'Skipping {0} repeats ({1} repeated in the file · {2} already in the scan list)', 'ထပ်နေသည် {0} ခု ကျော်မည် (ဖိုင်တွင် ထပ်နေသည် {1} · စကင်န်စာရင်းတွင် ရှိပြီးသား {2})'],
+  ['ตัวอย่างที่จะนำเข้า', 'Preview of what will be imported', 'ထည့်သွင်းမည့် နမူနာ'],
+  ['ข้าม {0} แถว (รูปแบบไม่ถูกต้อง): {1}', 'Skipping {0} rows (invalid format): {1}', 'အတန်း {0} ခု ကျော်မည် (ပုံစံမမှန်ပါ): {1}'],
+  ['ข้าม {0} ออเดอร์ (รหัสพนักงานไม่อยู่ในรายชื่อ): {1}', 'Skipping {0} orders (employee ID not in the list): {1}', 'အော်ဒါ {0} ခု ကျော်မည် (ဝန်ထမ်းကုဒ် စာရင်းတွင် မရှိပါ): {1}'],
+  ['ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1 หรือสลับเป็นโหมด "ยังไม่ระบุพนักงาน" (มี {0} ออเดอร์ที่ไม่มีพนักงาน)', 'An employee is needed first — scan a badge in field 1, or switch to the "No employee yet" mode ({0} orders have no employee)', 'ဦးစွာ ဝန်ထမ်း လိုအပ်သည် — အကွက် ၁ တွင် ကတ်စကင်န်ဖတ်ပါ သို့မဟုတ် "ဝန်ထမ်း မသတ်မှတ်သေးပါ" မုဒ်သို့ ပြောင်းပါ (အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိပါ)'],
+  ['นำเข้า {0} ออเดอร์', 'Import {0} orders', 'အော်ဒါ {0} ခု ထည့်သွင်းရန်'],
+  ['ไม่มีอะไรให้นำเข้า', 'Nothing to import', 'ထည့်သွင်းစရာ မရှိပါ'],
+  ['นำเข้าแล้ว {0} ออเดอร์', 'Imported {0} orders', 'အော်ဒါ {0} ခု ထည့်သွင်းပြီးပါပြီ'],
+  ['ตอนนี้มี {0} ออเดอร์', 'Now {0} orders', 'ယခု အော်ဒါ {0} ခု ရှိသည်'],
+  ['เพิ่ม {0} ออเดอร์เข้ารายการสแกนแล้ว', 'Added {0} orders to the scan list', 'စကင်န်စာရင်းသို့ အော်ဒါ {0} ခု ထည့်ပြီးပါပြီ'],
+  ['ย้อนการนำเข้า {0} ออเดอร์แล้ว', 'Undid the import of {0} orders', 'အော်ဒါ {0} ခု ထည့်သွင်းမှုကို နောက်ပြန်ပြီးပါပြီ'],
+  // scan-list filter (the four tiles)
+  ['กดเพื่อกรองรายการสแกน', 'Click to filter the scan list', 'စကင်န်စာရင်းကို စစ်ထုတ်ရန် နှိပ်ပါ'],
+  ['ตัวกรอง: {0} ✕', 'Filter: {0} ✕', 'စစ်ထုတ်မှု: {0} ✕'],
+  ['ล้างตัวกรอง', 'Clear filter', 'စစ်ထုတ်မှု ဖယ်ရှားရန်'],
+  ['ไม่มีรายการที่ตรงกับตัวกรอง', 'No entries match the filter', 'စစ်ထုတ်မှုနှင့် ကိုက်ညီသော စာရင်း မရှိပါ'],
+  // cover-sheet print
+  ['พิมพ์ใบปะหน้า', 'Print cover sheets', 'အဖုံးစာရွက် ပုံနှိပ်ရန်'],
+  ['พิมพ์ใบปะหน้า ({0} ใบ)', 'Print cover sheets ({0})', 'အဖုံးစာရွက် ပုံနှိပ်ရန် ({0} ရွက်)'],
+  ['พิมพ์', 'Print', 'ပုံနှိပ်ရန်'],
+  ['ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', 'Cover sheet preview — {0} sheets (2 identical slips per page)', 'အဖုံးစာရွက် နမူနာ — {0} ရွက် (တစ်မျက်နှာလျှင် အတူတူ ၂ ခု)'],
+  ['{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', '{0} orders have no customer name / date / round yet — import the Call Center file in the green box to fill them in', 'အော်ဒါ {0} ခုတွင် ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ် မရှိသေးပါ — အစိမ်းရောင်အကွက်တွင် Call Center ဖိုင်ကို ထည့်သွင်း၍ ဖြည့်ပါ'],
+  ['ทั้งหมด ({0} ใบ)', 'All ({0} sheets)', 'အားလုံး ({0} ရွက်)'],
+  ['มีข้อมูลใบปะหน้า {0} ออเดอร์ (ชื่อลูกค้า / วันที่ / รอบส่ง)', 'Cover-sheet data found for {0} orders (customer name / date / round)', 'အော်ဒါ {0} ခုအတွက် အဖုံးစာရွက်အချက်အလက် တွေ့သည် (ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ်)'],
+];
+
+const exactMap = { en: new Map(), my: new Map() }, tplList = { en: [], my: [] }, byTh = { en: new Map(), my: new Map() };
+LEX.forEach(([th, en, my]) => {
+  const out = { en, my };
+  ['en', 'my'].forEach(L => {
+    byTh[L].set(th, out[L]);
+    if (/\{\d+\}/.test(th)) {
+      const pat = th.replace(/\{\d+\}/g, '\u0001').replace(/[.*+?^$()|[\]\\{}]/g, '\\$&').replace(/\u0001/g, '(.+?)');
+      tplList[L].push({ re: new RegExp('^' + pat + '$', 's'), out: out[L], n: th.length, whole: th.includes('\n') });
+    } else exactMap[L].set(th, out[L]);
+  });
+});
+Object.values(tplList).forEach(a => a.sort((x, y) => y.n - x.n));      // most specific phrase first
+
+const fillTpl = (out, m) => out.replace(/\{(\d+)\}/g, (_, i) => (m[+i + 1] === undefined ? '' : m[+i + 1]));
+function lookup(core, whole) {
+  const e = exactMap[lang].get(core); if (e !== undefined) return e;
+  for (const t of tplList[lang]) { if (t.whole !== whole) continue; const m = t.re.exec(core); if (m) return fillTpl(t.out, m); }
+  return null;
+}
+const EDGE = /^(\s*)([\s\S]*?)(\s*)$/;
+function trText(s) {
+  if (lang === 'th' || !THAI.test(s)) return s;
+  const w = EDGE.exec(s), r = lookup(w[2], true);
+  if (r !== null) return w[1] + r + w[3];
+  return s.split(/( · | — |\n)/).map((p, i) => {
+    if (i % 2) return p;
+    const m = EDGE.exec(p); if (!m[2] || !THAI.test(m[2])) return p;
+    const x = lookup(m[2], false); return x === null ? p : m[1] + x + m[3];
+  }).join('');
+}
+function T(th, ...args) {                                  // a whole sentence in the current language, {0} {1} … filled in
+  const s = lang === 'th' ? th : (byTh[lang].get(th) ?? th);
+  return s.replace(/\{(\d+)\}/g, (_, i) => (args[+i] === undefined ? '' : args[+i]));
+}
+
+// --- translate the DOM in place (text nodes and placeholder / title / aria-label), remembering the Thai original of every node ---
+const baseText = new WeakMap(), baseAttr = new WeakMap();
+const I18N_ATTRS = ['placeholder', 'title', 'aria-label'];
+function xText(n, fresh) {
+  if (n.parentNode && n.parentNode.closest && n.parentNode.closest('[data-notr]')) return;      // the printed cover sheets stay Thai
+  let base = baseText.get(n);
+  if (fresh || base === undefined) base = n.data;
+  if (!THAI.test(base)) { baseText.delete(n); return; }
+  baseText.set(n, base);
+  const v = lang === 'th' ? base : trText(base);
+  if (n.data !== v) n.data = v;
+}
+function xAttr(el, a, fresh) {
+  const cur = el.getAttribute(a); let o = baseAttr.get(el);
+  if (cur === null) { if (o) delete o[a]; return; }
+  if (!o) { o = {}; baseAttr.set(el, o); }
+  let base = o[a];
+  if (fresh || base === undefined) base = cur;
+  if (!THAI.test(base)) { delete o[a]; return; }
+  o[a] = base;
+  const v = lang === 'th' ? base : trText(base);
+  if (cur !== v) el.setAttribute(a, v);
+}
+function xTree(root) {
+  if (root.nodeType === 3) { xText(root); return; }
+  if (root.nodeType !== 1) return;
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  const visit = n => {
+    if (n.nodeType === 3) { const t = n.parentNode && n.parentNode.tagName; if (t !== 'SCRIPT' && t !== 'STYLE') xText(n); }
+    else I18N_ATTRS.forEach(a => { if (n.hasAttribute(a)) xAttr(n, a); });
+  };
+  visit(root);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) visit(n);
+}
+const i18nObserver = new MutationObserver(recs => {
+  i18nObserver.disconnect();                               // our own writes must not come back as new mutations
+  try {
+    for (const r of recs) {
+      if (r.type === 'childList') r.addedNodes.forEach(xTree);
+      else if (r.type === 'characterData') xText(r.target, true);
+      else if (r.type === 'attributes') xAttr(r.target, r.attributeName, true);
+    }
+  } finally { watchI18n(); }
+});
+const watchI18n = () => i18nObserver.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
+
+// --- flags (drawn as SVG: Windows has no flag emoji) ---
+const starPoints = (cx, cy, R, r) => Array.from({ length: 10 }, (_, i) => {
+  const a = (-90 + i * 36) * Math.PI / 180, rad = i % 2 ? r : R;
+  return (cx + rad * Math.cos(a)).toFixed(2) + ',' + (cy + rad * Math.sin(a)).toFixed(2);
+}).join(' ');
+const FLAGS = {
+  th: '<svg viewBox="0 0 24 16" preserveAspectRatio="none"><rect width="24" height="16" fill="#A51931"/><rect y="2.67" width="24" height="10.66" fill="#F4F5F8"/><rect y="5.33" width="24" height="5.34" fill="#2D2A4A"/></svg>',
+  en: '<svg viewBox="0 0 60 30" preserveAspectRatio="none"><rect width="60" height="30" fill="#012169"/><path d="M0 0 60 30M60 0 0 30" stroke="#fff" stroke-width="6"/><path d="M0 0 60 30M60 0 0 30" stroke="#C8102E" stroke-width="2.4"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/></svg>',
+  my: `<svg viewBox="0 0 24 16" preserveAspectRatio="none"><rect width="24" height="5.34" fill="#FECB00"/><rect y="5.33" width="24" height="5.34" fill="#34B233"/><rect y="10.66" width="24" height="5.34" fill="#EA2839"/><polygon points="${starPoints(12, 8.7, 5.6, 2.2)}" fill="#fff"/></svg>`,
+};
+function paintLangUi() {
+  $('langFlag').innerHTML = FLAGS[lang]; $('langCode').textContent = lang === 'my' ? 'MM' : lang.toUpperCase();   // Myanmar's code is MM (MY = Malaysia); the stored value / <html lang> stay "my"
+  document.querySelectorAll('.langitem').forEach(b => { b.classList.toggle('on', b.dataset.lang === lang); b.setAttribute('aria-checked', String(b.dataset.lang === lang)); });
+}
+function closeLangMenu() { $('langMenu').hidden = true; $('btnLang').setAttribute('aria-expanded', 'false'); }
+function setLang(l) {
+  if (!LANGS.includes(l)) return;
+  lang = l; try { localStorage.setItem(LS_LANG, l); } catch (_) {}
+  document.documentElement.lang = l;
+  i18nObserver.disconnect();
+  try { xTree(document.body); } finally { watchI18n(); }
+  paintLangUi(); closeLangMenu();
+  if (pending) refreshPreview();                           // parts built with T() are rebuilt in the new language
+  renderImport();
+  if (rosterDlg.open) renderRoster();
+}
+function initLang() {
+  document.querySelectorAll('.flag[data-flag]').forEach(el => { el.innerHTML = FLAGS[el.dataset.flag]; });
+  document.documentElement.lang = lang;
+  xTree(document.body); watchI18n(); paintLangUi();
+  $('btnLang').addEventListener('click', e => { e.stopPropagation(); const m = $('langMenu'); m.hidden = !m.hidden; $('btnLang').setAttribute('aria-expanded', String(!m.hidden)); });
+  $('langMenu').addEventListener('click', e => { const b = e.target.closest('[data-lang]'); if (b) { e.stopPropagation(); setLang(b.dataset.lang); focusNext(); } });
+  document.addEventListener('click', e => { if (!e.target.closest('#langWrap')) closeLangMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLangMenu(); });
+}
+
+/* ---------- theme: follows the OS, the moon/sun button overrides it ---------- */
+const LS_THEME = 'o2o-theme';
+const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const isDark = () => (document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+function paintThemeBtn() { $('btnTheme').firstElementChild.innerHTML = isDark() ? SUN : MOON; }
+try { const t = localStorage.getItem(LS_THEME); if (t) document.documentElement.setAttribute('data-theme', t); } catch (_) {}
+$('btnTheme').addEventListener('click', () => {
+  const next = isDark() ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(LS_THEME, next); } catch (_) {}
+  paintThemeBtn();
+});
+paintThemeBtn();
+
+/* test/debug hook */
+window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang };
+
+empIn.value = state.emp || '';
+if (state.finished) feedback('ok', 'สิ้นสุดการสแกนแล้ว', 'ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"');
+else if (state.mode === 'none') feedback('idle', 'พร้อมสแกน', 'โหมดยังไม่ระบุพนักงาน — สแกนเลขออเดอร์ได้เลย');
+else if (state.emp) feedback('idle', 'พร้อมสแกน', `พนักงาน ${state.emp} — สแกนเลขออเดอร์ได้เลย`);
+render();
+initLang();                                  // last: translates what render() just put on the page, then watches for new text
+focusNext();
+})();
+</script>
+</body>
+</html>
