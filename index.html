@@ -318,6 +318,10 @@ td.x{width:34px;text-align:center}
   transition:border-color .15s,box-shadow .15s}
 .panel input[type=text]::placeholder{color:var(--muted);opacity:.5;font-weight:600;font-size:13.5px;letter-spacing:0}
 .panel input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 28%,transparent)}
+/* the Assign field is a solid bar like the green "พิมพ์ใบปะหน้า" button, with the colours swapped: white bold text on orange (it used to be a white field with an orange edge) */
+.panel.orange input[type=text]{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f39a4a,#dd7222);box-shadow:0 3px 10px rgba(221,114,34,.35);text-shadow:0 1px 1px rgba(122,58,6,.3)}
+.panel.orange input[type=text]::placeholder{color:#fff;opacity:.95;font-weight:800;font-size:15px}
+.panel.orange input[type=text]:focus{border-color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 38%,transparent),0 3px 10px rgba(221,114,34,.35)}
 .panel input[type=text]:disabled{opacity:.55}
 .pmsg{min-height:22px;margin-top:6px;font-size:13px;font-weight:700}
 .pmsg:not(:empty){padding:1px 9px;border-radius:9px;background:rgba(255,255,255,.7);color:var(--pt)}
