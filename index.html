@@ -293,9 +293,6 @@ td.x{width:34px;text-align:center}
 /* the window the green bar opens: ONE field, locked (no way to the print page) until a nickname is typed or a staff badge is scanned */
 .pdlg h3{margin:0 0 4px;font-size:20px}
 .pdlg .pdinfo{margin:0 0 12px;font-size:14px;color:var(--muted)}
-.pdlg .pdtabs{display:flex;gap:8px;margin-bottom:10px}
-.pdlg .pdtabs button{flex:1;padding:9px 10px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#175c37;font:800 14px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
-.pdlg .pdtabs button.on{background:#1f9d57;border-color:#1f9d57;color:#fff}
 .pdlg .pdin{width:100%;height:52px;margin:0 0 8px;padding:0 14px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#1d2433;font:800 21px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
 .pdlg .pdin:focus{border-color:#36b36c;box-shadow:0 0 0 4px rgba(54,179,108,.28)}
 .pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:15px}
@@ -306,7 +303,7 @@ td.x{width:34px;text-align:center}
 .pdlg .row{justify-content:flex-end;align-items:center}
 .pdlg .row .sp{flex:1}
 .pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px 2px}
-.pdlg #pdGo:disabled{opacity:.45}
+
 .panel.green .pmsg{min-height:18px;margin-top:4px;margin-bottom:4px}
 .panel.green .pmsg:empty{display:none}      /* the line is there only while it has something to say (this keeps the two columns of the page level) */
 .panel.green .impbox.flat{margin-top:6px}
@@ -789,10 +786,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 <dialog id="printDlg" class="askdlg pdlg" aria-labelledby="pdTitle">
   <h3 id="pdTitle">ใครเป็นผู้จัด?</h3>
   <p class="pdinfo" id="pdInfo"></p>
-  <div class="pdtabs" role="tablist"><button id="pdScan" type="button" role="tab" class="on" aria-selected="true">1 สแกนรหัสพนักงาน</button><button id="pdName" type="button" role="tab" aria-selected="false">2 พิมพ์ชื่อเล่น</button></div>
-  <input id="pdIn" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)" aria-label="ผู้จัด: สแกนรหัสพนักงาน หรือพิมพ์ชื่อเล่น">
+  <input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น (แล้วกด Enter)" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น">
   <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
-  <div class="row"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button><button id="pdGo" class="primary" type="button" disabled>ไปหน้าพิมพ์</button></div>
+  <div class="row"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button></div>
 </dialog>
 
 <div id="printView" hidden>
@@ -2495,39 +2491,31 @@ function assignWhoGo(raw, say) {                                          // ret
   ptime[nid] = { name: s.slice(0, 40), ts: Date.now() }; savePt();
   return pickEmp(nid, (kind, text) => tell(kind, kind === 'ok' ? `${text} · ชื่อใหม่ → เลข ${nid}` : text));
 }
-/* the green "พิมพ์ใบปะหน้า" bar: clicking it opens a window with ONE field and two ways to fill it — 1 scan a staff badge (8 digits -> the last 4), 2 type a nickname. The way to the print
-   page is locked ("ไปหน้าพิมพ์" stays dimmed) until a nickname is typed or a known badge is scanned. Then that employee is given every order of the scan list that has nobody yet (they are
-   listed in the orange Assign box too, where each can be undone) and the print page comes up by itself — a scan does it at once, a typed name with Enter / the button. */
+/* the green "พิมพ์ใบปะหน้า" bar: clicking it opens a window with ONE field that takes both a scanned staff badge (8 digits -> the last 4, or 4 digits) and a typed nickname. The way to the
+   print page is locked until something valid is in it; there is no button — a scan goes on at once, a typed name with Enter. Then that employee is given every order of the scan list that
+   has nobody yet (they are listed in the orange Assign box too, where each can be undone) and the print page comes up by itself. */
 const pendingOrders = () => { const seen = new Set(); derive().rows.forEach(r => { if (!r.dup && !r.emp) seen.add(r.order); }); return [...seen]; };
 const pdIn = $('pdIn');
-let pdWay = 'scan';
 const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG) ; m.appendChild(document.createTextNode(text)); }
-const pdReady = () => { const v = pdIn.value.trim(); return pdWay === 'scan' ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0; };
-function pdSync() {                                                        // the lock: "ไปหน้าพิมพ์" works only with something valid in the field
-  const ok = pdReady(); $('pdGo').disabled = !ok;
-  if (ok) pdSay('ok', pdWay === 'scan' ? 'พร้อมแล้ว — สแกนแล้วไปหน้าพิมพ์เอง (หรือกด "ไปหน้าพิมพ์")' : 'พร้อมแล้ว — กด Enter หรือ "ไปหน้าพิมพ์"');
-  else pdSay('', pdWay === 'scan' ? 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงานก่อน จึงไปหน้าพิมพ์ได้' : 'ล็อกอยู่ — พิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
-}
-function pdSetWay(w) {
-  pdWay = w; pdIn.value = '';
-  $('pdScan').classList.toggle('on', w === 'scan'); $('pdName').classList.toggle('on', w === 'name');
-  $('pdScan').setAttribute('aria-selected', String(w === 'scan')); $('pdName').setAttribute('aria-selected', String(w === 'name'));
-  pdIn.inputMode = w === 'scan' ? 'numeric' : 'text';
-  pdIn.placeholder = T(w === 'scan' ? 'สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)' : 'พิมพ์ชื่อเล่น เช่น วา');
-  pdSync(); pdIn.focus();
+function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG); m.appendChild(document.createTextNode(text)); }
+const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits); anything else = a nickname
+function pdSync() {                                                        // the lock message follows what is in the field
+  const v = pdIn.value.trim();
+  if (!v) pdSay('', 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
+  else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
+  else pdSay('ok', /^\d+$/.test(v) ? 'พร้อมแล้ว — ไปหน้าพิมพ์เอง' : 'พร้อมแล้ว — กด Enter เพื่อไปหน้าพิมพ์');
 }
 function openPrintDlg() {
   const n = derive().unique; if (!n) return;
   const np = pendingOrders().length;
-  $('pdInfo').textContent = np ? T('{0} ออเดอร์ยังไม่มีพนักงาน — จะให้คนที่เลือกเป็นผู้จัด แล้วเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ)', np, n) : T('ทุกออเดอร์มีพนักงานแล้ว');
+  $('pdInfo').textContent = np ? T('{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', np, n) : T('ทุกออเดอร์มีพนักงานแล้ว');
   $('pdSkip').hidden = np > 0;                                             // nothing to hand out: the window has nothing to wait for
-  $('printDlg').showModal(); pdSetWay('scan');
+  pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
 function pdSubmit(raw) {
   const s = String(raw == null ? pdIn.value : raw).trim();
-  if (!s || !(pdWay === 'name' || EMP_RE.test(s) || EMP8_RE.test(s))) { sfx.bad(); pdSay('bad', pdWay === 'scan' ? 'สแกนบาร์โค้ดพนักงาน (4 หรือ 8 หลัก) ก่อน' : 'พิมพ์ชื่อเล่นก่อน'); return; }
-  if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; $('pdGo').disabled = true; return; }      // an unknown code: the reason stays on screen and the way on stays locked
+  if (!s || !pdValid(s)) { sfx.bad(); pdSay('bad', !s ? 'สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน' : 'รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก'); return; }
+  if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; return; }                // an unknown code: the reason stays on screen and the way on stays locked
   const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
   orders.forEach((o, i) => {
     state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
@@ -2539,13 +2527,10 @@ function pdSubmit(raw) {
   openPrint('scan');
 }
 $('printWho').addEventListener('click', openPrintDlg);
-$('pdScan').addEventListener('click', () => pdSetWay('scan'));
-$('pdName').addEventListener('click', () => pdSetWay('name'));
 $('pdCancel').addEventListener('click', () => $('printDlg').close());
-$('pdGo').addEventListener('click', () => pdSubmit());
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
-wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);           // a scan (or Enter) goes straight on; a locked field never does
+wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);
 assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = assignWho.value; assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
   for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
@@ -3346,13 +3331,10 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ใส่ชื่อ หรือสแกนรหัสพนักงาน', 'Type a name or scan the staff code', 'နာမည်ရိုက်ပါ သို့မဟုတ် ဝန်ထမ်းကုဒ်ကို စကင်န်ဖတ်ပါ'],
   ['ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด', 'Type the employee name or scan the barcode', 'ဝန်ထမ်းအမည် ရိုက်ပါ သို့မဟုတ် ဘားကုဒ်ကို စကင်န်ဖတ်ပါ'],
   ['ใครเป็นผู้จัด?', 'Who is the picker?', 'ပစ္စည်းကောက်သူ ဘယ်သူလဲ?'],
-  ['1 สแกนรหัสพนักงาน', '1 Scan the staff code', '၁ ဝန်ထမ်းကုဒ် စကင်န်ဖတ်ရန်'],
-  ['2 พิมพ์ชื่อเล่น', '2 Type a nickname', '၂ အမည်ပြောင် ရိုက်ရန်'],
-  ['สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)', 'Scan the staff barcode (8 digits, only the last 4 are read)', 'ဝန်ထမ်းဘားကုဒ် စကင်န်ဖတ်ပါ (၈ လုံး၊ နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
-  ['ไปหน้าพิมพ์', 'Go to the print page', 'ပုံနှိပ်စာမျက်နှာသို့'],
   ['ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย', 'Every order has its employee — go to the print page', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီ — ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น (แล้วกด Enter)', 'Scan the staff barcode or type a nickname (then press Enter)', 'ဝန်ထမ်းဘားကုဒ်ကို စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ (ပြီးလျှင် Enter နှိပ်ပါ)'],
+  ['{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', '{0} orders have no employee yet — scan a barcode or type a nickname and the print page ({1} sheets) opens by itself', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိသေးပါ — ဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ ({1} ရွက်) အလိုအလျောက် ပွင့်ပါမည်'],
   ['ทุกออเดอร์มีพนักงานแล้ว', 'Every order already has its employee', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီးဖြစ်သည်'],
-  ['{0} ออเดอร์ยังไม่มีพนักงาน — จะให้คนที่เลือกเป็นผู้จัด แล้วเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ)', '{0} orders have no employee yet — the person you pick becomes their picker, then the print page ({1} sheets) opens', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိသေးပါ — ရွေးထားသူကို ပစ္စည်းကောက်သူအဖြစ် သတ်မှတ်ပြီး ပုံနှိပ်စာမျက်နှာ ({1} ရွက်) ဖွင့်ပါမည်'],
   ['ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน', 'No orders to print yet — scan or import a file first', 'ပုံနှိပ်ရန် အော်ဒါ မရှိသေးပါ — အရင်စကင်န်ဖတ်ပါ သို့မဟုတ် ဖိုင်ထည့်ပါ'],
   ['พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)', 'Print the cover sheet at once when scanned in Assign (numbers ending in A / B)', 'Assign တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို ချက်ချင်း ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['2 มม. (ชิดขอบสุด)', '2 mm (tightest)', '၂ မီလီမီတာ (အကပ်ဆုံး)'],
