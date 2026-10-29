@@ -378,6 +378,14 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpbox{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:flex-start;overflow:hidden}
 .rpwrap{flex:none;position:relative}
 .rpwrap .sheet{margin:0;position:absolute;left:0;top:0;transform-origin:top left;box-shadow:0 6px 22px rgba(0,0,0,.28)}
+.rpfoot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:12px}
+.rpclick{min-width:0;font-size:13px;color:var(--pt);opacity:.8}
+#rpPrint{flex:none;display:inline-flex;align-items:center;gap:12px;padding:14px 36px;font-size:26px;font-weight:800;line-height:1.1;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1f9d57);box-shadow:0 6px 16px rgba(31,157,87,.38);cursor:pointer}
+#rpPrint svg{width:30px;height:30px}
+#rpPrint:hover:not(:disabled){filter:brightness(1.07)}
+#rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
+.rpwrap .sheet{cursor:pointer}
+input.rp2{margin-top:8px}
 .rpempty{align-self:center;max-width:300px;text-align:center;color:var(--pt);opacity:.75;font-size:15px}
 @media (max-width:900px){ .panel.purple.zoomed{grid-template-columns:minmax(0,1fr);grid-template-rows:none} .panel.purple.zoomed .rpview{min-height:70vh} }
 
@@ -612,16 +620,18 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <div class="pleft">
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
-            <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะพิมพ์ซ้ำ" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์">
+            <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
+            <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
             <p class="phint" id="reprintHint"></p>
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button></div>
             </div>
             <aside class="rpview" id="rpView" aria-label="ตัวอย่างใบที่จะพิมพ์">
-              <div class="rphead"><b id="rpTitle"></b><button id="rpPrint" class="mini" type="button" disabled>พิมพ์ใบนี้</button></div>
+              <div class="rphead"><b id="rpTitle"></b></div>
               <div class="rpnote" id="rpNote"></div>
               <div class="rpbox" id="rpBox" data-notr></div>
+              <div class="rpfoot"><span class="rpclick">กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย</span><button id="rpPrint" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>พิมพ์ใบนี้</button></div>
             </aside>
           </section>
         </div>
@@ -1095,10 +1105,12 @@ wire(inp, ORD_RE);
 
 let reprintMode = false;             // true while the purple Re-Print field owns the screen (see "Re-Print mode" below)
 let zoomedEl = null;                 // the Assign / Re-Print box that currently fills the whole page, if any
+let lastRp = null;                   // the Re-Print field (1 Page / 1 Order or 1 Page / 2 Order) used last: focus goes back to it
+const panelInput = p => p.classList.contains('purple') ? (lastRp || $('reprintIn')) : p.querySelector('input[type=text]');
 function focusNext() {
   if ($('rosterDlg').open) return;
-  if (zoomedEl) { const zi = zoomedEl.querySelector('input[type=text]'); if (!zi.disabled) zi.focus(); return; }
-  if (reprintMode) { $('reprintIn').focus(); return; }
+  if (zoomedEl) { const zi = panelInput(zoomedEl); if (!zi.disabled) zi.focus(); return; }
+  if (reprintMode) { (lastRp || $('reprintIn')).focus(); return; }
   (state.mode === 'none' || state.emp ? inp : empIn).focus();
 }
 const sideHandlers = new Map();      // Assign / Re-Print fields: their own handler, and focus stays so several orders can be scanned in a row
@@ -2074,7 +2086,7 @@ $('dbTest').addEventListener('keydown', e => { if (e.key === 'Enter') $('dbTestG
 
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
 const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
-const assignIn = $('assignIn'), reprintIn = $('reprintIn');
+const assignIn = $('assignIn'), reprintIn = $('reprintIn'), reprintIn2 = $('reprintIn2');
 const cleanScan = raw => { const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase(); return ORD_RE.test(v) ? v : (extractOrder(v) || v); };
 function sideMsg(which, kind, text) { const m = $(which + 'Msg'); m.className = 'pmsg ' + kind; m.textContent = text; }
 const empLabel = (e, n) => e + (n ? ' ' + n : '');
@@ -2125,6 +2137,31 @@ function reprintOrder(raw) {
   const got = ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
   if (auto) Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => autoPrintOrder(v), 60));
 }
+/* Re-Print, 1 page / 2 orders (the second field): a page carries two DIFFERENT orders, one on each slip. The first scan waits for its pair (the sheet on the right shows it alone on the top slip),
+   the second completes the page; like the first field it then prints by itself when the order ends in A / B (with the automatic print switched off every order is paired and the button prints). */
+let pairWait = null;                                  // the first order of a page that still waits for its second
+let previewPair = null;                               // the orders of the page shown on the right (1 or 2), or null while one order is shown on both slips
+function reprintOrder2(raw) {
+  const v = cleanScan(raw); if (!v) return;
+  if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
+  if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
+  const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false, pairable = !autoOn || AUTO_PRINT_RE.test(v);
+  state.reprints.push({ ts: Date.now(), order: v, emp, name: roster[emp] || '', pair: true });
+  save(); sfx.ok();
+  const refresh = list => ensureInfo(list).then(ch => { if (ch) renderRpView(); });
+  if (!pairable) {                                    // an order that does not end in A / B is listed and shown, but is not put on a page by itself
+    previewOrder = v; previewPair = null;
+    sideMsg('reprint', 'ok', `✓ Re-Print ${v} · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)`); render(); refresh([v]); return;
+  }
+  if (!pairWait) {
+    pairWait = v; previewOrder = v; previewPair = [v];
+    sideMsg('reprint', 'ok', `✓ Re-Print ${v} · รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)`); render(); refresh([v]); return;
+  }
+  const a = pairWait; pairWait = null; previewOrder = v; previewPair = [a, v];
+  sideMsg('reprint', 'ok', `✓ Re-Print ${a} + ${v}` + (autoOn ? ' · กำลังพิมพ์' : '')); render();
+  const got = refresh([a, v]);
+  if (autoOn) Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => autoPrintPair([a, v]), 60));
+}
 
 /* ---- the cover sheet that is about to be printed, shown on the right half of the zoomed Re-Print box ---- */
 let previewOrder = null;
@@ -2142,14 +2179,17 @@ function fitRpView() {
 }
 function renderRpView() {
   if (!document.querySelector('.panel.purple').classList.contains('zoomed')) return;
-  const box = $('rpBox'), last = state.reprints.length ? state.reprints[state.reprints.length - 1].order : null;
-  if (!previewOrder || !state.reprints.some(x => x.order === previewOrder)) previewOrder = last;
-  const o = previewOrder;
-  $('rpTitle').textContent = o ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', o) : T('ตัวอย่างใบที่จะพิมพ์');
+  const box = $('rpBox'), last = state.reprints.length ? state.reprints[state.reprints.length - 1].order : null, inList = x => state.reprints.some(r => r.order === x);
+  if (pairWait && !inList(pairWait)) pairWait = null;                        // taken out of the list again
+  if (previewPair && !previewPair.every(inList)) previewPair = null;
+  if (!previewOrder || !inList(previewOrder)) previewOrder = last;
+  const pair = previewPair, o = pair ? pair[0] : previewOrder;
+  $('rpTitle').textContent = pair ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', pair.length < 2 ? pair[0] + ' + …' : pair.join(' + ')) : o ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', o) : T('ตัวอย่างใบที่จะพิมพ์');
   $('rpPrint').disabled = !o;
   if (!o) { box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; $('rpNote').textContent = ''; return; }
-  box.innerHTML = `<div class="rpwrap">${sheetHtml(reprintRow(o))}</div>`; fitSheets(box); fitRpView();
-  $('rpNote').textContent = orderInfo[o] ? '' : sheetUsable() ? 'ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';
+  box.innerHTML = `<div class="rpwrap">${pair ? sheetHtml(reprintRow(pair[0]), pair[1] ? reprintRow(pair[1]) : null) : sheetHtml(reprintRow(o))}</div>`; fitSheets(box); fitRpView();
+  const missing = (pair || [o]).some(x => !orderInfo[x]);
+  $('rpNote').textContent = !missing ? '' : sheetUsable() ? 'ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';
 }
 window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
@@ -2158,7 +2198,7 @@ function printSheets(rows) {
   const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
   f.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;visibility:hidden';
   f.onload = async () => { try { await f.contentWindow.document.fonts.ready; fitSheets(f.contentDocument); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
-  f.srcdoc = printFileHtml(rows.map(sheetHtml).join(''), false); document.body.appendChild(f);
+  f.srcdoc = printFileHtml(rows.map(r => Array.isArray(r) ? sheetHtml(r[0], r[1] || null) : sheetHtml(r)).join(''), false); document.body.appendChild(f);      // a row = one order on both slips, [row, row] = two orders on one page
 }
 async function printOrder(order) {                                         // the "พิมพ์ใบนี้" button and the automatic print both come here
   if (IN_VIEWER) {                                                         // the claude.ai web copy cannot open the print window: save a file that prints when opened
@@ -2168,7 +2208,19 @@ async function printOrder(order) {                                         // th
   printSheets([reprintRow(order)]);
 }
 function autoPrintOrder(order) { if (IN_VIEWER) { $('rpNote').textContent = 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์'; return; } printSheets([reprintRow(order)]); }
-$('rpPrint').addEventListener('click', () => { if (previewOrder) printOrder(previewOrder); });
+async function printPair(orders) {                                         // one page, two different orders (the second may be missing: then the bottom slip stays empty)
+  const rows = orders.map(reprintRow);
+  if (orders.length < 2 && pairWait === orders[0]) pairWait = null;        // printed on its own: no longer waiting for a pair
+  if (IN_VIEWER) {
+    if (await download(new Blob([printFileHtml(sheetHtml(rows[0], rows[1] || null))], { type: 'text/html' }), `cover-sheet_${orders.join('_')}.html`)) toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง');
+    return;
+  }
+  printSheets([rows]);
+}
+function autoPrintPair(orders) { if (IN_VIEWER) { $('rpNote').textContent = 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์'; return; } printSheets([orders.map(reprintRow)]); }
+function printPreview() { if (previewPair) printPair(previewPair); else if (previewOrder) printOrder(previewOrder); }
+$('rpPrint').addEventListener('click', printPreview);                       // the green button, and a click on the sample sheet itself
+$('rpBox').addEventListener('click', e => { if (e.target.closest('.sheet') && !$('rpPrint').disabled) printPreview(); });
 
 function renderList(ul, items, build) {
   ul.innerHTML = '';
@@ -2194,9 +2246,9 @@ function renderSide() {
     : (state.emp ? `จะ Assign ให้ ${empLabel(state.emp, roster[state.emp])}` : 'ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
-  renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print');
+  renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
-    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; renderRpView(); renderSide(); }); return li; });
+    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = null; renderRpView(); renderSide(); }); return li; });
   renderRpView();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
@@ -2214,10 +2266,10 @@ function exitReprint() {
   if (!reprintMode) return; reprintMode = false;
   lockTargets().forEach(el => { el.inert = false; el.classList.remove('dimmed'); });
   document.querySelector('.panel.purple').classList.remove('active'); $('reprintMode').hidden = true;
-  if (document.activeElement === reprintIn) reprintIn.blur();
+  if (document.activeElement === reprintIn || document.activeElement === reprintIn2) document.activeElement.blur();
   focusNext();
 }
-reprintIn.addEventListener('focus', enterReprint);
+[reprintIn, reprintIn2].forEach(i => i.addEventListener('focus', () => { lastRp = i; enterReprint(); }));
 /* Zoom: the button in a box's corner makes that box fill the whole page (bigger type, long list, scanning keeps working); press it again or Esc to go back */
 function setZoom(panel, on) {
   if (on && zoomedEl && zoomedEl !== panel) setZoom(zoomedEl, false);
@@ -2226,14 +2278,14 @@ function setZoom(panel, on) {
   document.body.classList.toggle('has-zoom', !!zoomedEl);
   const b = panel.querySelector('.pzoom'), label = on ? 'ย่อกลับ' : 'ขยายเต็มหน้า';
   b.setAttribute('title', label); b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
-  if (on) { const i = panel.querySelector('input[type=text]'); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(renderRpView); }
+  if (on) { const i = panelInput(panel); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(renderRpView); }
   else { if (panel.classList.contains('purple')) exitReprint(); else focusNext(); }      // zooming out of Re-Print also leaves its mode
 }
 const collapseZoom = () => { if (zoomedEl) setZoom(zoomedEl, false); };
 document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () => { const p = b.closest('.panel'); setZoom(p, !p.classList.contains('zoomed')); }));
 // auto zoom: clicking (or tabbing) into one of the two scan fields opens its box full page — no need to press the zoom button (Settings can switch this off)
-[assignIn, reprintIn].forEach(i => i.addEventListener('focus', () => {
-  const p = i.closest('.panel');
+[assignIn, reprintIn, reprintIn2].forEach(i => i.addEventListener('focus', () => {
+  const p = i.closest('.panel'); if (i !== assignIn) lastRp = i;
   if (state.autoZoom && !p.classList.contains('zoomed')) setZoom(p, true);
 }));
 $('reprintDone').addEventListener('click', () => { collapseZoom(); exitReprint(); });
@@ -2245,8 +2297,8 @@ document.addEventListener('click', e => {          // capture phase: the first c
   if (reprintMode && !e.target.closest('.panel.purple')) { e.preventDefault(); e.stopPropagation(); exitReprint(); }
 }, true);
 
-wire(assignIn, ORD_RE); wire(reprintIn, ORD_RE);
-sideHandlers.set(assignIn, assignOrder); sideHandlers.set(reprintIn, reprintOrder);
+wire(assignIn, ORD_RE); wire(reprintIn, ORD_RE); wire(reprintIn2, ORD_RE);
+sideHandlers.set(assignIn, assignOrder); sideHandlers.set(reprintIn, reprintOrder); sideHandlers.set(reprintIn2, reprintOrder2);
 async function copyList(items, label) {
   const ok = await copyText(items.map(x => x.order).join('\r\n'));
   toast(ok ? T('คัดลอก {0} ({1} ใบ) แล้ว', T(label), items.length) : T('คัดลอกไม่สำเร็จ'));
@@ -2504,12 +2556,13 @@ function slotStyle(time) {
 }
 /* the sheet is set in Prompt (the font of the Google Sheet "TAG New" the staff print from) at the proportions of that sheet: the name row biggest, the date row and the
    round box very bold, the hand-written lines running the full width. Every [data-fit] text is given its biggest size (pt) and shrunk by fitSheets() when it is wider than its box. */
-function sheetHtml(r) {
+function sheetHtml(r, r2) {                       // r2: undefined = the same order on both slips; null = nothing on the bottom slip; a row = another order on the bottom slip
+  const slipOf = r => {
   const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
-  const slip = `<div class="slip">
+  return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
-      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu">________</span>')(tripFor(inf))}</span>${inf.sd ? ` <span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
+      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf))}</span>${inf.sd ? ` <span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
       <div class="s-order"><div class="fit s-onum" data-fit="44">${xesc(r.order)}</div></div>
     </div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
@@ -2523,7 +2576,9 @@ function sheetHtml(r) {
       </div>
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}><div class="fit" data-fit="27">${xesc(inf.time || '')}</div></div><div class="s-picker"><div class="fit" data-fit="54">${xesc(picker)}</div></div></div>
     </div></div>`;
-  return `<section class="sheet" style="--m:${sheetMargin()}mm">${slip}${slip}</section>`;
+  };
+  const top = slipOf(r);
+  return `<section class="sheet" style="--m:${sheetMargin()}mm">${top}${r2 === undefined ? top : r2 ? slipOf(r2) : '<div class="slip"></div>'}</section>`;
 }
 function fitSheets(root) {                                                  // self-contained: its source text is also put into the saved print file
   root.querySelectorAll('[data-fit]').forEach(el => {
@@ -2558,8 +2613,8 @@ const SHEET_CSS = `.sheet{--m:4mm;width:210mm;height:296.8mm;margin:14px auto;ba
 .s-chk{border-bottom:0;justify-content:space-around;padding:0 4mm;font-size:22pt;font-weight:800}
 .s-ck{display:flex;align-items:center;gap:3mm}
 .s-cb{flex:none;width:10mm;height:10mm;box-sizing:border-box;border:1.3px solid #444;background:#e0e0e0}
-.s-tp{font-size:.7em;font-weight:800}
-.s-tu{font-size:.75em;font-weight:500}
+.s-tp{font-weight:800}
+.s-tu{display:inline-block;width:2.2em;height:0;margin-left:.1em;border-bottom:1px solid #222}      /* the blank to write the trip on: a thin line (not the bold "____" characters) */
 .s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
 .s-slot{height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900}
@@ -2760,6 +2815,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ขยายเต็มหน้า', 'Full screen', 'စာမျက်နှာအပြည့် ချဲ့ရန်'],
   ['ย่อกลับ', 'Back to normal size', 'မူလအရွယ်သို့ ပြန်ရန်'],
   ['สแกนเลขออเดอร์ที่จะพิมพ์ซ้ำ', 'Scan the order number to reprint', 'ပြန်ပရင့်မည့် အော်ဒါနံပါတ်ကို စကင်န်ဖတ်ပါ'],
+  ['สแกนเลขออเดอร์ (1 Page / 1 Order)', 'Scan order number (1 Page / 1 Order)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
+  ['สแกนเลขออเดอร์ (1 Page / 2 Order)', 'Scan order number (1 Page / 2 Order)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
+  ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
+  ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
+  ['กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย', 'Click the sample sheet to print it right away', 'နမူနာစာရွက်ကို နှိပ်လျှင် ချက်ချင်း ပုံနှိပ်နိုင်သည်'],
   ['โหมด Re-Print', 'Re-Print mode', 'Re-Print မုဒ်'],
   ['ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย', 'other functions are off — just scan', 'အခြားလုပ်ဆောင်ချက်များ ပိတ်ထားသည်၊ စကင်န်ဖတ်ရုံသာ'],
   ['เสร็จสิ้น (Esc)', 'Done (Esc)', 'ပြီးပါပြီ (Esc)'],
