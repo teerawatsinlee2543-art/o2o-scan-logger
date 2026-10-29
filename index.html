@@ -128,9 +128,11 @@ main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:18px;a
 .card.compact details.settings summary{cursor:pointer;font-weight:600;padding:3px 4px}
 .card.compact details.settings[open]{margin-left:0;flex:1 1 100%}
 .card.compact details.settings .row{margin-top:8px}
-/* the two columns end level: the left one is scan / export / tools — the tools card (last) takes the height that is left; the right one is scan list / the card with the green, orange and
-   purple boxes, which stretches the same way (its boxes stretch with it). Opening the settings only makes the left column longer. */
-#toolCard{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center}
+/* the two columns end level. Left: scan / export / tools — the tools card (last) is LOCKED to its own height; the status card inside the scan card (first, at the top) is what stretches
+   to take up the height that is left when the orange / purple boxes on the right grow. Right: scan list / the card with the green, orange and purple boxes, which stretches the same
+   way (its boxes stretch with it). Opening the settings only makes the left column longer. */
+main > .stack:first-child > .card:first-child{flex:1 1 auto;display:flex;flex-direction:column}
+main > .stack:first-child > .card:first-child .fb{flex:1 1 auto}
 .card.fill{flex:1 1 auto;display:flex;flex-direction:column}
 .card.fill > .twin{flex:1 1 auto}
 /* the orange / purple boxes keep their own (small) height; only the white card around them stretches to meet the left column */
