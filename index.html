@@ -2418,7 +2418,7 @@ function code128(text) {                                          // Code 128-B 
 function barcodeSvg(text) {
   const w = code128(text), quiet = 10, total = w.reduce((a, b) => a + b, 0) + quiet * 2; let x = quiet, rects = '';
   w.forEach((n, i) => { if (i % 2 === 0) rects += `<rect x="${x}" y="0" width="${n}" height="1"/>`; x += n; });
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:${(total * 0.5).toFixed(1)}mm;height:11mm"><rect width="${total}" height="1" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:100%;height:10mm"><rect width="${total}" height="1" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
 }
 /* the round (time slot) box has one solid colour per slot, as on the cover sheets in the workbook: 05-08 green, 08-12 red, 12-16 orange, 16-20 blue (the first hour of the slot decides);
    anything else — the 20:00-22:00 round included, or no time — has no colour (white) */
@@ -2432,8 +2432,11 @@ function slotStyle(time) {
 function sheetHtml(r) {
   const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
   const slip = `<div class="slip">
-    <div class="s-top"><div class="s-sdbox">${inf.sd ? `<div class="fit s-sd" data-fit="30">${xesc(inf.sd)}</div>` : ''}</div><div class="s-bar">${barcodeSvg(r.order)}${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch} · ใบที่ ${r.slot}</span>` : ''}</div></div>
-    <div class="s-order"><div class="s-otrip"><div class="fit s-tp" data-fit="20">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu">_______</span>')(tripFor(inf))}</div></div><div class="s-onum">${xesc(r.order)}</div></div>
+    <div class="s-head">
+      <div class="s-lc"><div class="fit s-tp" data-fit="24">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu">________</span>')(tripFor(inf))}</div>${inf.sd ? `<div class="fit s-sd" data-fit="40">${xesc(inf.sd)}</div>` : ''}</div>
+      <div class="s-bar">${barcodeSvg(r.order)}${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch} · ใบที่ ${r.slot}</span>` : ''}</div>
+      <div class="s-order"><div class="fit s-onum" data-fit="56">${xesc(r.order)}</div></div>
+    </div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
     <div class="s-body">
       <div class="s-left">
@@ -2458,13 +2461,13 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .slip{height:148mm;padding:5mm 8mm;display:flex;flex-direction:column;box-sizing:border-box}
 .slip + .slip{border-top:1px dashed #999}
 .fit{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-align:center;line-height:1.35}
-.s-top{display:grid;grid-template-columns:52mm 1fr;height:16mm;border:1px solid #444;align-items:center}
-.s-sdbox{display:flex;align-items:center;height:100%;padding:0 2mm;min-width:0}
-.s-bar{position:relative;display:flex;justify-content:center;align-items:center;height:100%;border-left:1px solid #444}
-.s-ref{position:absolute;right:2mm;bottom:.8mm;font-size:7.5pt;color:#555}
-.s-order{height:19mm;display:grid;grid-template-columns:52mm 1fr;align-items:center;background:#c4c4c4;border:1px solid #444;border-top:0}
-.s-otrip{display:flex;align-items:center;height:100%;padding:0 3mm;border-right:1px solid #444;min-width:0}
-.s-onum{line-height:19mm;text-align:center;font-size:40pt;font-weight:800;letter-spacing:.02em}
+.s-head{display:grid;grid-template-columns:62mm 1fr;grid-template-rows:16mm 19mm;border:1px solid #444}
+.s-lc{grid-row:1 / span 2;display:flex;flex-direction:column;justify-content:center;gap:.5mm;padding:0 2mm;min-width:0;border-right:1px solid #444}
+.s-lc .fit{flex:none}
+.s-bar{position:relative;display:flex;justify-content:center;align-items:flex-start;padding-top:1.2mm;box-sizing:border-box;min-width:0;border-bottom:1px solid #444}
+.s-ref{position:absolute;right:2mm;bottom:.6mm;font-size:7.5pt;color:#555}
+.s-order{display:flex;align-items:center;padding:0 2mm;min-width:0;background:#c4c4c4}
+.s-onum{font-weight:800;letter-spacing:.02em;line-height:19mm}
 .s-name{height:22mm;display:flex;align-items:center;padding:0 3mm;font-weight:900;border:1px solid #444;border-top:0}
 .s-body{flex:1;display:grid;grid-template-columns:51.5% 48.5%;border:1px solid #444;border-top:0;min-height:0}
 .s-left{display:flex;flex-direction:column;border-right:1px solid #444;min-width:0}
@@ -2477,7 +2480,7 @@ const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#
 .s-chk{border-bottom:0;justify-content:space-around;padding:0 4mm;font-size:22pt;font-weight:800}
 .s-ck{display:flex;align-items:center;gap:3mm}
 .s-cb{flex:none;width:10mm;height:10mm;box-sizing:border-box;border:1.3px solid #444;background:#e0e0e0}
-.s-tp{font-weight:800;text-align:left}
+.s-tp{font-weight:800}
 .s-tu{font-size:.65em;font-weight:500}
 .s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
