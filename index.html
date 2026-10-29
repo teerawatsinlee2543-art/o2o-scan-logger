@@ -389,6 +389,30 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 #rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
+/* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
+.empbox{display:none;flex:none;margin-top:12px;padding:10px 12px 12px;border-radius:14px;border:1px solid #a9dcbe;background:linear-gradient(180deg,#f0fbf4,#dcf2e5);--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;color:#175c37}
+.panel.purple.zoomed .empbox{display:block}
+.panel.purple.zoomed .plist{min-height:72px}      /* the order list gives way to the green box on a short screen */
+.etabs{display:flex;gap:6px;margin-bottom:8px}
+.etabs button{flex:1;padding:7px 10px;border-radius:10px;border:1px solid #a9dcbe;background:rgba(255,255,255,.75);color:#175c37;font:800 13px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+.etabs button.on{background:#1f9d57;border-color:#1f9d57;color:#fff}
+.panel.zoomed .empbox input[type=text]{height:46px;font-size:20px;border-radius:12px;padding:0 12px}
+.panel.zoomed .empbox input[type=text]::placeholder{font-size:14px}
+.empbox .pmsg{min-height:20px;margin-top:6px;font-size:14px}
+.eadd{display:flex;gap:8px}
+.eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+.ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
+.ptlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
+.ptlist li.sel{background:#e4f6ec}
+.ptlist li.none{display:block;padding:10px;text-align:center;color:var(--muted);font-size:13px}
+.ptlist .ptbar{display:block;line-height:0}
+.ptlist .ptn{min-width:0;font-weight:800;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptlist .ptn small{display:block;font-weight:600;font-size:12px;color:var(--muted)}
+.ptlist .ptn small.cf{color:var(--bad)}
+.ptlist .pta{display:flex;gap:6px}
+.ptlist .pta button{padding:4px 10px;font-size:13px;border-radius:8px;border:1px solid #a9dcbe;background:#fff;color:#175c37;font-weight:700;cursor:pointer}
+.ptlist .pta button.go{background:#1f9d57;border-color:#1f9d57;color:#fff}
+.ewho{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:14px;font-weight:700}
 .rpempty{align-self:center;max-width:300px;text-align:center;color:var(--pt);opacity:.75;font-size:15px}
 @media (max-width:900px){ .panel.purple.zoomed{grid-template-columns:minmax(0,1fr);grid-template-rows:none} .panel.purple.zoomed .rpview{min-height:70vh} }
 
@@ -629,6 +653,20 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <p class="phint" id="reprintHint"></p>
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button></div>
+            <section class="empbox" id="rpEmp" aria-label="ผู้จัด — ชื่อที่พิมพ์บนใบปะหน้า">
+              <div class="etabs" role="tablist"><button id="eTabReg" type="button" role="tab" class="on" aria-selected="true">1 พนักงานประจำ</button><button id="eTabPt" type="button" role="tab" aria-selected="false">2 พนักงานชั่วคราว (Part-Time)</button></div>
+              <div class="epane" id="ePaneReg">
+                <input id="rpEmpIn" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="สแกนบาร์โค้ดพนักงาน 8 หลัก (อ่านแค่ 4 หลักท้าย)" aria-label="บาร์โค้ดพนักงานประจำ 8 หลัก (อ่านแค่ 4 หลักท้าย)">
+                <div class="pmsg" id="rpEmpMsg" aria-live="polite"></div>
+              </div>
+              <div class="epane" id="ePanePt" hidden>
+                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
+                <div class="pmsg" id="ptMsg" aria-live="polite"></div>
+                <ul class="ptlist" id="ptList"></ul>
+                <div class="prow"><button id="ptPrintAll" class="mini" type="button">พิมพ์บัตรทั้งหมด</button></div>
+              </div>
+              <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
+            </section>
             </div>
             <aside class="rpview" id="rpView" aria-label="ตัวอย่างใบที่จะพิมพ์">
               <div class="rphead"><b id="rpTitle"></b></div>
@@ -854,6 +892,15 @@ let rosterInfo = {};
 try { const r = JSON.parse(localStorage.getItem(LS_RINFO) || 'null'); if (r && typeof r === 'object') rosterInfo = r; } catch (_) {}
 const saveRInfo = () => { try { localStorage.setItem(LS_RINFO, JSON.stringify(rosterInfo)); } catch (_) {} };
 const nickOf = id => (rosterInfo[id] && rosterInfo[id].nick) || '';
+/* Part-Time (temporary) staff {id: {name, ts}}: added by typing a name — the system picks a free 4-digit number and makes a barcode of it. Kept in a store of its own,
+   so the regular roster (and its import / export / backup) is never touched. A regular employee's badge has 8 digits and only the last 4 are read (EMP8_RE). */
+const LS_PT = 'o2o-parttime-v1';
+let ptime = {};
+try { const p = JSON.parse(localStorage.getItem(LS_PT) || 'null'); if (p && typeof p === 'object') ptime = p; } catch (_) {}
+const savePt = () => { try { localStorage.setItem(LS_PT, JSON.stringify(ptime)); } catch (_) {} };
+const nameOfEmp = id => roster[id] || (ptime[id] && ptime[id].name) || '';
+const isKnownEmp = id => id in roster || id in ptime;
+const EMP8_RE = /^\d{8}$/;
 
 /* cover-sheet data per order {order: {name, date, time, trip}} — comes from an imported Call Center file, kept apart from the scan log */
 const LS_INFO = 'o2o-orderinfo-v1';
@@ -891,7 +938,7 @@ function derive() {
     const dup = firstIdx !== undefined;
     let batch = null, slot = null;
     if (!dup) { first.set(r.order, i); batch = Math.floor(u / size) + 1; slot = (u % size) + 1; u++; }
-    out.push(Object.assign({ i, dup, batch, slot, firstIdx }, r, { name: r.name || roster[r.emp] || '' }));
+    out.push(Object.assign({ i, dup, batch, slot, firstIdx }, r, { name: r.name || nameOfEmp(r.emp) }));
   });
   return { rows: out, unique: u };
 }
@@ -1010,6 +1057,7 @@ function rejectFlash() {
 /* ---------- scan handling ---------- */
 function handleScan(raw) {
   let v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
+  if (EMP8_RE.test(v)) v = v.slice(-4);                                      // a regular employee's badge has 8 digits: only the last 4 are read
   if (!EMP_RE.test(v) && !ORD_RE.test(v)) v = extractOrder(v) || v;          // a QR / long barcode: take the order number out of it
   if (!v) return;
   if (state.finished) {
@@ -1019,7 +1067,7 @@ function handleScan(raw) {
   }
 
   if (EMP_RE.test(v)) {
-    const known = v in roster, haveRoster = rosterCount() > 0;
+    const known = isKnownEmp(v), haveRoster = rosterCount() > 0;             // a Part-Time number counts as known too
     if (state.requireRoster && haveRoster && !known) {
       // not in the roster: nobody is signed in, and focus stays on the employee field (see submitFrom/focusNext)
       state.emp = null; save(); sfx.bad();
@@ -1034,7 +1082,7 @@ function handleScan(raw) {
       feedback('warn', 'พนักงาน ' + v, 'ไม่พบรหัสนี้ในรายชื่อ — สแกนต่อได้ แต่โปรดตรวจรหัสอีกครั้ง' + note);
     } else {
       sfx.emp();
-      feedback('ok', 'พนักงาน ' + v + (roster[v] ? ' · ' + roster[v] : ''),
+      feedback('ok', 'พนักงาน ' + v + (nameOfEmp(v) ? ' · ' + nameOfEmp(v) : ''),
         (haveRoster ? 'สแกนเลขออเดอร์ได้เลย' : 'ยังไม่มีรายชื่อพนักงาน จึงไม่ได้ตรวจรหัส — สแกนเลขออเดอร์ได้เลย') + note);
     }
     render(); return;
@@ -1050,7 +1098,7 @@ function handleScan(raw) {
     const before = derive();
     const dupOf = before.rows.find(r => r.order === v && !r.dup);
     const emp = noEmp ? '' : state.emp;
-    state.rows.push({ ts: Date.now(), emp, name: roster[emp] || '', order: v });
+    state.rows.push({ ts: Date.now(), emp, name: nameOfEmp(emp), order: v });
     save();
     if (sheetUsable()) ensureInfo([v]).then(ch => { if (ch) render(); });       // customer name / date / round / sub-district from the Google Sheet, when one is connected
     if (dupOf) {
@@ -1093,7 +1141,7 @@ function wire(el, ownRe, normalize) {
       const v = el.value.trim().toUpperCase();
       if (v.length < 4) return;
       const fast = (tLast - tFirst) / Math.max(1, v.length - 1) < 35;
-      if (fast && (EMP_RE.test(v) || ORD_RE.test(v) || (v.length > 11 && extractOrder(v)))) { submitFrom(el); return; }
+      if (fast && (EMP_RE.test(v) || EMP8_RE.test(v) || ORD_RE.test(v) || (v.length > 11 && extractOrder(v)))) { submitFrom(el); return; }
       if (ownRe.test(v)) { const snap = el.value; t2 = setTimeout(() => { if (el.value === snap) submitFrom(el); }, 260); }
     }, 140);
   });
@@ -1103,7 +1151,7 @@ function wire(el, ownRe, normalize) {
   });
 }
 // a badge is exactly 4 digits: typing/scanning into a field that still shows the current badge replaces it instead of appending
-wire(empIn, EMP_RE, v => (state.emp && v.length > state.emp.length && v.startsWith(state.emp)) ? v.slice(state.emp.length) : v);
+wire(empIn, /^(\d{4}|\d{8})$/, v => (state.emp && v.length > state.emp.length && v.startsWith(state.emp)) ? v.slice(state.emp.length) : v);
 wire(inp, ORD_RE);
 
 let reprintMode = false;             // true while the purple Re-Print field owns the screen (see "Re-Print mode" below)
@@ -1131,7 +1179,7 @@ empIn.addEventListener('mouseup', e => { if (selectOnUp) { e.preventDefault(); s
 empIn.addEventListener('blur', () => {            // typed 4 digits then clicked away -> still counts
   selectOnUp = false;
   const v = empIn.value.trim();
-  if (EMP_RE.test(v) && v !== state.emp) handleScan(v);
+  if ((EMP_RE.test(v) && v !== state.emp) || EMP8_RE.test(v)) handleScan(v);
   empIn.value = state.emp || '';
 });
 
@@ -1149,7 +1197,7 @@ function render() {
   $('btnLogout').hidden = !state.emp;
   if (document.activeElement !== empIn) empIn.value = state.emp || '';
   const who = $('whoami');
-  if (state.emp && state.emp in roster) { who.className = 'whoami ok'; who.textContent = roster[state.emp] ? roster[state.emp] + (nickOf(state.emp) ? ` (${nickOf(state.emp)})` : '') : '(ไม่มีชื่อในรายชื่อ)'; }
+  if (state.emp && isKnownEmp(state.emp)) { who.className = 'whoami ok'; const nm = nameOfEmp(state.emp); who.textContent = nm ? nm + (nickOf(state.emp) ? ` (${nickOf(state.emp)})` : '') + (state.emp in ptime && !(state.emp in roster) ? ' · Part-Time' : '') : '(ไม่มีชื่อในรายชื่อ)'; }
   else if (state.emp && rosterCount()) { who.className = 'whoami warn'; who.textContent = 'ไม่พบรหัสนี้ในรายชื่อพนักงาน'; }
   else { who.className = 'whoami'; who.textContent = ''; }
   if (state.mode === 'none') { who.className = 'whoami'; who.textContent = ''; }
@@ -1167,7 +1215,7 @@ function render() {
   const unassigned = state.rows.filter(r => !r.emp).length;
   const ba = $('btnAssign');
   ba.hidden = !(unassigned && state.emp && !solo && !state.finished);
-  if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${roster[state.emp] ? ' ' + roster[state.emp] : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
+  if (!ba.hidden) ba.textContent = `ใส่ ${state.emp}${nameOfEmp(state.emp) ? ' ' + nameOfEmp(state.emp) : ''} ให้ ${unassigned} ออเดอร์ที่ยังไม่ระบุพนักงาน`;
   $('tabEmpCnt').textContent = `${rosterCount()} คน`; $('tabEmpCnt').classList.toggle('zero', !rosterCount());          // the counts sit on the corner of the two tabs of the Update Data window
   $('tabTripCnt').textContent = `${tripCount()} Trip`; $('tabTripCnt').classList.toggle('zero', !tripCount());
   renderDb();
@@ -1341,7 +1389,7 @@ $('modeNone').addEventListener('click', () => setMode('none'));
 $('btnAssign').addEventListener('click', async () => {
   if (!state.emp || state.finished) return;
   const n = state.rows.filter(r => !r.emp).length; if (!n) return;
-  const nm = roster[state.emp] || '';
+  const nm = nameOfEmp(state.emp);
   if (!await ask(`ใส่พนักงาน ${state.emp}${nm ? ' ' + nm : ''} ให้ ${n} ออเดอร์ที่ยังไม่ระบุพนักงาน?`)) return;
   state.rows.forEach(r => { if (!r.emp) { r.emp = state.emp; r.name = nm; } });
   save(); feedback('ok', `ใส่พนักงาน ${state.emp} แล้ว`, `${n} ออเดอร์${nm ? ' · ' + nm : ''}`);
@@ -2101,7 +2149,7 @@ async function assignOrder(raw) {
   if (state.finished) { sfx.bad(); return sideMsg('assign', 'warn', 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน'); }
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('assign', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   if (!state.emp) { sfx.bad(); return sideMsg('assign', 'bad', 'ยังไม่มีพนักงาน — สแกนบัตรพนักงานที่ช่อง 1 ก่อน'); }
-  const emp = state.emp, name = roster[emp] || '', rows = state.rows.filter(r => r.order === v);
+  const emp = state.emp, name = nameOfEmp(emp), rows = state.rows.filter(r => r.order === v);
   let kind, prev = null, rowTs = null;
   if (!rows.length) { rowTs = Date.now(); state.rows.push({ ts: rowTs, emp, name, order: v }); kind = 'new'; }
   else if (rows.every(r => r.emp === emp)) { sfx.dup(); return sideMsg('assign', 'warn', `${v} Assign ให้ ${empLabel(emp, name)} อยู่แล้ว`); }
@@ -2127,10 +2175,11 @@ function undoAssign(i) {
 /* Re-Print: just a list of orders whose cover sheet has to be printed again (no employee needed; the signed-in one is noted if there is one) */
 function reprintOrder(raw) {
   const v = cleanScan(raw); if (!v) return;
+  if (rpEmpScan.isBadge(v)) return rpEmpScan(v, true);                     // an employee badge scanned into an order field: it is the picker
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
   const emp = state.mode === 'none' ? '' : (state.emp || '');
-  state.reprints.push({ ts: Date.now(), order: v, emp, name: roster[emp] || '' });
+  state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp) });
   const auto = state.autoPrint !== false && AUTO_PRINT_RE.test(v);         // an 11-character order ending in A or B is printed straight away
   previewOrder = v;
   save(); sfx.ok();
@@ -2146,10 +2195,11 @@ let pairWait = null;                                  // the first order of a pa
 let previewPair = null;                               // the orders of the page shown on the right (1 or 2), or null while one order is shown on both slips
 function reprintOrder2(raw) {
   const v = cleanScan(raw); if (!v) return;
+  if (rpEmpScan.isBadge(v)) return rpEmpScan(v, true);
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
   const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false, pairable = !autoOn || AUTO_PRINT_RE.test(v);
-  state.reprints.push({ ts: Date.now(), order: v, emp, name: roster[emp] || '', pair: true });
+  state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp), pair: true });
   save(); sfx.ok();
   const refresh = list => ensureInfo(list).then(ch => { if (ch) renderRpView(); });
   if (!pairable) {                                    // an order that does not end in A / B is listed and shown, but is not put on a page by itself
@@ -2172,7 +2222,7 @@ const AUTO_PRINT_RE = /[AB]$/;
 const hooks = { printFrame: f => f.contentWindow.print() };               // (a hook, so a test can stand in for the real print dialog)
 function reprintRow(order) {                                               // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too
   const d = derive().rows.find(r => r.order === order && !r.dup), rp = state.reprints.find(x => x.order === order) || {};
-  const emp = d ? d.emp : (rp.emp || ''), name = (d && d.name) || rp.name || roster[emp] || '';
+  const emp = d ? d.emp : (rp.emp || ''), name = (d && d.name) || rp.name || nameOfEmp(emp);
   return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null };
 }
 function fitRpView() {
@@ -2197,11 +2247,14 @@ function renderRpView() {
 window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
    (start the browser with --kiosk-printing, see Open-O2O-Scan-Logger-AutoPrint.bat, and it prints at once without that window) */
-function printSheets(rows) {
+function printDoc(html, prep) {                                          // a complete page goes into a hidden frame, `prep` (optional) runs once its fonts have arrived, then it is printed
   const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
   f.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;visibility:hidden';
-  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; fitSheets(f.contentDocument); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
-  f.srcdoc = printFileHtml(rows.map(r => Array.isArray(r) ? sheetHtml(r[0], r[1] || null) : sheetHtml(r)).join(''), false); document.body.appendChild(f);      // a row = one order on both slips, [row, row] = two orders on one page
+  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; if (prep) prep(f); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
+  f.srcdoc = html; document.body.appendChild(f);
+}
+function printSheets(rows) {                                               // a row = one order on both slips, [row, row] = two orders on one page
+  printDoc(printFileHtml(rows.map(r => Array.isArray(r) ? sheetHtml(r[0], r[1] || null) : sheetHtml(r)).join(''), false), f => fitSheets(f.contentDocument));
 }
 async function printOrder(order) {                                         // the "พิมพ์ใบนี้" button and the automatic print both come here
   if (IN_VIEWER) {                                                         // the claude.ai web copy cannot open the print window: save a file that prints when opened
@@ -2246,13 +2299,13 @@ function renderSide() {
   assignIn.disabled = fin;
   $('assignCount').textContent = state.assigns.length; $('reprintCount').textContent = state.reprints.length;
   $('assignHint').textContent = fin ? 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม'
-    : (state.emp ? `จะ Assign ให้ ${empLabel(state.emp, roster[state.emp])}` : 'ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1');
+    : (state.emp ? `จะ Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` : 'ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
     li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = null; renderRpView(); renderSide(); }); return li; });
-  renderRpView();
+  renderRpView(); renderEmpBox();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
 }
@@ -2281,7 +2334,7 @@ function setZoom(panel, on) {
   document.body.classList.toggle('has-zoom', !!zoomedEl);
   const b = panel.querySelector('.pzoom'), label = on ? 'ย่อกลับ' : 'ขยายเต็มหน้า';
   b.setAttribute('title', label); b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
-  if (on) { const i = panelInput(panel); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(renderRpView); }
+  if (on) { const i = panelInput(panel); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(() => { renderRpView(); renderEmpBox(); }); }
   else { if (panel.classList.contains('purple')) exitReprint(); else focusNext(); }      // zooming out of Re-Print also leaves its mode
 }
 const collapseZoom = () => { if (zoomedEl) setZoom(zoomedEl, false); };
@@ -2314,6 +2367,95 @@ $('assignClear').addEventListener('click', async () => {
 $('reprintClear').addEventListener('click', async () => {
   if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { state.reprints = []; save(); render(); toast('ล้างรายการ Re-Print แล้ว'); }
 });
+
+/* ---------- ผู้จัด in the full-page Re-Print view (green box): who the picker is, i.e. the name printed on the sheet ----------
+   1 regular staff: scan the badge — 8 digits, only the last 4 are read (a 4-digit code works too); it signs that person in, exactly like the employee field of the main page.
+   2 Part-Time staff: type a name, the system picks a free 4-digit number for it and shows it as a barcode (and prints a card); scanning that barcode signs the person in under the typed
+     name. They live in their own store (ptime) — the regular roster is not touched. Scanning a badge in one of the two order fields of Re-Print lands here too. */
+const rpEmpIn = $('rpEmpIn'), ptName = $('ptName');
+let empTab = 'reg';
+function showEmpTab(t) {
+  empTab = t;
+  $('eTabReg').classList.toggle('on', t === 'reg'); $('eTabPt').classList.toggle('on', t === 'pt');
+  $('eTabReg').setAttribute('aria-selected', String(t === 'reg')); $('eTabPt').setAttribute('aria-selected', String(t === 'pt'));
+  $('ePaneReg').hidden = t !== 'reg'; $('ePanePt').hidden = t !== 'pt';
+  renderEmpBox(); (t === 'reg' ? rpEmpIn : ptName).focus();
+}
+$('eTabReg').addEventListener('click', () => showEmpTab('reg'));
+$('eTabPt').addEventListener('click', () => showEmpTab('pt'));
+function rpEmpScan(raw, alsoTop) {
+  const v0 = String(raw).replace(/[^\d]/g, ''), v = EMP8_RE.test(v0) ? v0.slice(-4) : v0;
+  const say = (kind, text) => { const m = $('rpEmpMsg'); m.className = 'pmsg ' + kind; m.textContent = text; if (alsoTop) sideMsg('reprint', kind, text); };
+  if (!EMP_RE.test(v)) { sfx.bad(); return say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); }
+  if (state.requireRoster && rosterCount() > 0 && !isKnownEmp(v)) { sfx.bad(); return say('bad', `ไม่พบรหัส ${v} ในรายชื่อพนักงาน`); }
+  state.emp = v; state.mode = 'with'; save(); sfx.emp();
+  say('ok', `✓ ผู้จัด ${v}` + (nameOfEmp(v) ? ' · ' + nameOfEmp(v) : '') + (v in ptime && !(v in roster) ? ' (Part-Time)' : ''));
+  render();
+}
+rpEmpScan.isBadge = raw => { const v = String(raw).trim(); return EMP_RE.test(v) || EMP8_RE.test(v); };
+function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
+  for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
+  return null;
+}
+function addPartTime() {
+  const name = ptName.value.replace(/\s+/g, ' ').trim().slice(0, 40), say = (kind, text) => { const m = $('ptMsg'); m.className = 'pmsg ' + kind; m.textContent = text; };
+  if (!name) { sfx.bad(); say('bad', 'พิมพ์ชื่อก่อน เช่น วา'); ptName.focus(); return; }
+  const same = Object.keys(ptime).find(id => ptime[id].name.toLowerCase() === name.toLowerCase());
+  if (same) { sfx.dup(); say('warn', `มีชื่อ "${name}" อยู่แล้ว — เลข ${same}`); renderEmpBox(); return; }
+  const id = newPtId(); if (!id) { sfx.bad(); say('bad', 'หาเลขว่างไม่ได้'); return; }
+  ptime[id] = { name, ts: Date.now() }; savePt(); sfx.ok();
+  say('ok', `✓ ${name} → เลข ${id} · สแกนบาร์โค้ดนี้ = ชื่อ ${name}`); ptName.value = '';
+  renderEmpBox(); render();
+}
+$('ptAdd').addEventListener('click', addPartTime);
+ptName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPartTime(); } });
+function renderEmpBox() {
+  if (!zoomedEl || !zoomedEl.classList.contains('purple')) return;          // the box only exists in the full-page Re-Print view
+  const nm = state.emp ? nameOfEmp(state.emp) : '';
+  $('rpWho').textContent = state.emp ? T('ผู้จัดตอนนี้: ') + state.emp + (nm ? ' · ' + nm : '') : T('ยังไม่มีผู้จัด — สแกนบัตรพนักงาน');
+  $('rpWhoClr').hidden = !state.emp;
+  const ul = $('ptList'); ul.innerHTML = '';
+  const ids = Object.keys(ptime).sort((a, b) => ptime[b].ts - ptime[a].ts);
+  $('ptPrintAll').disabled = !ids.length;
+  if (!ids.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีพนักงานชั่วคราว'; ul.appendChild(li); return; }
+  ids.forEach(id => {
+    const li = document.createElement('li'); if (state.emp === id) li.classList.add('sel');
+    const bar = document.createElement('span'); bar.className = 'ptbar'; bar.innerHTML = barcodeSvg(id, 1.3, 30, 'px'); bar.title = id;
+    const n = document.createElement('span'); n.className = 'ptn'; n.textContent = ptime[id].name;
+    const s = document.createElement('small'); s.textContent = 'เลข ' + id; n.appendChild(s);
+    if (id in roster) { s.className = 'cf'; s.textContent = `เลข ${id} ซ้ำกับพนักงานประจำ — กด "เลขใหม่"`; }
+    const act = document.createElement('span'); act.className = 'pta';
+    const mk = (label, cls, fn, title) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls; if (title) b.title = title; b.addEventListener('click', fn); act.appendChild(b); };
+    mk('ใช้', 'go', () => { state.emp = id; state.mode = 'with'; save(); sfx.emp(); render(); }, 'ให้คนนี้เป็นผู้จัด');
+    if (id in roster) mk('เลขใหม่', '', () => { const nid = newPtId(); if (!nid) return; ptime[nid] = ptime[id]; delete ptime[id]; if (state.emp === id) state.emp = nid; savePt(); save(); render(); renderEmpBox(); });
+    mk('พิมพ์บัตร', '', () => printPtCards([id]));
+    mk('×', '', async () => { if (await ask(`ลบพนักงานชั่วคราว ${ptime[id].name} (เลข ${id}) ?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม)`)) { delete ptime[id]; savePt(); render(); renderEmpBox(); toast('ลบแล้ว'); } }, 'ลบ');
+    li.append(bar, n, act); ul.appendChild(li);
+  });
+}
+$('rpWhoClr').addEventListener('click', () => { state.emp = null; save(); render(); });
+/* the Part-Time card: name, barcode and number, 2 cards across an A4 page */
+function ptCardsHtml(ids, interactive) {
+  const cards = ids.filter(id => ptime[id]).map(id => { const n = ptime[id].name; return `<div class="ptc"><div class="ptn" style="font-size:${n.length > 12 ? 18 : n.length > 8 ? 24 : 30}pt">${xesc(n)}</div>${barcodeSvg(id, 0.6, 20, 'mm')}<div class="pti">${id}</div><div class="ptt">PART-TIME</div></div>`; }).join('');
+  return `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>บัตรพนักงานชั่วคราว</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;800;900&display=swap">
+<style>@page{size:A4;margin:10mm} body{margin:0;font-family:Prompt,Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.g{display:grid;grid-template-columns:repeat(2,90mm);gap:6mm 8mm;justify-content:center}
+.ptc{box-sizing:border-box;height:58mm;border:1px dashed #888;border-radius:3mm;padding:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;break-inside:avoid;overflow:hidden}
+.ptn{max-width:100%;font-weight:900;line-height:1.25;white-space:nowrap;overflow:hidden}
+.pti{font-size:16pt;font-weight:800;letter-spacing:.25em}
+.ptt{font-size:9pt;color:#555;letter-spacing:.2em}
+${interactive ? '.pbar{position:sticky;top:0;padding:10px 16px;background:#fff;font:600 14px sans-serif} @media print{.pbar{display:none}}' : ''}</style></head><body>
+${interactive ? '<div class="pbar">พิมพ์ (Ctrl+P) — เลือกเครื่องพิมพ์ ขนาดกระดาษ A4</div>' : ''}<div class="g">${cards}</div>
+${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(function(){window.print()},600)})<\/script>' : ''}</body></html>`;
+}
+async function printPtCards(ids) {
+  if (!ids.length) return;
+  if (IN_VIEWER) { if (await download(new Blob([ptCardsHtml(ids, true)], { type: 'text/html' }), 'part-time-cards.html')) toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง'); return; }
+  printDoc(ptCardsHtml(ids, false));
+}
+$('ptPrintAll').addEventListener('click', () => printPtCards(Object.keys(ptime).sort((a, b) => ptime[a].ts - ptime[b].ts)));
+wire(rpEmpIn, /^(\d{4}|\d{8})$/); sideHandlers.set(rpEmpIn, rpEmpScan);
 
 /* ---------- นำไฟล์เข้า (green box): a file / pasted column of order numbers becomes rows in the scan list ----------
    The order column is the one whose cells look like orders; an employee column is used only when its header says so ("รหัสพนักงาน" / "Employee ID" …,
@@ -2398,14 +2540,14 @@ function renderImport() {
   const ordTxt = L.how === 'text' ? T('เลขออเดอร์ ← ค้นหาจากข้อความทั้งหมด') : T('เลขออเดอร์ ← คอลัมน์ {0}', L.ordLabel ? q(L.ordLabel) : L.ordCol + 1);
   const empTxt = L.empCol >= 0 ? T('พนักงาน ← {0}', L.empLabel ? q(L.empLabel) : T('คอลัมน์ {0} (เดาจากเนื้อหา)', L.empCol + 1))
     : state.mode === 'none' ? T('ยังไม่ระบุพนักงาน')
-    : state.emp ? T('ใช้พนักงานที่เข้าระบบอยู่: {0}', xesc(empLabel(state.emp, roster[state.emp]))) : T('ยังไม่มีพนักงานที่เข้าระบบ');
+    : state.emp ? T('ใช้พนักงานที่เข้าระบบอยู่: {0}', xesc(empLabel(state.emp, nameOfEmp(state.emp)))) : T('ยังไม่มีพนักงานที่เข้าระบบ');
   let html = `<div>${T('อ่านได้ {0} ออเดอร์ จาก {1}', '<b>' + p.items.length + '</b>', src)}<br><small>${ordTxt} · ${empTxt}</small></div>` +
     `<div><span class="ok">${T('นำเข้าได้ {0} ออเดอร์', v.ok.length + v.needEmp)}</span>` +
     (v.dupFile + v.dupLog ? ` · <span class="warn">${T('ข้ามที่ซ้ำ {0} (ซ้ำในไฟล์ {1} · ซ้ำกับรายการสแกน {2})', v.dupFile + v.dupLog, v.dupFile, v.dupLog)}</span>` : '') + '</div>';
   const infoN = p.items.filter(it => it.info).length;
   if (infoN) html += `<div><span class="ok">${T('มีข้อมูลใบปะหน้า {0} ออเดอร์ (ชื่อลูกค้า / วันที่ / รอบส่ง)', infoN)}</span></div>`;
   if (v.ok.length) html += `<details><summary>${T('ตัวอย่างที่จะนำเข้า')}</summary><ul>` +
-    v.ok.slice(0, 40).map(x => `<li>${x.order}${x.emp ? ' · ' + xesc(empLabel(x.emp, roster[x.emp])) : ''}</li>`).join('') + (v.ok.length > 40 ? `<li>… +${v.ok.length - 40}</li>` : '') + '</ul></details>';
+    v.ok.slice(0, 40).map(x => `<li>${x.order}${x.emp ? ' · ' + xesc(empLabel(x.emp, nameOfEmp(x.emp))) : ''}</li>`).join('') + (v.ok.length > 40 ? `<li>… +${v.ok.length - 40}</li>` : '') + '</ul></details>';
   if (p.bad.length) html += `<div class="bad">${T('ข้าม {0} แถว (รูปแบบไม่ถูกต้อง): {1}', p.bad.length,
     p.bad.slice(0, 4).map(b => T('แถว {0} "{1}"', b.row, xesc(b.raw))).join(', ') + (p.bad.length > 4 ? ' …' : ''))}</div>`;
   if (v.unknown.length) html += `<div class="bad">${T('ข้าม {0} ออเดอร์ (รหัสพนักงานไม่อยู่ในรายชื่อ): {1}', v.unknown.length,
@@ -2451,7 +2593,7 @@ $('impApply').addEventListener('click', () => {
     importPending = null; sfx.ok(); render(); toast(`เติมข้อมูลใบปะหน้า ${n} ออเดอร์แล้ว`); return;
   }
   const from = state.rows.length, t0 = Date.now();
-  v.ok.forEach((x, i) => state.rows.push({ ts: t0 + i, emp: x.emp, name: roster[x.emp] || '', order: x.order }));
+  v.ok.forEach((x, i) => state.rows.push({ ts: t0 + i, emp: x.emp, name: nameOfEmp(x.emp), order: x.order }));
   lastImport = { from, orders: v.ok.map(x => x.order) };
   p.items.forEach(it => { if (it.info) orderInfo[it.order] = it.info; }); saveInfo();      // cover-sheet data is kept for every order in the file, also the ones skipped as repeats
   importPending = null; save(); sfx.full();
@@ -2466,6 +2608,24 @@ $('impUndo').addEventListener('click', () => {
 
 /* ---------- พิมพ์ใบปะหน้า: all cover sheets in one go, laid out like the printed ones (2 identical slips per A4 page) ----------
    Each slip: QR code of the order, the order number, customer name, delivery date, round (orange), the picker's name, and the hand-written fields. */
+/* Code 128-B barcode (for the Part-Time staff badges: the 4-digit number the system picked for them). code128() gives the bar / space widths, barcodeSvg() draws them: `mod` = width of the narrowest bar, `h` = height, in `unit` (px / mm); a quiet zone of 10 modules each side is included. */
+const C128 = ['212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222', '123122', '123221', '223211', '221132',
+  '221231', '213212', '223112', '312131', '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321', '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313',
+  '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', '313121', '211331', '231131', '213113', '213311', '213131', '311123', '311321', '331121', '312113', '312311', '332111',
+  '314111', '221411', '431111', '111224', '111422', '121124', '121421', '141122', '141221', '112214', '112412', '122114', '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111',
+  '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', '421211', '212141', '214121', '412121', '111143', '111341', '131141', '114113', '114311', '411113', '411311', '113141',
+  '114131', '311141', '411131', '211412', '211214', '211232', '2331112'];
+function code128(text) {                                          // Code 128-B -> bar/space widths, starting with a bar
+  const vals = [104]; let sum = 104;
+  [...text].forEach((ch, i) => { const v = Math.min(94, Math.max(0, ch.charCodeAt(0) - 32)); vals.push(v); sum += v * (i + 1); });
+  vals.push(sum % 103, 106);
+  return vals.map(v => C128[v]).join('').split('').map(Number);
+}
+function barcodeSvg(text, mod, h, unit) {
+  const w = code128(text), quiet = 10, total = w.reduce((a, b) => a + b, 0) + quiet * 2; let x = quiet, rects = '';
+  w.forEach((n, i) => { if (i % 2 === 0) rects += `<rect x="${x}" y="0" width="${n}" height="1"/>`; x += n; });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:${(total * mod).toFixed(2)}${unit};height:${h}${unit}"><rect width="${total}" height="1" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
+}
 /* QR code of the order number, drawn by our own small encoder (byte mode, error correction M, versions 1-10 — an order number is 11 characters, so version 1) so it works offline with no library.
    qrMatrix() returns the matrix as rows of true (dark) / false; qrSvg() draws it with a quiet zone of white round it. */
 const QR_ECC = [10, 16, 26, 18, 24, 16, 18, 22, 22, 26], QR_BLK = [1, 1, 1, 2, 2, 4, 4, 4, 5, 5];     // level M, versions 1..10: error-correction codewords per block, number of blocks
@@ -2823,6 +2983,16 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย', 'Click the sample sheet to print it right away', 'နမူနာစာရွက်ကို နှိပ်လျှင် ချက်ချင်း ပုံနှိပ်နိုင်သည်'],
+  ['1 พนักงานประจำ', '1 Regular staff', '၁ ပုံမှန်ဝန်ထမ်း'],
+  ['2 พนักงานชั่วคราว (Part-Time)', '2 Temporary staff (Part-Time)', '၂ ယာယီဝန်ထမ်း (Part-Time)'],
+  ['สแกนบาร์โค้ดพนักงาน 8 หลัก (อ่านแค่ 4 หลักท้าย)', 'Scan the 8-digit staff barcode (only the last 4 digits are read)', 'ဝန်ထမ်းဘားကုဒ် ၈ လုံး စကင်န်ဖတ်ပါ (နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
+  ['พิมพ์ชื่อ เช่น วา', 'Type a name, e.g. Wa', 'နာမည်ရိုက်ပါ (ဥပမာ Wa)'],
+  ['สร้างบาร์โค้ด', 'Make barcode', 'ဘားကုဒ်ပြုလုပ်ရန်'],
+  ['พิมพ์บัตรทั้งหมด', 'Print all cards', 'ကတ်အားလုံး ပုံနှိပ်ရန်'],
+  ['พิมพ์บัตร', 'Print card', 'ကတ်ပုံနှိပ်ရန်'],
+  ['เลขใหม่', 'New number', 'နံပါတ်အသစ်'],
+  ['ยังไม่มีผู้จัด — สแกนบัตรพนักงาน', 'No picker yet — scan a staff badge', 'ပစ္စည်းကောက်သူ မရှိသေးပါ — ဝန်ထမ်းကတ်ကို စကင်န်ဖတ်ပါ'],
+  ['ยังไม่มีพนักงานชั่วคราว', 'No temporary staff yet', 'ယာယီဝန်ထမ်း မရှိသေးပါ'],
   ['โหมด Re-Print', 'Re-Print mode', 'Re-Print မုဒ်'],
   ['ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย', 'other functions are off — just scan', 'အခြားလုပ်ဆောင်ချက်များ ပိတ်ထားသည်၊ စကင်န်ဖတ်ရုံသာ'],
   ['เสร็จสิ้น (Esc)', 'Done (Esc)', 'ပြီးပါပြီ (Esc)'],
