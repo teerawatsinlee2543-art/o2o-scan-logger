@@ -291,20 +291,30 @@ td.x{width:34px;text-align:center}
 .panel.green button.gbar:hover:not(:disabled){background:linear-gradient(135deg,#3bb972,#23975a)}
 .panel.green button.gbar:disabled{opacity:.55;cursor:default}
 .panel.green button.gbar:focus-visible{outline:3px solid #fff;outline-offset:-1px;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 45%,transparent)}
-/* the window the green bar opens: ONE field, locked (no way to the print page) until a nickname is typed or a staff badge is scanned */
-.pdlg h3{margin:0 0 4px;font-size:20px}
-.pdlg .pdinfo{margin:0 0 12px;font-size:14px;color:var(--muted)}
-.pdlg .pdin{width:100%;height:52px;margin:0 0 8px;padding:0 14px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#1d2433;font:800 21px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
-.pdlg .pdin:focus{border-color:#36b36c;box-shadow:0 0 0 4px rgba(54,179,108,.28)}
-.pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:15px}
-.pdlg .pdmsg{display:flex;align-items:center;gap:8px;min-height:40px;margin-bottom:12px;padding:6px 10px;border-radius:10px;font-size:14px;font-weight:700;background:#fff3cd;color:#7a4b00}
-.pdlg .pdmsg svg{flex:none;width:18px;height:18px}
+/* the two big windows — who is the picker (green print bar) and the Part-Time barcodes (Re-Print): wide, centred on the screen, a green header with an icon, big type */
+.bigdlg{width:min(760px,92vw);max-height:90vh;margin:auto;padding:0;border:0;border-radius:26px;overflow:hidden;background:var(--card);color:var(--ink);box-shadow:0 30px 90px rgba(8,16,36,.55)}
+.bigdlg[open]{display:flex;flex-direction:column;animation:bdpop .2s ease-out}
+.bigdlg::backdrop{background:rgba(12,18,32,.62);backdrop-filter:blur(5px)}
+@keyframes bdpop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.bigdlg[open]{animation:none}}
+.bigdlg .bdhead{flex:none;display:flex;align-items:center;gap:18px;padding:22px 30px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1b7f48)}
+.bigdlg .bdico{flex:none;display:grid;place-items:center;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.2)}
+.bigdlg .bdico svg{width:32px;height:32px}
+.bigdlg h3{margin:0;font-size:30px;line-height:1.2;color:#fff}
+.bigdlg .bdsub{margin:4px 0 0;font-size:16px;line-height:1.4;opacity:.94;color:#fff;white-space:normal}
+.bigdlg .bdbody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:26px 30px 28px;overflow:auto}
+.bigdlg .bdfoot{flex:none;display:flex;align-items:center;gap:12px;margin-top:18px}
+.bigdlg .bdfoot .sp{flex:1}
+.bigdlg .bdfoot button{padding:13px 30px;border-radius:14px;font-size:18px;font-weight:700}
+/* ONE field, locked (no way to the print page) until a nickname is typed or a staff badge is scanned */
+.pdlg .pdin{width:100%;height:70px;padding:0 22px;border-radius:18px;border:3px solid #a9dcbe;background:#fff;color:#1d2433;font:800 28px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
+.pdlg .pdin:focus{border-color:#36b36c;box-shadow:0 0 0 6px rgba(54,179,108,.28)}
+.pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:19px}
+.pdlg .pdmsg{display:flex;align-items:center;gap:12px;min-height:60px;margin-top:16px;padding:12px 18px;border-radius:16px;font-size:18px;font-weight:700;line-height:1.35;background:#fff3cd;color:#7a4b00}
+.pdlg .pdmsg svg{flex:none;width:24px;height:24px}
 .pdlg .pdmsg.ok{background:#e4f3ea;color:#1f7a45}
 .pdlg .pdmsg.bad{background:#fde3e3;color:#b42318}
-.pdlg .row{justify-content:flex-end;align-items:center}
-.pdlg .row .sp{flex:1}
-.pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px 2px}
-
+.pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:15px;font-weight:600;text-decoration:underline;padding:6px 2px}
 .panel.green .pmsg{min-height:18px;margin-top:4px;margin-bottom:4px}
 .panel.green .pmsg:empty{display:none}      /* the line is there only while it has something to say (this keeps the two columns of the page level) */
 .panel.green .impbox.flat{margin-top:6px}
@@ -440,16 +450,21 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 input.rp2{margin-top:8px}
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
 .panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
-.ptdlg{width:min(580px,94vw);--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;color:var(--ink)}
-.ptdlg h3{margin:0 0 4px;font-size:20px}
-.ptdlg .ptinfo{margin:0 0 12px;font-size:13px;color:var(--muted)}
-.panel.zoomed .ptdlg input[type=text]{height:46px;font-size:20px;border-radius:12px;padding:0 12px}
-.panel.zoomed .ptdlg input[type=text]::placeholder{font-size:14px}
-.ptdlg .pmsg{min-height:20px;margin-top:6px;font-size:14px}
-.ptdlg .ptlist{max-height:290px}
-.ptdlg .row{justify-content:flex-end;align-items:center;margin-top:12px}
-.ptdlg .row .sp{flex:1}
-.eadd{display:flex;gap:8px}
+.ptdlg{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c}
+.panel.zoomed .ptdlg input[type=text]{height:62px;font-size:24px;border-radius:16px;padding:0 20px}
+.panel.zoomed .ptdlg input[type=text]::placeholder{font-size:17px}
+.ptdlg .eadd{gap:12px}
+.ptdlg .eadd button{padding:0 28px;border-radius:16px;font-size:19px}
+.ptdlg .pmsg{min-height:24px;margin-top:10px;font-size:16px}
+.ptdlg .ptlist{flex:1 1 auto;min-height:110px;max-height:none;margin-top:12px;border-radius:16px;border-width:2px}
+.ptdlg .ptlist li{gap:16px;padding:12px 16px}
+.ptdlg .ptlist .ptn{font-size:22px}
+.ptdlg .ptlist .ptn small{font-size:14px}
+.ptdlg .ptlist .pta{gap:8px}
+.ptdlg .ptlist .pta button{padding:8px 16px;font-size:16px;border-radius:10px}
+.ptdlg .ptlist li.none{font-size:17px;padding:22px}
+.ptdlg .ewho{margin-top:14px;font-size:17px}
+.ptdlg .ewho button{padding:6px 16px;font-size:15px}.eadd{display:flex;gap:8px}
 .eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
 .ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
 .ptlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
@@ -745,14 +760,15 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <p class="phint" id="reprintHint"></p>
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button><button id="ptOpen" class="mini go" type="button" title="พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14" stroke-dasharray="14 0"/></svg>บาร์โค้ดพนักงาน</button></div>
-            <dialog id="ptDlg" class="askdlg ptdlg" aria-labelledby="ptTitle">
-              <h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3>
-              <p class="ptinfo">พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p>
-              <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
-              <div class="pmsg" id="ptMsg" aria-live="polite"></div>
-              <ul class="ptlist" id="ptList"></ul>
-              <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
-              <div class="row"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptClose" type="button">ปิด</button></div>
+            <dialog id="ptDlg" class="bigdlg ptdlg" aria-labelledby="ptTitle">
+              <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span><div><h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3><p class="bdsub">พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p></div></div>
+              <div class="bdbody">
+                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
+                <div class="pmsg" id="ptMsg" aria-live="polite"></div>
+                <ul class="ptlist" id="ptList"></ul>
+                <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
+                <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptClose" type="button">ปิด</button></div>
+              </div>
             </dialog>
             </div>
             <aside class="rpview" id="rpView" aria-label="ตัวอย่างใบที่จะพิมพ์">
@@ -774,12 +790,13 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 </dialog>
 
 
-<dialog id="printDlg" class="askdlg pdlg" aria-labelledby="pdTitle">
-  <h3 id="pdTitle">ใครเป็นผู้จัด?</h3>
-  <p class="pdinfo" id="pdInfo"></p>
-  <input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น (แล้วกด Enter)" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น">
-  <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
-  <div class="row"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button></div>
+<dialog id="printDlg" class="bigdlg pdlg" aria-labelledby="pdTitle">
+  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><div><h3 id="pdTitle">ใครเป็นผู้จัด?</h3><p class="bdsub" id="pdInfo"></p></div></div>
+  <div class="bdbody">
+    <input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น (แล้วกด Enter)" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น">
+    <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
+    <div class="bdfoot"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button></div>
+  </div>
 </dialog>
 
 <div id="printView" hidden>
@@ -2518,7 +2535,7 @@ function renderEmpBox() {
   if (!ids.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีพนักงานชั่วคราว'; ul.appendChild(li); return; }
   ids.forEach(id => {
     const li = document.createElement('li'); if (state.emp === id) li.classList.add('sel');
-    const bar = document.createElement('span'); bar.className = 'ptbar'; bar.innerHTML = barcodeSvg(id, 1.3, 30, 'px'); bar.title = id;
+    const bar = document.createElement('span'); bar.className = 'ptbar'; bar.innerHTML = barcodeSvg(id, 1.8, 44, 'px'); bar.title = id;
     const n = document.createElement('span'); n.className = 'ptn'; n.textContent = ptime[id].name;
     const s = document.createElement('small'); s.textContent = 'เลข ' + id; n.appendChild(s);
     if (id in roster) { s.className = 'cf'; s.textContent = `เลข ${id} ซ้ำกับพนักงานประจำ — กด "เลขใหม่"`; }
