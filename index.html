@@ -439,15 +439,16 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
-.empbox{display:none;flex:none;margin-top:12px;padding:10px 12px 12px;border-radius:14px;border:1px solid #a9dcbe;background:linear-gradient(180deg,#f0fbf4,#dcf2e5);--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;color:#175c37}
-.panel.purple.zoomed .empbox{display:block}
-.panel.purple.zoomed .plist{min-height:72px}      /* the order list gives way to the green box on a short screen */
-.etabs{display:flex;gap:6px;margin-bottom:8px}
-.etabs button{flex:1;padding:7px 10px;border-radius:10px;border:1px solid #a9dcbe;background:rgba(255,255,255,.75);color:#175c37;font:800 13px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
-.etabs button.on{background:#1f9d57;border-color:#1f9d57;color:#fff}
-.panel.zoomed .empbox input[type=text]{height:46px;font-size:20px;border-radius:12px;padding:0 12px}
-.panel.zoomed .empbox input[type=text]::placeholder{font-size:14px}
-.empbox .pmsg{min-height:20px;margin-top:6px;font-size:14px}
+.panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
+.ptdlg{width:min(580px,94vw);--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;color:var(--ink)}
+.ptdlg h3{margin:0 0 4px;font-size:20px}
+.ptdlg .ptinfo{margin:0 0 12px;font-size:13px;color:var(--muted)}
+.panel.zoomed .ptdlg input[type=text]{height:46px;font-size:20px;border-radius:12px;padding:0 12px}
+.panel.zoomed .ptdlg input[type=text]::placeholder{font-size:14px}
+.ptdlg .pmsg{min-height:20px;margin-top:6px;font-size:14px}
+.ptdlg .ptlist{max-height:290px}
+.ptdlg .row{justify-content:flex-end;align-items:center;margin-top:12px}
+.ptdlg .row .sp{flex:1}
 .eadd{display:flex;gap:8px}
 .eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
 .ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
@@ -743,21 +744,16 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
             <p class="phint" id="reprintHint"></p>
             <ul class="plist" id="reprintList"></ul>
-            <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button></div>
-            <section class="empbox" id="rpEmp" aria-label="ผู้จัด — ชื่อที่พิมพ์บนใบปะหน้า">
-              <div class="etabs" role="tablist"><button id="eTabReg" type="button" role="tab" class="on" aria-selected="true">1 พนักงานประจำ</button><button id="eTabPt" type="button" role="tab" aria-selected="false">2 พนักงานชั่วคราว (Part-Time)</button></div>
-              <div class="epane" id="ePaneReg">
-                <input id="rpEmpIn" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="สแกนบาร์โค้ดพนักงาน 8 หลัก (อ่านแค่ 4 หลักท้าย)" aria-label="บาร์โค้ดพนักงานประจำ 8 หลัก (อ่านแค่ 4 หลักท้าย)">
-                <div class="pmsg" id="rpEmpMsg" aria-live="polite"></div>
-              </div>
-              <div class="epane" id="ePanePt" hidden>
-                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
-                <div class="pmsg" id="ptMsg" aria-live="polite"></div>
-                <ul class="ptlist" id="ptList"></ul>
-                <div class="prow"><button id="ptPrintAll" class="mini" type="button">พิมพ์บัตรทั้งหมด</button></div>
-              </div>
+            <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button><button id="ptOpen" class="mini go" type="button" title="พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14" stroke-dasharray="14 0"/></svg>บาร์โค้ดพนักงาน</button></div>
+            <dialog id="ptDlg" class="askdlg ptdlg" aria-labelledby="ptTitle">
+              <h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3>
+              <p class="ptinfo">พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p>
+              <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
+              <div class="pmsg" id="ptMsg" aria-live="polite"></div>
+              <ul class="ptlist" id="ptList"></ul>
               <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
-            </section>
+              <div class="row"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptClose" type="button">ปิด</button></div>
+            </dialog>
             </div>
             <aside class="rpview" id="rpView" aria-label="ตัวอย่างใบที่จะพิมพ์">
               <div class="rphead"><b id="rpTitle"></b></div>
@@ -2403,7 +2399,7 @@ document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () 
 }));
 $('reprintDone').addEventListener('click', () => { collapseZoom(); exitReprint(); });
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
   if (zoomedEl) collapseZoom(); else if (reprintMode) exitReprint();
 });
 document.addEventListener('click', e => {          // capture phase: the first click outside only leaves the mode, it never reaches the control underneath
@@ -2429,17 +2425,7 @@ $('reprintClear').addEventListener('click', async () => {
    1 regular staff: scan the badge — 8 digits, only the last 4 are read (a 4-digit code works too); it signs that person in, exactly like the employee field of the main page.
    2 Part-Time staff: type a name, the system picks a free 4-digit number for it and shows it as a barcode (and prints a card); scanning that barcode signs the person in under the typed
      name. They live in their own store (ptime) — the regular roster is not touched. Scanning a badge in one of the two order fields of Re-Print lands here too. */
-const rpEmpIn = $('rpEmpIn'), ptName = $('ptName');
-let empTab = 'reg';
-function showEmpTab(t) {
-  empTab = t;
-  $('eTabReg').classList.toggle('on', t === 'reg'); $('eTabPt').classList.toggle('on', t === 'pt');
-  $('eTabReg').setAttribute('aria-selected', String(t === 'reg')); $('eTabPt').setAttribute('aria-selected', String(t === 'pt'));
-  $('ePaneReg').hidden = t !== 'reg'; $('ePanePt').hidden = t !== 'pt';
-  renderEmpBox(); (t === 'reg' ? rpEmpIn : ptName).focus();
-}
-$('eTabReg').addEventListener('click', () => showEmpTab('reg'));
-$('eTabPt').addEventListener('click', () => showEmpTab('pt'));
+const ptName = $('ptName');
 function pickEmp(raw, say) {                                               // sign an employee in from a badge scan (8 digits -> the last 4, or 4 digits); `say(kind, text)` shows the answer where the scan was made
   const v0 = String(raw).replace(/[^\d]/g, ''), v = EMP8_RE.test(v0) ? v0.slice(-4) : v0;
   if (!EMP_RE.test(v)) { sfx.bad(); say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); return false; }
@@ -2448,9 +2434,7 @@ function pickEmp(raw, say) {                                               // si
   say('ok', `✓ ผู้จัด ${v}` + (nameOfEmp(v) ? ' · ' + nameOfEmp(v) : '') + (v in ptime && !(v in roster) ? ' (Part-Time)' : ''));
   render(); return true;
 }
-function rpEmpScan(raw, alsoTop) {
-  pickEmp(raw, (kind, text) => { const m = $('rpEmpMsg'); m.className = 'pmsg ' + kind; m.textContent = text; if (alsoTop) sideMsg('reprint', kind, text); });
-}
+function rpEmpScan(raw) { pickEmp(raw, (kind, text) => sideMsg('reprint', kind, text)); }      // a badge scanned into an order field of Re-Print: the answer is shown under that field
 rpEmpScan.isBadge = raw => { const v = String(raw).trim(); return EMP_RE.test(v) || EMP8_RE.test(v); };
 /* the picker field of the orange Assign box: a badge code (8 digits -> last 4) signs that employee in; a typed name picks the regular / Part-Time person with that name,
    and when there is none a new Part-Time person is made (a free number is picked for it, see the green box of the Re-Print view). Orders cannot be Assigned before this. */
@@ -2524,9 +2508,9 @@ function addPartTime() {
 $('ptAdd').addEventListener('click', addPartTime);
 ptName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPartTime(); } });
 function renderEmpBox() {
-  if (!zoomedEl || !zoomedEl.classList.contains('purple')) return;          // the box only exists in the full-page Re-Print view
+  if (!$('ptDlg').open) return;                                            // only drawn while the Part-Time window is open
   const nm = state.emp ? nameOfEmp(state.emp) : '';
-  $('rpWho').textContent = state.emp ? T('ผู้จัดตอนนี้: ') + state.emp + (nm ? ' · ' + nm : '') : T('ยังไม่มีผู้จัด — สแกนบัตรพนักงาน');
+  $('rpWho').textContent = state.emp ? T('ผู้จัดตอนนี้: ') + state.emp + (nm ? ' · ' + nm : '') : T('ยังไม่มีผู้จัด');
   $('rpWhoClr').hidden = !state.emp;
   const ul = $('ptList'); ul.innerHTML = '';
   const ids = Object.keys(ptime).sort((a, b) => ptime[b].ts - ptime[a].ts);
@@ -2548,6 +2532,8 @@ function renderEmpBox() {
   });
 }
 $('rpWhoClr').addEventListener('click', () => { state.emp = null; save(); render(); });
+$('ptOpen').addEventListener('click', () => { $('ptMsg').textContent = ''; $('ptMsg').className = 'pmsg'; $('ptDlg').showModal(); renderEmpBox(); ptName.focus(); });
+$('ptClose').addEventListener('click', () => $('ptDlg').close());
 /* the Part-Time card: name, barcode and number, 2 cards across an A4 page */
 function ptCardsHtml(ids, interactive) {
   const cards = ids.filter(id => ptime[id]).map(id => { const n = ptime[id].name; return `<div class="ptc"><div class="ptn" style="font-size:${n.length > 12 ? 18 : n.length > 8 ? 24 : 30}pt">${xesc(n)}</div>${barcodeSvg(id, 0.6, 20, 'mm')}<div class="pti">${id}</div><div class="ptt">PART-TIME</div></div>`; }).join('');
@@ -2569,7 +2555,7 @@ async function printPtCards(ids) {
   printDoc(ptCardsHtml(ids, false));
 }
 $('ptPrintAll').addEventListener('click', () => printPtCards(Object.keys(ptime).sort((a, b) => ptime[a].ts - ptime[b].ts)));
-wire(rpEmpIn, /^(\d{4}|\d{8})$/); sideHandlers.set(rpEmpIn, rpEmpScan);
+
 
 /* ---------- นำไฟล์เข้า (green box): a file / pasted column of order numbers becomes rows in the scan list ----------
    The order column is the one whose cells look like orders; an employee column is used only when its header says so ("รหัสพนักงาน" / "Employee ID" …,
@@ -3105,15 +3091,15 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย', 'Click the sample sheet to print it right away', 'နမူနာစာရွက်ကို နှိပ်လျှင် ချက်ချင်း ပုံနှိပ်နိုင်သည်'],
-  ['1 พนักงานประจำ', '1 Regular staff', '၁ ပုံမှန်ဝန်ထမ်း'],
-  ['2 พนักงานชั่วคราว (Part-Time)', '2 Temporary staff (Part-Time)', '၂ ယာယီဝန်ထမ်း (Part-Time)'],
-  ['สแกนบาร์โค้ดพนักงาน 8 หลัก (อ่านแค่ 4 หลักท้าย)', 'Scan the 8-digit staff barcode (only the last 4 digits are read)', 'ဝန်ထမ်းဘားကုဒ် ၈ လုံး စကင်န်ဖတ်ပါ (နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
   ['พิมพ์ชื่อ เช่น วา', 'Type a name, e.g. Wa', 'နာမည်ရိုက်ပါ (ဥပမာ Wa)'],
   ['สร้างบาร์โค้ด', 'Make barcode', 'ဘားကုဒ်ပြုလုပ်ရန်'],
+  ['บาร์โค้ดพนักงาน', 'Staff barcode', 'ဝန်ထမ်းဘားကုဒ်'],
+  ['บาร์โค้ดพนักงานชั่วคราว (Part-Time)', 'Temporary staff barcode (Part-Time)', 'ယာယီဝန်ထမ်း ဘားကုဒ် (Part-Time)'],
+  ['พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)', 'Type a name, the system picks a number and makes a barcode — scan it anywhere and that name becomes the picker (the regular roster is not touched)', 'အမည်ရိုက်ပါ၊ စနစ်က နံပါတ်ရွေး၍ ဘားကုဒ်ပြုလုပ်ပေးသည် — ဘယ်နေရာမှာမဆို စကင်န်ဖတ်လျှင် ထိုအမည်သည် ပစ္စည်းကောက်သူဖြစ်သည် (ပုံမှန်စာရင်းကို မထိပါ)'],
+  ['ยังไม่มีผู้จัด', 'No picker yet', 'ပစ္စည်းကောက်သူ မရှိသေးပါ'],
   ['พิมพ์บัตรทั้งหมด', 'Print all cards', 'ကတ်အားလုံး ပုံနှိပ်ရန်'],
   ['พิมพ์บัตร', 'Print card', 'ကတ်ပုံနှိပ်ရန်'],
   ['เลขใหม่', 'New number', 'နံပါတ်အသစ်'],
-  ['ยังไม่มีผู้จัด — สแกนบัตรพนักงาน', 'No picker yet — scan a staff badge', 'ပစ္စည်းကောက်သူ မရှိသေးပါ — ဝန်ထမ်းကတ်ကို စကင်န်ဖတ်ပါ'],
   ['ยังไม่มีพนักงานชั่วคราว', 'No temporary staff yet', 'ယာယီဝန်ထမ်း မရှိသေးပါ'],
   ['โหมด Re-Print', 'Re-Print mode', 'Re-Print မုဒ်'],
   ['ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย', 'other functions are off — just scan', 'အခြားလုပ်ဆောင်ချက်များ ပိတ်ထားသည်၊ စကင်န်ဖတ်ရုံသာ'],
