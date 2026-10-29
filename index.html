@@ -283,9 +283,30 @@ td.x{width:34px;text-align:center}
 /* the green "พิมพ์ใบปะหน้า" box (printing + importing the orders), above the orange Assign box in the left column of the pair; its bar is solid green, like the print button it replaces */
 .tcol{display:flex;flex-direction:column;gap:8px;min-width:0}
 .panel.green{--g1:#ecfaf1;--g2:#d3f1df;--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;--glow:rgba(54,179,108,.24);--ok:#1f7a45;--warn:#8a5a00}
-.panel.green input[type=text].gbar{height:38px;color:#fff;border-color:transparent;background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);text-shadow:0 1px 1px rgba(8,60,30,.3)}
-.panel.green input[type=text].gbar::placeholder{color:#fff;opacity:.95;font-weight:800;font-size:14.5px}
-.panel.green input[type=text].gbar:focus{border-color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 38%,transparent),0 3px 10px rgba(31,138,79,.35)}
+.panel.green button.gbar{display:flex;align-items:center;gap:8px;width:100%;height:38px;padding:0 12px;border:0;border-radius:10px;text-align:left;color:#fff;font:800 15px/1.1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;
+  background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);text-shadow:0 1px 1px rgba(8,60,30,.3);cursor:pointer}
+.panel.green button.gbar svg{flex:none;width:18px;height:18px}
+.panel.green button.gbar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel.green button.gbar:hover:not(:disabled){background:linear-gradient(135deg,#3bb972,#23975a)}
+.panel.green button.gbar:disabled{opacity:.55;cursor:default}
+.panel.green button.gbar:focus-visible{outline:3px solid #fff;outline-offset:-1px;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 45%,transparent)}
+/* the window the green bar opens: ONE field, locked (no way to the print page) until a nickname is typed or a staff badge is scanned */
+.pdlg h3{margin:0 0 4px;font-size:20px}
+.pdlg .pdinfo{margin:0 0 12px;font-size:14px;color:var(--muted)}
+.pdlg .pdtabs{display:flex;gap:8px;margin-bottom:10px}
+.pdlg .pdtabs button{flex:1;padding:9px 10px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#175c37;font:800 14px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+.pdlg .pdtabs button.on{background:#1f9d57;border-color:#1f9d57;color:#fff}
+.pdlg .pdin{width:100%;height:52px;margin:0 0 8px;padding:0 14px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#1d2433;font:800 21px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
+.pdlg .pdin:focus{border-color:#36b36c;box-shadow:0 0 0 4px rgba(54,179,108,.28)}
+.pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:15px}
+.pdlg .pdmsg{display:flex;align-items:center;gap:8px;min-height:40px;margin-bottom:12px;padding:6px 10px;border-radius:10px;font-size:14px;font-weight:700;background:#fff3cd;color:#7a4b00}
+.pdlg .pdmsg svg{flex:none;width:18px;height:18px}
+.pdlg .pdmsg.ok{background:#e4f3ea;color:#1f7a45}
+.pdlg .pdmsg.bad{background:#fde3e3;color:#b42318}
+.pdlg .row{justify-content:flex-end;align-items:center}
+.pdlg .row .sp{flex:1}
+.pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px 2px}
+.pdlg #pdGo:disabled{opacity:.45}
 .panel.green .pmsg{min-height:18px;margin-top:4px;margin-bottom:4px}
 .panel.green .pmsg:empty{display:none}      /* the line is there only while it has something to say (this keeps the two columns of the page level) */
 .panel.green .impbox.flat{margin-top:6px}
@@ -657,8 +678,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
           <div class="tcol">
           <section class="panel green" id="printBox" aria-label="พิมพ์ใบปะหน้า">
             <div class="phead"><label for="printWho">พิมพ์ใบปะหน้า</label><span class="pright"><span class="pcount" id="printCount">0</span></span></div>
-            <input id="printWho" class="gbar" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด" aria-label="พิมพ์ใบปะหน้า: ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด (8 หลัก อ่านแค่ 4 หลักท้าย)">
-            <div class="pmsg" id="printMsg" aria-live="polite"></div>
+            <button id="printWho" class="gbar" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="printLbl">พิมพ์ใบปะหน้า</span></button>
             <section class="impbox flat" id="impBox" aria-label="นำไฟล์เข้า">
               <label class="idrop" id="impDrop" for="impFile" title="ใช้พนักงานที่เข้าระบบอยู่ หรือตามคอลัมน์ &quot;รหัสพนักงาน&quot; ในไฟล์ · ข้ามออเดอร์ที่ซ้ำ · ดูตัวอย่างก่อนนำเข้าทุกครั้ง">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
@@ -765,6 +785,15 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
   <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
 </dialog>
 
+
+<dialog id="printDlg" class="askdlg pdlg" aria-labelledby="pdTitle">
+  <h3 id="pdTitle">ใครเป็นผู้จัด?</h3>
+  <p class="pdinfo" id="pdInfo"></p>
+  <div class="pdtabs" role="tablist"><button id="pdScan" type="button" role="tab" class="on" aria-selected="true">1 สแกนรหัสพนักงาน</button><button id="pdName" type="button" role="tab" aria-selected="false">2 พิมพ์ชื่อเล่น</button></div>
+  <input id="pdIn" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)" aria-label="ผู้จัด: สแกนรหัสพนักงาน หรือพิมพ์ชื่อเล่น">
+  <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
+  <div class="row"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button><button id="pdGo" class="primary" type="button" disabled>ไปหน้าพิมพ์</button></div>
+</dialog>
 
 <div id="printView" hidden>
   <div class="pvbar">
@@ -2354,9 +2383,9 @@ function renderSide() {
     : (state.emp ? `Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` + (state.assignAutoPrint !== false ? ' · พิมพ์ทันที' : ' · เก็บแล้วพิมพ์ทีเดียว') : 'ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน');
   const na = new Set(state.assigns.map(a => a.order)).size;                  // the orders of the orange list that the "พิมพ์ใบปะหน้า" button prints in one go
   $('assignPrint').disabled = !na; $('assignPrint').textContent = na ? T('พิมพ์ใบปะหน้า ({0} ใบ)', na) : T('พิมพ์ใบปะหน้า');
-  const nAll = derive().unique, np = pendingOrders().length, pw = $('printWho');   // the green box: how many sheets there are, and how many of them still have no employee
-  $('printCount').textContent = nAll; pw.disabled = !nAll;
-  pw.placeholder = !nAll ? T('ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน') : np ? T('พิมพ์ใบปะหน้า ({0} ใบ) — ใส่ชื่อ/สแกนบาร์โค้ด', nAll) : T('พิมพ์ใบปะหน้า ({0} ใบ) — กด Enter', nAll);
+  const nAll = derive().unique;                                              // the green box: how many sheets there are (its bar opens the "who is the picker" window)
+  $('printCount').textContent = nAll; $('printWho').disabled = !nAll;
+  $('printLbl').textContent = nAll ? T('พิมพ์ใบปะหน้า ({0} ใบ)', nAll) : T('ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : '' });
@@ -2466,28 +2495,57 @@ function assignWhoGo(raw, say) {                                          // ret
   ptime[nid] = { name: s.slice(0, 40), ts: Date.now() }; savePt();
   return pickEmp(nid, (kind, text) => tell(kind, kind === 'ok' ? `${text} · ชื่อใหม่ → เลข ${nid}` : text));
 }
-/* the green "พิมพ์ใบปะหน้า" box: its bar first asks for the employee — a typed name, or the badge scanned (8 digits -> the last 4). That employee is given every order of the scan list
-   that has nobody yet (they are listed in the orange Assign box too, where each can be undone), and then the print page comes up by itself. When every order already has its
-   employee the bar just takes Enter. */
-const printWho = $('printWho');
+/* the green "พิมพ์ใบปะหน้า" bar: clicking it opens a window with ONE field and two ways to fill it — 1 scan a staff badge (8 digits -> the last 4), 2 type a nickname. The way to the print
+   page is locked ("ไปหน้าพิมพ์" stays dimmed) until a nickname is typed or a known badge is scanned. Then that employee is given every order of the scan list that has nobody yet (they are
+   listed in the orange Assign box too, where each can be undone) and the print page comes up by itself — a scan does it at once, a typed name with Enter / the button. */
 const pendingOrders = () => { const seen = new Set(); derive().rows.forEach(r => { if (!r.dup && !r.emp) seen.add(r.order); }); return [...seen]; };
-function printGo(raw) {
-  if (!derive().unique) return;
-  const say = (kind, text) => { const m = $('printMsg'); m.className = 'pmsg ' + kind; m.textContent = text; };
-  const s = String(raw).trim();
-  if (!s && pendingOrders().length) { sfx.bad(); say('bad', 'ใส่ชื่อ หรือสแกนบาร์โค้ดพนักงานก่อน'); return; }
-  if (s) {
-    if (!assignWhoGo(s, say)) return;                                       // an unknown code ...: the reason is shown and nothing else happens
-    const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
-    orders.forEach((o, i) => {
-      state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
-      state.assigns.push({ ts: now + i, order: o, emp, name, kind: 'fill', prev: null, rowTs: null });
-    });
-    if (orders.length) { save(); render(); say('ok', `✓ ${empLabel(emp, name)} · ${orders.length} ออเดอร์`); }
-  }
+const pdIn = $('pdIn');
+let pdWay = 'scan';
+const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG) ; m.appendChild(document.createTextNode(text)); }
+const pdReady = () => { const v = pdIn.value.trim(); return pdWay === 'scan' ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0; };
+function pdSync() {                                                        // the lock: "ไปหน้าพิมพ์" works only with something valid in the field
+  const ok = pdReady(); $('pdGo').disabled = !ok;
+  if (ok) pdSay('ok', pdWay === 'scan' ? 'พร้อมแล้ว — สแกนแล้วไปหน้าพิมพ์เอง (หรือกด "ไปหน้าพิมพ์")' : 'พร้อมแล้ว — กด Enter หรือ "ไปหน้าพิมพ์"');
+  else pdSay('', pdWay === 'scan' ? 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงานก่อน จึงไปหน้าพิมพ์ได้' : 'ล็อกอยู่ — พิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
+}
+function pdSetWay(w) {
+  pdWay = w; pdIn.value = '';
+  $('pdScan').classList.toggle('on', w === 'scan'); $('pdName').classList.toggle('on', w === 'name');
+  $('pdScan').setAttribute('aria-selected', String(w === 'scan')); $('pdName').setAttribute('aria-selected', String(w === 'name'));
+  pdIn.inputMode = w === 'scan' ? 'numeric' : 'text';
+  pdIn.placeholder = T(w === 'scan' ? 'สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)' : 'พิมพ์ชื่อเล่น เช่น วา');
+  pdSync(); pdIn.focus();
+}
+function openPrintDlg() {
+  const n = derive().unique; if (!n) return;
+  const np = pendingOrders().length;
+  $('pdInfo').textContent = np ? T('{0} ออเดอร์ยังไม่มีพนักงาน — จะให้คนที่เลือกเป็นผู้จัด แล้วเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ)', np, n) : T('ทุกออเดอร์มีพนักงานแล้ว');
+  $('pdSkip').hidden = np > 0;                                             // nothing to hand out: the window has nothing to wait for
+  $('printDlg').showModal(); pdSetWay('scan');
+}
+function pdSubmit(raw) {
+  const s = String(raw == null ? pdIn.value : raw).trim();
+  if (!s || !(pdWay === 'name' || EMP_RE.test(s) || EMP8_RE.test(s))) { sfx.bad(); pdSay('bad', pdWay === 'scan' ? 'สแกนบาร์โค้ดพนักงาน (4 หรือ 8 หลัก) ก่อน' : 'พิมพ์ชื่อเล่นก่อน'); return; }
+  if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; $('pdGo').disabled = true; return; }      // an unknown code: the reason stays on screen and the way on stays locked
+  const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
+  orders.forEach((o, i) => {
+    state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
+    state.assigns.push({ ts: now + i, order: o, emp, name, kind: 'fill', prev: null, rowTs: null });
+  });
+  if (orders.length) save();
+  $('printDlg').close(); render();
+  if (orders.length) sideMsg('assign', 'ok', `✓ ${empLabel(emp, name)} · ${orders.length} ออเดอร์`);
   openPrint('scan');
 }
-wire(printWho, /^(\d{4}|\d{8})$/); sideHandlers.set(printWho, printGo);
+$('printWho').addEventListener('click', openPrintDlg);
+$('pdScan').addEventListener('click', () => pdSetWay('scan'));
+$('pdName').addEventListener('click', () => pdSetWay('name'));
+$('pdCancel').addEventListener('click', () => $('printDlg').close());
+$('pdGo').addEventListener('click', () => pdSubmit());
+$('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
+pdIn.addEventListener('input', pdSync);
+wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);           // a scan (or Enter) goes straight on; a locked field never does
 assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = assignWho.value; assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
   for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
@@ -3287,9 +3345,15 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ขอบกระดาษใบปะหน้า', 'Cover sheet margin', 'အဖုံးစာရွက် အနားသတ်'],
   ['ใส่ชื่อ หรือสแกนรหัสพนักงาน', 'Type a name or scan the staff code', 'နာမည်ရိုက်ပါ သို့မဟုတ် ဝန်ထမ်းကုဒ်ကို စကင်န်ဖတ်ပါ'],
   ['ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด', 'Type the employee name or scan the barcode', 'ဝန်ထမ်းအမည် ရိုက်ပါ သို့မဟုတ် ဘားကုဒ်ကို စကင်န်ဖတ်ပါ'],
+  ['ใครเป็นผู้จัด?', 'Who is the picker?', 'ပစ္စည်းကောက်သူ ဘယ်သူလဲ?'],
+  ['1 สแกนรหัสพนักงาน', '1 Scan the staff code', '၁ ဝန်ထမ်းကုဒ် စကင်န်ဖတ်ရန်'],
+  ['2 พิมพ์ชื่อเล่น', '2 Type a nickname', '၂ အမည်ပြောင် ရိုက်ရန်'],
+  ['สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)', 'Scan the staff barcode (8 digits, only the last 4 are read)', 'ဝန်ထမ်းဘားကုဒ် စကင်န်ဖတ်ပါ (၈ လုံး၊ နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
+  ['ไปหน้าพิมพ์', 'Go to the print page', 'ပုံနှိပ်စာမျက်နှာသို့'],
+  ['ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย', 'Every order has its employee — go to the print page', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီ — ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['ทุกออเดอร์มีพนักงานแล้ว', 'Every order already has its employee', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီးဖြစ်သည်'],
+  ['{0} ออเดอร์ยังไม่มีพนักงาน — จะให้คนที่เลือกเป็นผู้จัด แล้วเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ)', '{0} orders have no employee yet — the person you pick becomes their picker, then the print page ({1} sheets) opens', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိသေးပါ — ရွေးထားသူကို ပစ္စည်းကောက်သူအဖြစ် သတ်မှတ်ပြီး ပုံနှိပ်စာမျက်နှာ ({1} ရွက်) ဖွင့်ပါမည်'],
   ['ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน', 'No orders to print yet — scan or import a file first', 'ပုံနှိပ်ရန် အော်ဒါ မရှိသေးပါ — အရင်စကင်န်ဖတ်ပါ သို့မဟုတ် ဖိုင်ထည့်ပါ'],
-  ['พิมพ์ใบปะหน้า ({0} ใบ) — ใส่ชื่อ/สแกนบาร์โค้ด', 'Print cover sheets ({0}) — type a name / scan', 'အဖုံးစာရွက် ({0} ရွက်) ပုံနှိပ်ရန် — နာမည်ရိုက်/စကင်န်ဖတ်ပါ'],
-  ['พิมพ์ใบปะหน้า ({0} ใบ) — กด Enter', 'Print cover sheets ({0}) — press Enter', 'အဖုံးစာရွက် ({0} ရွက်) ပုံနှိပ်ရန် — Enter နှိပ်ပါ'],
   ['พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)', 'Print the cover sheet at once when scanned in Assign (numbers ending in A / B)', 'Assign တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို ချက်ချင်း ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['2 มม. (ชิดขอบสุด)', '2 mm (tightest)', '၂ မီလီမီတာ (အကပ်ဆုံး)'],
   ['3 มม.', '3 mm', '၃ မီလီမီတာ'],
