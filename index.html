@@ -128,7 +128,10 @@ main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:18px;a
 .card.compact details.settings summary{cursor:pointer;font-weight:600;padding:3px 4px}
 .card.compact details.settings[open]{margin-left:0;flex:1 1 100%}
 .card.compact details.settings .row{margin-top:8px}
-.card.fill{flex:0 0 auto}      /* (it used to stretch down to the left column; the user then asked for smaller orange / purple boxes, so the card now just wraps them) */
+/* the right column is built to end level with the left one: the card with the orange / purple boxes takes up the little height that is left (its boxes stretch with it), so the
+   buttons / settings card under it ends on the same bottom edge as "ส่งออก" on the left. Opening the settings only makes the right column longer — the left one is not touched. */
+.card.fill{flex:1 1 auto;display:flex;flex-direction:column}
+.card.fill > .twin{flex:1 1 auto}
 /* the orange / purple boxes keep their own (small) height; only the white card around them stretches to meet the left column */
 .sec{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -566,44 +569,6 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <p class="hint" id="pasteHint"></p>
       </div>
 
-      <div class="card compact">
-        <div class="row">
-          <button id="btnUndo" type="button">ลบรายการล่าสุด</button>
-          <button id="btnClear" class="danger" type="button">ล้างข้อมูลทั้งหมด</button>
-          <button id="btnRestore" type="button" hidden>กู้คืนที่เพิ่งล้าง</button>
-          <details class="settings">
-            <summary>ตั้งค่า</summary>
-            <div class="row">
-              <label>ใบต่อชุด <input id="optSize" type="number" min="1" max="200"></label>
-              <label><input id="optSound" type="checkbox"> เสียงบี๊บ</label>
-            </div>
-            <div class="row">
-              <label>เสียงสแกน <select id="optBeep">
-                <option value="p1">คมสูง (2.7 kHz)</option>
-                <option value="p2">กลาง (2.0 kHz)</option>
-                <option value="p3">สั้นแหลม (3.5 kHz)</option>
-                <option value="p4">ยาว (2.4 kHz)</option>
-                <option value="p5">นุ่ม (1.8 kHz)</option>
-                <option value="r1">เสียงจริง: เครื่องแคชเชียร์ #1</option>
-                <option value="r2">เสียงจริง: เครื่องแคชเชียร์ #2 (สั้น)</option>
-              </select></label>
-              <label>ความดัง <select id="optVol"><option value="low">เบา</option><option value="mid">กลาง</option><option value="high">ดัง</option></select></label>
-            </div>
-            <div class="row">
-              <label><input id="optStrict" type="checkbox"> รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน</label>
-            </div>
-            <div class="row">
-              <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
-            </div>
-            <div class="row">
-              <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
-            </div>
-            <div class="row">
-              <label>ขอบกระดาษใบปะหน้า <select id="optMargin"><option value="2">2 มม. (ชิดขอบสุด)</option><option value="3">3 มม.</option><option value="4">4 มม.</option><option value="5">5 มม.</option></select></label>
-            </div>
-          </details>
-        </div>
-      </div>
     </section>
 
     <section class="stack">
@@ -659,6 +624,44 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <div class="rpbox" id="rpBox" data-notr></div>
             </aside>
           </section>
+        </div>
+      </div>
+      <div class="card compact" id="toolCard">
+        <div class="row">
+          <button id="btnUndo" type="button">ลบรายการล่าสุด</button>
+          <button id="btnClear" class="danger" type="button">ล้างข้อมูลทั้งหมด</button>
+          <button id="btnRestore" type="button" hidden>กู้คืนที่เพิ่งล้าง</button>
+          <details class="settings">
+            <summary>ตั้งค่า</summary>
+            <div class="row">
+              <label>ใบต่อชุด <input id="optSize" type="number" min="1" max="200"></label>
+              <label><input id="optSound" type="checkbox"> เสียงบี๊บ</label>
+            </div>
+            <div class="row">
+              <label>เสียงสแกน <select id="optBeep">
+                <option value="p1">คมสูง (2.7 kHz)</option>
+                <option value="p2">กลาง (2.0 kHz)</option>
+                <option value="p3">สั้นแหลม (3.5 kHz)</option>
+                <option value="p4">ยาว (2.4 kHz)</option>
+                <option value="p5">นุ่ม (1.8 kHz)</option>
+                <option value="r1">เสียงจริง: เครื่องแคชเชียร์ #1</option>
+                <option value="r2">เสียงจริง: เครื่องแคชเชียร์ #2 (สั้น)</option>
+              </select></label>
+              <label>ความดัง <select id="optVol"><option value="low">เบา</option><option value="mid">กลาง</option><option value="high">ดัง</option></select></label>
+            </div>
+            <div class="row">
+              <label><input id="optStrict" type="checkbox"> รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน</label>
+            </div>
+            <div class="row">
+              <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
+            </div>
+            <div class="row">
+              <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
+            </div>
+            <div class="row">
+              <label>ขอบกระดาษใบปะหน้า <select id="optMargin"><option value="2">2 มม. (ชิดขอบสุด)</option><option value="3">3 มม.</option><option value="4">4 มม.</option><option value="5">5 มม.</option></select></label>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -2201,7 +2204,7 @@ function renderSide() {
 /* Re-Print mode: clicking into the purple field greys out and disables everything else, so a scan can only land here.
    Leave with Esc, the "เสร็จสิ้น" button, or a click anywhere outside the purple box. */
 const lockTargets = () => [document.querySelector('header.top'), document.querySelector('main > .stack:first-child'),
-  document.querySelector('main > .stack:nth-child(2) > .card:first-child'), document.querySelector('.panel.orange')];
+  document.querySelector('main > .stack:nth-child(2) > .card:first-child'), document.querySelector('.panel.orange'), $('toolCard')];
 function enterReprint() {
   if (reprintMode) return; reprintMode = true;
   lockTargets().forEach(el => { el.inert = true; el.classList.add('dimmed'); });
