@@ -1458,17 +1458,22 @@ $('btnAssign').addEventListener('click', async () => {
 });
 
 function hasBackup() { try { return !!localStorage.getItem(LS_BAK); } catch (_) { return false; } }
+// "ล้างข้อมูลทั้งหมด" wipes the scan list AND the orange Assign list and the purple Re-Print list; the one backup holds all three so "กู้คืนที่เพิ่งล้าง" brings them back together
 $('btnClear').addEventListener('click', async () => {
-  if (!state.rows.length) return;
-  if (!await ask(`ล้างรายการสแกนทั้งหมด ${state.rows.length} รายการ?\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)`)) return;
-  try { localStorage.setItem(LS_BAK, JSON.stringify(state.rows)); } catch (_) {}
-  state.rows = []; selBatch = null; listFilter = null; state.finished = false; save(); render(); toast('ล้างแล้ว'); focusNext();
+  const nr = state.rows.length, na = state.assigns.length, np = state.reprints.length;
+  if (!nr && !na && !np) return;
+  if (!await ask(`ล้างข้อมูลทั้งหมด?\nรายการสแกน ${nr} · Assign ${na} · Re-Print ${np}\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)`)) return;
+  try { localStorage.setItem(LS_BAK, JSON.stringify({ rows: state.rows, assigns: state.assigns, reprints: state.reprints })); } catch (_) {}
+  state.rows = []; state.assigns = []; state.reprints = []; pairWait = null; previewPair = null; previewOrder = null;
+  selBatch = null; listFilter = null; state.finished = false; save(); render(); toast('ล้างแล้ว'); focusNext();
 });
 $('btnRestore').addEventListener('click', async () => {
   try {
-    const rows = JSON.parse(localStorage.getItem(LS_BAK) || 'null');
-    if (Array.isArray(rows) && (!state.rows.length || await ask('รายการปัจจุบันจะถูกแทนที่ ตกลงไหม?'))) {
-      state.rows = rows; state.finished = false; localStorage.removeItem(LS_BAK); save(); render(); toast('กู้คืนแล้ว');
+    const bak = JSON.parse(localStorage.getItem(LS_BAK) || 'null');
+    const b = Array.isArray(bak) ? { rows: bak } : bak;                    // an older backup is just the scan rows
+    if (b && Array.isArray(b.rows) && (!(state.rows.length || state.assigns.length || state.reprints.length) || await ask('รายการปัจจุบันจะถูกแทนที่ ตกลงไหม?'))) {
+      state.rows = b.rows; state.assigns = Array.isArray(b.assigns) ? b.assigns : []; state.reprints = Array.isArray(b.reprints) ? b.reprints : [];
+      state.finished = false; localStorage.removeItem(LS_BAK); save(); render(); toast('กู้คืนแล้ว');
     }
   } catch (_) {}
 });
@@ -3074,7 +3079,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เสียงบี๊บ', 'Beep sound', 'ဘီပ်အသံ'],
   ['รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน', 'Accept only IDs in the employee list', 'ဝန်ထမ်းစာရင်းထဲရှိ ကုဒ်များကိုသာ လက်ခံမည်'],
   ['ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print', 'Go full screen automatically when the Assign / Re-Print field is clicked', 'Assign / Re-Print ကွက်ကို နှိပ်လျှင် စာမျက်နှာအပြည့် အလိုအလျောက် ချဲ့မည်'],
-  ['ล้างรายการสแกนทั้งหมด {0} รายการ?\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)', 'Clear all {0} scan entries?\n(Export Excel first if you need it — if you slip, press "Restore what was just cleared")', 'စကင်န်စာရင်း {0} ခုလုံးကို ရှင်းလင်းမလား?\n(လိုအပ်ပါက Excel ကို ဦးစွာ ထုတ်ယူပါ — မှားသွားပါက "ရှင်းလင်းထားသည်ကို ပြန်ယူရန်" ကိုနှိပ်ပါ)'],
+  ['ล้างข้อมูลทั้งหมด?\nรายการสแกน {0} · Assign {1} · Re-Print {2}\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)', 'Clear all data?\nScan list {0} · Assign {1} · Re-Print {2}\n(Export Excel first if you need it — if you slip, press "Restore what was just cleared")', 'ဒေတာအားလုံးကို ရှင်းလင်းမလား?\nစကင်န်စာရင်း {0} · Assign {1} · Re-Print {2}\n(လိုအပ်ပါက Excel ကို ဦးစွာ ထုတ်ယူပါ — မှားသွားပါက "ရှင်းလင်းထားသည်ကို ပြန်ယူရန်" ကိုနှိပ်ပါ)'],
   ['รายการปัจจุบันจะถูกแทนที่ ตกลงไหม?', 'The current list will be replaced. OK?', 'လက်ရှိစာရင်းကို အစားထိုးမည်၊ ရပါသလား?'],
   ['ล้างแล้ว', 'Cleared', 'ရှင်းလင်းပြီးပါပြီ'],
   ['กู้คืนแล้ว', 'Restored', 'ပြန်ယူပြီးပါပြီ'],
