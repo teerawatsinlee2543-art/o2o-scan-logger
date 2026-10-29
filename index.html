@@ -2321,7 +2321,9 @@ function printDoc(html, prep) {                                          // a co
   f.srcdoc = html; document.body.appendChild(f);
 }
 function printSheets(rows) {                                               // a row = one order on both slips, [row, row] = two orders on one page
-  printDoc(printFileHtml(rows.map(r => Array.isArray(r) ? sheetHtml(r[0], r[1] || null) : sheetHtml(r)).join(''), false), f => fitSheets(f.contentDocument));
+  const sheets = rows.map(r => Array.isArray(r) ? sheetHtml(r[0], r[1] || null) : sheetHtml(r)).join('');
+  if (!sheets) return;                                                     // no order number anywhere: nothing is printed
+  printDoc(printFileHtml(sheets, false), f => fitSheets(f.contentDocument));
 }
 async function printOrder(order) {                                         // the "พิมพ์ใบนี้" button and the automatic print both come here
   if (IN_VIEWER) {                                                         // the claude.ai web copy cannot open the print window: save a file that prints when opened
@@ -2858,8 +2860,10 @@ function sheetHtml(r, r2) {                       // r2: undefined = the same or
       <div class="s-right"><div class="s-slot"${slotStyle(inf.time)}><div class="fit" data-fit="27">${xesc(inf.time || '')}</div></div><div class="s-picker"><div class="fit" data-fit="54">${xesc(picker)}</div></div></div>
     </div></div>`;
   };
+  if (!r || !r.order) return '';                                            // no order number: there is nothing to print (no "undefined" sheet)
+  if (typeof r2 === 'number') r2 = undefined;                              // (so that rows.map(sheetHtml), which passes the index, can never put a stray slip on the page)
   const top = slipOf(r);
-  return `<section class="sheet" style="--m:${sheetMargin()}mm">${top}${r2 === undefined ? top : r2 ? slipOf(r2) : '<div class="slip"></div>'}</section>`;
+  return `<section class="sheet" style="--m:${sheetMargin()}mm">${top}${r2 === undefined ? top : r2 && r2.order ? slipOf(r2) : '<div class="slip"></div>'}</section>`;
 }
 function fitSheets(root) {                                                  // self-contained: its source text is also put into the saved print file
   root.querySelectorAll('[data-fit]').forEach(el => {
@@ -2923,12 +2927,12 @@ ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(
 }
 let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green box); 'assign' = the orders of the orange Assign list
 const pvRows = () => {
-  if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
-  const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b));
+  if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
+  const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => r.order && !r.dup && (b === 'all' || r.batch === +b));
 };
 function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
-  $('pvPages').innerHTML = rows.map(sheetHtml).join(''); fitSheets($('pvPages'));
+  $('pvPages').innerHTML = rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
   $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
   $('pvNote').textContent = miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '';
   $('pvPrint').disabled = !rows.length;
