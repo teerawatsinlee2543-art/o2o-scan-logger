@@ -2129,8 +2129,8 @@ function reprintRow(order) {                                               // wh
 }
 function fitRpView() {
   const box = $('rpBox'), w = box.querySelector('.rpwrap'); if (!w) return;
-  const s = Math.min(box.clientWidth / 794, box.clientHeight / 1119, 1.25);
-  w.style.width = Math.floor(794 * s) + 'px'; w.style.height = Math.floor(1119 * s) + 'px'; w.firstElementChild.style.transform = `scale(${s})`;
+  const s = Math.min(box.clientWidth / 794, box.clientHeight / 1122, 1.25);
+  w.style.width = Math.floor(794 * s) + 'px'; w.style.height = Math.floor(1122 * s) + 'px'; w.firstElementChild.style.transform = `scale(${s})`;
 }
 function renderRpView() {
   if (!document.querySelector('.panel.purple').classList.contains('zoomed')) return;
@@ -2457,9 +2457,11 @@ function fitSheets(root) {                                                  // s
     if (w > 0 && s > w) el.style.fontSize = (max * w / s * 0.97).toFixed(2) + 'pt';
   });
 }
-const SHEET_CSS = `.sheet{width:210mm;height:296mm;margin:14px auto;background:#fff;color:#111;box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;break-after:page;font-family:Prompt,Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.slip{height:148mm;padding:5mm 8mm;display:flex;flex-direction:column;box-sizing:border-box}
-.slip + .slip{border-top:1px dashed #999}
+/* A4 = 297 mm: the sheet is 296.8 mm (a hair less, so the printer never pushes a blank page) and each slip 148.4 mm, so the dashed line between the slips is on the middle of the paper — fold there.
+   --m is the white margin left round the slips (the printer's own unprintable edge is about 3-4 mm, so go below 4 mm only if the printer allows it) */
+const SHEET_CSS = `.sheet{--m:4mm;width:210mm;height:296.8mm;margin:14px auto;background:#fff;color:#111;box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;break-after:page;font-family:Prompt,Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.slip{height:148.4mm;padding:var(--m);display:flex;flex-direction:column;box-sizing:border-box}
+.slip + .slip{border-top:1px dashed #777;padding-top:calc(var(--m) - 1px)}
 .fit{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-align:center;line-height:1.35}
 .s-head{display:grid;grid-template-columns:62mm 1fr;grid-template-rows:16mm 19mm;border:1px solid #444}
 .s-lc{grid-row:1 / span 2;display:flex;flex-direction:column;justify-content:center;gap:.5mm;padding:0 2mm;min-width:0;border-right:1px solid #444}
