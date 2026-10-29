@@ -280,6 +280,17 @@ td.x{width:34px;text-align:center}
   --card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--orange:#c75a0b;--purple:#6d3fd0;
   padding:10px 12px;min-width:0;border-radius:14px;color:var(--pt);border:1px solid var(--pbd);
   background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px var(--glow)}
+/* the green "พิมพ์ใบปะหน้า" box (printing + importing the orders), above the orange Assign box in the left column of the pair; its bar is solid green, like the print button it replaces */
+.tcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.panel.green{--g1:#ecfaf1;--g2:#d3f1df;--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;--glow:rgba(54,179,108,.24);--ok:#1f7a45;--warn:#8a5a00}
+.panel.green input[type=text].gbar{height:38px;color:#fff;border-color:transparent;background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);text-shadow:0 1px 1px rgba(8,60,30,.3)}
+.panel.green input[type=text].gbar::placeholder{color:#fff;opacity:.95;font-weight:800;font-size:14.5px}
+.panel.green input[type=text].gbar:focus{border-color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 38%,transparent),0 3px 10px rgba(31,138,79,.35)}
+.panel.green .pmsg{min-height:18px;margin-top:4px;margin-bottom:4px}
+.panel.green .pmsg:empty{display:none}      /* the line is there only while it has something to say (this keeps the two columns of the page level) */
+.panel.green .impbox.flat{margin-top:6px}
+.panel.green .phead{margin-bottom:4px}
+.impbox.flat{margin:0;padding:0;border:0;border-radius:0;background:none}
 .panel.purple{--g1:#f3edff;--g2:#e0d5ff;--pt:#43288f;--pbd:#cfc1f6;--dot:#8b6ce2;--glow:rgba(139,108,226,.24);--k:var(--purple)}
 /* green pastel "นำไฟล์เข้า" box nested inside the orange Assign box, under its scan field (it inherits the pinned light tokens of .panel) */
 .impbox{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;--ok:#1f7a45;--warn:#8a5a00;margin:0 0 8px;padding:8px 10px;border-radius:12px;color:var(--pt);
@@ -513,15 +524,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .askdlg::backdrop{background:rgba(16,24,40,.55)}
 .askdlg p{margin:0 0 16px;font-size:15px;line-height:1.55;white-space:pre-line}
 .askdlg .row{justify-content:flex-end}
-/* the "Assign งาน" window (the green button in the orange box): the employee's name or badge first, then the cover sheets come up */
-.agdlg h3{margin:0 0 4px;font-size:20px}
-.agdlg .aginfo{margin:0 0 12px;font-size:14px;color:var(--muted)}
-.agdlg .agin{width:100%;height:50px;margin:0 0 8px;padding:0 14px;border-radius:12px;border:2px solid #a9dcbe;background:#fff;color:#1d2433;font:800 20px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
-.agdlg .agin:focus{border-color:#36b36c;box-shadow:0 0 0 4px rgba(54,179,108,.28)}
-.agdlg .agin::placeholder{color:#8a93a3;font-weight:600;font-size:16px}
-.agdlg .agmsg{min-height:22px;margin-bottom:10px;font-size:14px;font-weight:700}
-.agdlg .agmsg.bad{color:var(--bad)}
-.agdlg .agmsg.ok{color:var(--ok)}
+
 /* ---- cover-sheet print view: 2 identical slips per A4 page, like the printed ones ---- */
 #printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#5b6472}
 #printView[hidden]{display:none}
@@ -651,14 +654,12 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       </div>
       <div class="card fill">
         <div class="twin">
-          <section class="panel orange" aria-label="Assign งาน">
-            <div class="phead"><label for="assignIn">Assign งาน</label><span class="pright"><span class="pcount" id="assignCount">0</span><button class="pzoom" id="assignZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
-            <input id="assignWho" class="aw" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อ หรือสแกนรหัสพนักงาน" aria-label="ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)">
-            <input id="assignIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะ Assign" aria-label="Assign งาน: เลขออเดอร์">
-            <div class="pmsg" id="assignMsg" aria-live="polite"></div>
-            <p class="phint" id="assignHint"></p>
-            <section class="impbox" id="impBox" aria-label="นำไฟล์เข้า">
-              <div class="phead"><label for="impFile">นำไฟล์เข้า</label></div>
+          <div class="tcol">
+          <section class="panel green" id="printBox" aria-label="พิมพ์ใบปะหน้า">
+            <div class="phead"><label for="printWho">พิมพ์ใบปะหน้า</label><span class="pright"><span class="pcount" id="printCount">0</span></span></div>
+            <input id="printWho" class="gbar" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด" aria-label="พิมพ์ใบปะหน้า: ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด (8 หลัก อ่านแค่ 4 หลักท้าย)">
+            <div class="pmsg" id="printMsg" aria-live="polite"></div>
+            <section class="impbox flat" id="impBox" aria-label="นำไฟล์เข้า">
               <label class="idrop" id="impDrop" for="impFile" title="ใช้พนักงานที่เข้าระบบอยู่ หรือตามคอลัมน์ &quot;รหัสพนักงาน&quot; ในไฟล์ · ข้ามออเดอร์ที่ซ้ำ · ดูตัวอย่างก่อนนำเข้าทุกครั้ง">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
                 <span><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><small>.xlsx · .csv · .txt · หรือกด Ctrl+V วางจาก Excel</small></span>
@@ -667,12 +668,19 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <div class="impprev" id="impPrev" aria-live="polite" hidden></div>
               <div class="prow" id="impRow" hidden><button id="impApply" class="mini go" type="button">นำเข้า</button><button id="impCancel" class="mini" type="button">ยกเลิก</button></div>
               <p class="phint" id="impHint"></p>
-              <div class="prow agrow"><button id="assignGo" class="mini go" type="button" disabled>Assign งาน</button></div>
-              <div class="prow"><button id="impPrint" class="mini go" type="button">พิมพ์ใบปะหน้า</button><button id="impUndo" class="mini danger" type="button" hidden>ย้อนการนำเข้าล่าสุด</button></div>
+              <div class="prow"><button id="impUndo" class="mini danger" type="button" hidden>ย้อนการนำเข้าล่าสุด</button></div>
             </section>
+          </section>
+          <section class="panel orange" aria-label="Assign งาน">
+            <div class="phead"><label for="assignIn">Assign งาน</label><span class="pright"><span class="pcount" id="assignCount">0</span><button class="pzoom" id="assignZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
+            <input id="assignWho" class="aw" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อ หรือสแกนรหัสพนักงาน" aria-label="ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)">
+            <input id="assignIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะ Assign" aria-label="Assign งาน: เลขออเดอร์">
+            <div class="pmsg" id="assignMsg" aria-live="polite"></div>
+            <p class="phint" id="assignHint"></p>
             <ul class="plist" id="assignList"></ul>
             <div class="prow"><button id="assignPrint" class="mini go" type="button" disabled>พิมพ์ใบปะหน้า</button><button id="assignCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="assignClear" class="mini danger" type="button">ล้างรายการ</button></div>
           </section>
+          </div>
           <section class="panel purple" aria-label="Re-Print ใบปะหน้า">
             <div class="pleft">
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
@@ -757,13 +765,6 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
   <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
 </dialog>
 
-<dialog id="assignDlg" class="askdlg agdlg" aria-labelledby="agTitle">
-  <h3 id="agTitle">Assign งาน</h3>
-  <p class="aginfo" id="agInfo"></p>
-  <input id="agWho" class="agin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด" aria-label="ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด (8 หลัก อ่านแค่ 4 หลักท้าย)">
-  <div class="agmsg" id="agMsg" aria-live="polite"></div>
-  <div class="row"><button id="agCancel" type="button">ยกเลิก</button></div>
-</dialog>
 
 <div id="printView" hidden>
   <div class="pvbar">
@@ -2353,9 +2354,9 @@ function renderSide() {
     : (state.emp ? `Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` + (state.assignAutoPrint !== false ? ' · พิมพ์ทันที' : ' · เก็บแล้วพิมพ์ทีเดียว') : 'ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน');
   const na = new Set(state.assigns.map(a => a.order)).size;                  // the orders of the orange list that the "พิมพ์ใบปะหน้า" button prints in one go
   $('assignPrint').disabled = !na; $('assignPrint').textContent = na ? T('พิมพ์ใบปะหน้า ({0} ใบ)', na) : T('พิมพ์ใบปะหน้า');
-  const np = pendingOrders().length;                                         // orders of the scan list that still have no employee: what the green "Assign งาน" button hands out
-  $('assignGo').disabled = !np || fin; $('assignGo').textContent = np ? T('Assign งาน ({0} ใบ)', np) : T('Assign งาน');
-  $('assignGo').title = fin ? T('สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน') : np ? '' : T('ไม่มีออเดอร์ที่ยังไม่ระบุพนักงาน');
+  const nAll = derive().unique, np = pendingOrders().length, pw = $('printWho');   // the green box: how many sheets there are, and how many of them still have no employee
+  $('printCount').textContent = nAll; pw.disabled = !nAll;
+  pw.placeholder = !nAll ? T('ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน') : np ? T('พิมพ์ใบปะหน้า ({0} ใบ) — ใส่ชื่อ/สแกนบาร์โค้ด', nAll) : T('พิมพ์ใบปะหน้า ({0} ใบ) — กด Enter', nAll);
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : '' });
@@ -2368,7 +2369,7 @@ function renderSide() {
 /* Re-Print mode: clicking into the purple field greys out and disables everything else, so a scan can only land here.
    Leave with Esc, the "เสร็จสิ้น" button, or a click anywhere outside the purple box. */
 const lockTargets = () => [document.querySelector('header.top'), document.querySelector('main > .stack:first-child'),
-  document.querySelector('main > .stack:nth-child(2) > .card:first-child'), document.querySelector('.panel.orange'), $('toolCard')];
+  document.querySelector('main > .stack:nth-child(2) > .card:first-child'), document.querySelector('.panel.orange'), $('printBox'), $('toolCard')];
 function enterReprint() {
   if (reprintMode) return; reprintMode = true;
   lockTargets().forEach(el => { el.inert = true; el.classList.add('dimmed'); });
@@ -2465,31 +2466,28 @@ function assignWhoGo(raw, say) {                                          // ret
   ptime[nid] = { name: s.slice(0, 40), ts: Date.now() }; savePt();
   return pickEmp(nid, (kind, text) => tell(kind, kind === 'ok' ? `${text} · ชื่อใหม่ → เลข ${nid}` : text));
 }
-/* the green "Assign งาน" button: it asks for the employee first (a typed name, or the badge scanned), gives that employee every order of the scan list that has nobody yet,
-   and brings up the print page with exactly those cover sheets. */
-const agWho = $('agWho');
+/* the green "พิมพ์ใบปะหน้า" box: its bar first asks for the employee — a typed name, or the badge scanned (8 digits -> the last 4). That employee is given every order of the scan list
+   that has nobody yet (they are listed in the orange Assign box too, where each can be undone), and then the print page comes up by itself. When every order already has its
+   employee the bar just takes Enter. */
+const printWho = $('printWho');
 const pendingOrders = () => { const seen = new Set(); derive().rows.forEach(r => { if (!r.dup && !r.emp) seen.add(r.order); }); return [...seen]; };
-function openAssignDlg() {
-  const n = pendingOrders().length; if (!n || state.finished) return;
-  $('agInfo').textContent = T('จะ Assign {0} ออเดอร์ที่ยังไม่ระบุพนักงาน แล้วเปิดหน้าพิมพ์ใบปะหน้าให้เลย', n);
-  $('agMsg').textContent = ''; $('agMsg').className = 'agmsg'; agWho.value = '';
-  $('assignDlg').showModal(); agWho.focus();
+function printGo(raw) {
+  if (!derive().unique) return;
+  const say = (kind, text) => { const m = $('printMsg'); m.className = 'pmsg ' + kind; m.textContent = text; };
+  const s = String(raw).trim();
+  if (!s && pendingOrders().length) { sfx.bad(); say('bad', 'ใส่ชื่อ หรือสแกนบาร์โค้ดพนักงานก่อน'); return; }
+  if (s) {
+    if (!assignWhoGo(s, say)) return;                                       // an unknown code ...: the reason is shown and nothing else happens
+    const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
+    orders.forEach((o, i) => {
+      state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
+      state.assigns.push({ ts: now + i, order: o, emp, name, kind: 'fill', prev: null, rowTs: null });
+    });
+    if (orders.length) { save(); render(); say('ok', `✓ ${empLabel(emp, name)} · ${orders.length} ออเดอร์`); }
+  }
+  openPrint('scan');
 }
-function agSubmit(raw) {
-  const say = (kind, text) => { $('agMsg').className = 'agmsg ' + kind; $('agMsg').textContent = text; };
-  if (!assignWhoGo(raw, say)) return;                                       // not signed in (unknown code, ...): the window stays open with the reason
-  const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
-  orders.forEach((o, i) => {
-    state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
-    state.assigns.push({ ts: now + i, order: o, emp, name, kind: 'fill', prev: null, rowTs: null });       // listed in the orange box and undoable there
-  });
-  save(); $('assignDlg').close(); render();
-  sideMsg('assign', 'ok', `✓ Assign ${orders.length} ออเดอร์ → ${empLabel(emp, name)}`);
-  pvOrders = orders; openPrint('orders');
-}
-$('assignGo').addEventListener('click', openAssignDlg);
-$('agCancel').addEventListener('click', () => $('assignDlg').close());
-wire(agWho, /^(\d{4}|\d{8})$/); sideHandlers.set(agWho, agSubmit);
+wire(printWho, /^(\d{4}|\d{8})$/); sideHandlers.set(printWho, printGo);
 assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = assignWho.value; assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
   for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
@@ -2628,7 +2626,6 @@ function renderImport() {
   const li = lastImport, n = li ? li.orders.length : 0;
   const canUndo = !!li && !fin && state.rows.length === li.from + n && li.orders.every((o, i) => state.rows[li.from + i].order === o);
   $('impUndo').hidden = !canUndo; if (canUndo) $('impUndo').textContent = T('ย้อนการนำเข้าล่าสุด ({0} ออเดอร์)', n);
-  const nu = derive().unique; $('impPrint').disabled = !nu; $('impPrint').textContent = nu ? T('พิมพ์ใบปะหน้า ({0} ใบ)', nu) : T('พิมพ์ใบปะหน้า');
   if (!p) { prev.hidden = true; prev.innerHTML = ''; $('impRow').hidden = true; return; }
   prev.hidden = false; $('impRow').hidden = false;
   const apply = $('impApply'); apply.hidden = !!p.error; apply.disabled = true;
@@ -2901,10 +2898,8 @@ ${sheets}
 window.addEventListener('load',function(){fitSheets(document);if(document.fonts)document.fonts.ready.then(function(){fitSheets(document)})})<\/script>
 ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(function(){window.print()},600)})<\/script>' : ''}</body></html>`;
 }
-let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green button); 'assign' = the orders of the orange Assign list; 'orders' = the orders just given to an employee (pvOrders)
-let pvOrders = [];
+let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green box); 'assign' = the orders of the orange Assign list
 const pvRows = () => {
-  if (pvMode === 'orders') return pvOrders.map(reprintRow);
   if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
   const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b));
 };
@@ -2924,10 +2919,9 @@ function pvRender() {
   ensureInfo(need).then(() => { if (!$('printView').hidden) pvDraw(); });
 }
 function openPrint(mode) {
-  pvMode = mode === 'assign' || mode === 'orders' ? mode : 'scan';
+  pvMode = mode === 'assign' ? 'assign' : 'scan';
   const d = derive(), sel = $('pvBatch'); sel.innerHTML = '';
-  if (pvMode === 'orders') { if (!pvOrders.length) return; }
-  else if (pvMode === 'assign') { if (!state.assigns.length) return; }
+  if (pvMode === 'assign') { if (!state.assigns.length) return; }
   else {
     if (!d.unique) return;
     const all = document.createElement('option'); all.value = 'all'; all.textContent = T('ทั้งหมด ({0} ใบ)', d.unique); sel.appendChild(all);
@@ -2935,12 +2929,11 @@ function openPrint(mode) {
       const o = document.createElement('option'); o.value = b; o.textContent = T('ชุดที่ {0} ({1} ใบ)', b, d.rows.filter(r => r.batch === b).length); sel.appendChild(o);
     }
   }
-  sel.hidden = pvMode !== 'scan';                                            // only the scan list is chosen by batch; the other two are printed whole
+  sel.hidden = pvMode === 'assign';                                          // the Assign list is printed whole, not by batch
   $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
 }
 const closePrint = () => { $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
-$('impPrint').addEventListener('click', () => openPrint('scan'));
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
@@ -3293,10 +3286,10 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ความดัง', 'Volume', 'အသံအတိုးအကျယ်'],
   ['ขอบกระดาษใบปะหน้า', 'Cover sheet margin', 'အဖုံးစာရွက် အနားသတ်'],
   ['ใส่ชื่อ หรือสแกนรหัสพนักงาน', 'Type a name or scan the staff code', 'နာမည်ရိုက်ပါ သို့မဟုတ် ဝန်ထမ်းကုဒ်ကို စကင်န်ဖတ်ပါ'],
-  ['Assign งาน ({0} ใบ)', 'Assign work ({0} sheets)', 'အလုပ်ခွဲပေးရန် ({0} ရွက်)'],
   ['ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด', 'Type the employee name or scan the barcode', 'ဝန်ထမ်းအမည် ရိုက်ပါ သို့မဟုတ် ဘားကုဒ်ကို စကင်န်ဖတ်ပါ'],
-  ['จะ Assign {0} ออเดอร์ที่ยังไม่ระบุพนักงาน แล้วเปิดหน้าพิมพ์ใบปะหน้าให้เลย', 'Will Assign {0} orders that have no employee yet, then open the print page', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {0} ခုကို ပေးအပ်ပြီး ပုံနှိပ်စာမျက်နှာကို ဖွင့်ပါမည်'],
-  ['ไม่มีออเดอร์ที่ยังไม่ระบุพนักงาน', 'No orders without an employee', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ မရှိပါ'],
+  ['ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน', 'No orders to print yet — scan or import a file first', 'ပုံနှိပ်ရန် အော်ဒါ မရှိသေးပါ — အရင်စကင်န်ဖတ်ပါ သို့မဟုတ် ဖိုင်ထည့်ပါ'],
+  ['พิมพ์ใบปะหน้า ({0} ใบ) — ใส่ชื่อ/สแกนบาร์โค้ด', 'Print cover sheets ({0}) — type a name / scan', 'အဖုံးစာရွက် ({0} ရွက်) ပုံနှိပ်ရန် — နာမည်ရိုက်/စကင်န်ဖတ်ပါ'],
+  ['พิมพ์ใบปะหน้า ({0} ใบ) — กด Enter', 'Print cover sheets ({0}) — press Enter', 'အဖုံးစာရွက် ({0} ရွက်) ပုံနှိပ်ရန် — Enter နှိပ်ပါ'],
   ['พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)', 'Print the cover sheet at once when scanned in Assign (numbers ending in A / B)', 'Assign တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို ချက်ချင်း ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['2 มม. (ชิดขอบสุด)', '2 mm (tightest)', '၂ မီလီမီတာ (အကပ်ဆုံး)'],
   ['3 มม.', '3 mm', '၃ မီလီမီတာ'],
