@@ -319,6 +319,16 @@ td.x{width:34px;text-align:center}
 .panel input[type=text]::placeholder{color:var(--muted);opacity:.5;font-weight:600;font-size:13.5px;letter-spacing:0}
 .panel input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 28%,transparent)}
 /* the Assign field is a solid bar like the green "พิมพ์ใบปะหน้า" button, with the colours swapped: white bold text on orange (it used to be a white field with an orange edge) */
+input.aw{margin-bottom:6px}
+.panel.orange:not(.zoomed) .pmsg{min-height:18px;margin-top:4px}      /* (the orange box got a field taller; these few pixels keep the right column level with the left one) */
+.panel.orange:not(.zoomed) .phint{margin:2px 2px 6px}
+.panel.orange:not(.zoomed) .impbox{margin-bottom:6px}
+.panel.orange > .prow button.go{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f08a3c,#d9701f)}      /* the orange print button: the green one's job for the orange list */
+.panel.orange > .prow button.go:hover:not(:disabled){background:linear-gradient(135deg,#f39a4a,#e27a26);border-color:transparent}
+.panel.orange > .prow button.go:disabled{opacity:.5}
+.panel.orange input[type=text]#assignWho{color:var(--ink);background:var(--card);border:2px solid var(--pbd);box-shadow:none;text-shadow:none}
+.panel.orange input[type=text]#assignWho::placeholder{color:var(--muted);opacity:.55;font-weight:600;font-size:13.5px}
+.panel.orange input[type=text]#assignWho:focus{border-color:var(--dot);box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 28%,transparent)}
 .panel.orange input[type=text]{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f39a4a,#dd7222);box-shadow:0 3px 10px rgba(221,114,34,.35);text-shadow:0 1px 1px rgba(122,58,6,.3)}
 .panel.orange input[type=text]::placeholder{color:#fff;opacity:.95;font-weight:800;font-size:15px}
 .panel.orange input[type=text]:focus{border-color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 38%,transparent),0 3px 10px rgba(221,114,34,.35)}
@@ -629,6 +639,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <div class="twin">
           <section class="panel orange" aria-label="Assign งาน">
             <div class="phead"><label for="assignIn">Assign งาน</label><span class="pright"><span class="pcount" id="assignCount">0</span><button class="pzoom" id="assignZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
+            <input id="assignWho" class="aw" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อ หรือสแกนรหัสพนักงาน" aria-label="ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)">
             <input id="assignIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะ Assign" aria-label="Assign งาน: เลขออเดอร์">
             <div class="pmsg" id="assignMsg" aria-live="polite"></div>
             <p class="phint" id="assignHint"></p>
@@ -645,7 +656,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <div class="prow"><button id="impPrint" class="mini go" type="button">พิมพ์ใบปะหน้า</button><button id="impUndo" class="mini danger" type="button" hidden>ย้อนการนำเข้าล่าสุด</button></div>
             </section>
             <ul class="plist" id="assignList"></ul>
-            <div class="prow"><button id="assignCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="assignClear" class="mini danger" type="button">ล้างรายการ</button></div>
+            <div class="prow"><button id="assignPrint" class="mini go" type="button" disabled>พิมพ์ใบปะหน้า</button><button id="assignCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="assignClear" class="mini danger" type="button">ล้างรายการ</button></div>
           </section>
           <section class="panel purple" aria-label="Re-Print ใบปะหน้า">
             <div class="pleft">
@@ -712,6 +723,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             </div>
             <div class="row">
               <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
+            </div>
+            <div class="row">
+              <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
             </div>
             <div class="row">
               <label>ขอบกระดาษใบปะหน้า <select id="optMargin"><option value="2">2 มม. (ชิดขอบสุด)</option><option value="3">3 มม.</option><option value="4">4 มม.</option><option value="5">5 มม.</option></select></label>
@@ -879,7 +893,7 @@ const extractOrder = s => { const m = ORD_FIND.exec(String(s)); return m ? m[2].
 const DATA_FIRST_ROW = 3;                     // ใบปะหน้า: DATA!B3 เป็นใบแรก
 
 /* ---------- state ---------- */
-let state = { rows: [], emp: null, batchSize: 20, sound: true, beep: 'p1', vol: 'mid', autoPrint: true, margin: 2, requireRoster: true, autoZoom: true, finished: false, mode: 'with', assigns: [], reprints: [] };   // mode: 'with' = employee first, 'none' = scan orders before knowing who picks
+let state = { rows: [], emp: null, batchSize: 20, sound: true, beep: 'p1', vol: 'mid', autoPrint: true, assignAutoPrint: true, margin: 2, requireRoster: true, autoZoom: true, finished: false, mode: 'with', assigns: [], reprints: [] };   // mode: 'with' = employee first, 'none' = scan orders before knowing who picks
 try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (s && Array.isArray(s.rows)) state = Object.assign(state, s); } catch (_) {}
 let selBatch = null;          // null = ตามชุดล่าสุด
 let importPending = null;     // order file read but not applied yet (green box "นำไฟล์เข้า")
@@ -1161,7 +1175,8 @@ wire(inp, ORD_RE);
 let reprintMode = false;             // true while the purple Re-Print field owns the screen (see "Re-Print mode" below)
 let zoomedEl = null;                 // the Assign / Re-Print box that currently fills the whole page, if any
 let lastRp = null;                   // the Re-Print field (1 Page / 1 Order or 1 Page / 2 Order) used last: focus goes back to it
-const panelInput = p => p.classList.contains('purple') ? (lastRp || $('reprintIn')) : p.querySelector('input[type=text]');
+let lastAs = null;                   // the same for the orange box: its picker field or its order field
+const panelInput = p => p.classList.contains('purple') ? (lastRp || $('reprintIn')) : p.classList.contains('orange') ? (lastAs || $('assignIn')) : p.querySelector('input[type=text]');
 function focusNext() {
   if ($('rosterDlg').open) return;
   if (zoomedEl) { const zi = panelInput(zoomedEl); if (!zi.disabled) zi.focus(); return; }
@@ -1331,7 +1346,7 @@ function render() {
   $('empty').hidden = d.rows.length > 0;
 
   $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
-  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optMargin').value = String(sheetMargin());
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
   $('btnRestore').hidden = !hasBackup();
   // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
   const fin = !!state.finished;
@@ -1364,6 +1379,7 @@ $('optSound').addEventListener('change', e => { state.sound = e.target.checked; 
 $('optStrict').addEventListener('change', e => { state.requireRoster = e.target.checked; save(); });
 $('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
 $('optAutoPrint').addEventListener('change', e => { state.autoPrint = e.target.checked; save(); });
+$('optAssignPrint').addEventListener('change', e => { state.assignAutoPrint = e.target.checked; save(); render(); });
 $('optMargin').addEventListener('change', e => { state.margin = +e.target.value; save(); render(); });      // the white margin round the cover sheets (render() redraws an open preview)
 function sheetMargin() { return [2, 3, 4, 5].includes(+state.margin) ? +state.margin : 2; }
 function setFinished(f) {
@@ -2150,9 +2166,10 @@ const empLabel = (e, n) => e + (n ? ' ' + n : '');
    not scanned yet -> it is added to the scan list for that employee. Every Assign is listed and can be undone. */
 async function assignOrder(raw) {
   const v = cleanScan(raw); if (!v) return;
+  if (rpEmpScan.isBadge(v)) return assignWhoGo(v);                         // an employee badge scanned into the order field: it is the picker
   if (state.finished) { sfx.bad(); return sideMsg('assign', 'warn', 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" ก่อน'); }
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('assign', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
-  if (!state.emp) { sfx.bad(); return sideMsg('assign', 'bad', 'ยังไม่มีพนักงาน — สแกนบัตรพนักงานที่ช่อง 1 ก่อน'); }
+  if (!state.emp) { sfx.bad(); return sideMsg('assign', 'bad', 'ยังไม่มีผู้จัด — ใส่ชื่อ หรือสแกนรหัสพนักงานในช่องด้านบนก่อน'); }
   const emp = state.emp, name = nameOfEmp(emp), rows = state.rows.filter(r => r.order === v);
   let kind, prev = null, rowTs = null;
   if (!rows.length) { rowTs = Date.now(); state.rows.push({ ts: rowTs, emp, name, order: v }); kind = 'new'; }
@@ -2166,8 +2183,15 @@ async function assignOrder(raw) {
     rows.forEach(r => { r.emp = emp; r.name = name; });
   }
   state.assigns.push({ ts: Date.now(), order: v, emp, name, kind, prev, rowTs });
-  save(); sfx.ok(); sideMsg('assign', 'ok', `✓ Assign ${v} → ${empLabel(emp, name)}`);
+  const auto = state.assignAutoPrint !== false && AUTO_PRINT_RE.test(v);    // like Re-Print: an order ending in A / B has its cover sheet printed at once, with the picker's name on it
+  save(); sfx.ok(); sideMsg('assign', 'ok', `✓ Assign ${v} → ${empLabel(emp, name)}` + (auto ? ' · กำลังพิมพ์' : state.assignAutoPrint !== false ? ' · ไม่พิมพ์ทันที (ลงท้ายไม่ใช่ A / B)' : ''));
   render();
+  if (auto) {                                                              // the data of the order (Google Sheet) is waited for, at most 6 s
+    const got = ensureInfo([v]).then(ch => { if (ch) render(); });
+    Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => {
+      if (IN_VIEWER) sideMsg('assign', 'warn', 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบปะหน้า" เพื่อบันทึกเป็นไฟล์พิมพ์'); else printSheets([reprintRow(v)]);
+    }, 60));
+  }
 }
 function undoAssign(i) {
   const a = state.assigns[i]; if (!a || state.finished) return;
@@ -2303,7 +2327,9 @@ function renderSide() {
   assignIn.disabled = fin;
   $('assignCount').textContent = state.assigns.length; $('reprintCount').textContent = state.reprints.length;
   $('assignHint').textContent = fin ? 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม'
-    : (state.emp ? `จะ Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` : 'ต้องมีพนักงานก่อน — สแกนบัตรพนักงานที่ช่อง 1');
+    : (state.emp ? `Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` + (state.assignAutoPrint !== false ? ' · พิมพ์ทันที' : ' · เก็บแล้วพิมพ์ทีเดียว') : 'ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน');
+  const na = new Set(state.assigns.map(a => a.order)).size;                  // the orders of the orange list that the "พิมพ์ใบปะหน้า" button prints in one go
+  $('assignPrint').disabled = !na; $('assignPrint').textContent = na ? T('พิมพ์ใบปะหน้า ({0} ใบ)', na) : T('พิมพ์ใบปะหน้า');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : '' });
@@ -2344,8 +2370,8 @@ function setZoom(panel, on) {
 const collapseZoom = () => { if (zoomedEl) setZoom(zoomedEl, false); };
 document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () => { const p = b.closest('.panel'); setZoom(p, !p.classList.contains('zoomed')); }));
 // auto zoom: clicking (or tabbing) into one of the two scan fields opens its box full page — no need to press the zoom button (Settings can switch this off)
-[assignIn, reprintIn, reprintIn2].forEach(i => i.addEventListener('focus', () => {
-  const p = i.closest('.panel'); if (i !== assignIn) lastRp = i;
+[assignIn, $('assignWho'), reprintIn, reprintIn2].forEach(i => i.addEventListener('focus', () => {
+  const p = i.closest('.panel'); if (p.classList.contains('orange')) lastAs = i; else lastRp = i;
   if (state.autoZoom && !p.classList.contains('zoomed')) setZoom(p, true);
 }));
 $('reprintDone').addEventListener('click', () => { collapseZoom(); exitReprint(); });
@@ -2387,16 +2413,33 @@ function showEmpTab(t) {
 }
 $('eTabReg').addEventListener('click', () => showEmpTab('reg'));
 $('eTabPt').addEventListener('click', () => showEmpTab('pt'));
-function rpEmpScan(raw, alsoTop) {
+function pickEmp(raw, say) {                                               // sign an employee in from a badge scan (8 digits -> the last 4, or 4 digits); `say(kind, text)` shows the answer where the scan was made
   const v0 = String(raw).replace(/[^\d]/g, ''), v = EMP8_RE.test(v0) ? v0.slice(-4) : v0;
-  const say = (kind, text) => { const m = $('rpEmpMsg'); m.className = 'pmsg ' + kind; m.textContent = text; if (alsoTop) sideMsg('reprint', kind, text); };
-  if (!EMP_RE.test(v)) { sfx.bad(); return say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); }
-  if (state.requireRoster && rosterCount() > 0 && !isKnownEmp(v)) { sfx.bad(); return say('bad', `ไม่พบรหัส ${v} ในรายชื่อพนักงาน`); }
+  if (!EMP_RE.test(v)) { sfx.bad(); say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); return false; }
+  if (state.requireRoster && rosterCount() > 0 && !isKnownEmp(v)) { sfx.bad(); say('bad', `ไม่พบรหัส ${v} ในรายชื่อพนักงาน`); return false; }
   state.emp = v; state.mode = 'with'; save(); sfx.emp();
   say('ok', `✓ ผู้จัด ${v}` + (nameOfEmp(v) ? ' · ' + nameOfEmp(v) : '') + (v in ptime && !(v in roster) ? ' (Part-Time)' : ''));
-  render();
+  render(); return true;
+}
+function rpEmpScan(raw, alsoTop) {
+  pickEmp(raw, (kind, text) => { const m = $('rpEmpMsg'); m.className = 'pmsg ' + kind; m.textContent = text; if (alsoTop) sideMsg('reprint', kind, text); });
 }
 rpEmpScan.isBadge = raw => { const v = String(raw).trim(); return EMP_RE.test(v) || EMP8_RE.test(v); };
+/* the picker field of the orange Assign box: a badge code (8 digits -> last 4) signs that employee in; a typed name picks the regular / Part-Time person with that name,
+   and when there is none a new Part-Time person is made (a free number is picked for it, see the green box of the Re-Print view). Orders cannot be Assigned before this. */
+const assignWho = $('assignWho');
+function assignWhoGo(raw) {
+  const s = String(raw).replace(/\s+/g, ' ').trim(); if (!s) return;
+  const say = (kind, text) => sideMsg('assign', kind, text);
+  if (rpEmpScan.isBadge(s)) { pickEmp(s, say); return; }
+  const lc = s.toLowerCase(), eq = x => String(x || '').toLowerCase() === lc;
+  const id = Object.keys(roster).find(k => eq(roster[k]) || eq(nickOf(k))) || Object.keys(ptime).find(k => eq(ptime[k].name));
+  if (id) { pickEmp(id, say); return; }
+  const nid = newPtId(); if (!nid) { sfx.bad(); say('bad', 'หาเลขว่างไม่ได้'); return; }
+  ptime[nid] = { name: s.slice(0, 40), ts: Date.now() }; savePt();
+  pickEmp(nid, (kind, text) => say(kind, kind === 'ok' ? `${text} · ชื่อใหม่ → เลข ${nid}` : text));
+}
+assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = assignWho.value; assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
   for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
   return null;
@@ -2807,7 +2850,11 @@ ${sheets}
 window.addEventListener('load',function(){fitSheets(document);if(document.fonts)document.fonts.ready.then(function(){fitSheets(document)})})<\/script>
 ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(function(){window.print()},600)})<\/script>' : ''}</body></html>`;
 }
-const pvRows = () => { const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b)); };
+let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green button); 'assign' = the orders of the orange Assign list
+const pvRows = () => {
+  if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
+  const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => !r.dup && (b === 'all' || r.batch === +b));
+};
 function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
   $('pvPages').innerHTML = rows.map(sheetHtml).join(''); fitSheets($('pvPages'));
@@ -2823,18 +2870,24 @@ function pvRender() {
   $('pvPrint').disabled = true; $('pvNote').textContent = T('กำลังดึงข้อมูลจาก Google Sheet …');
   ensureInfo(need).then(() => { if (!$('printView').hidden) pvDraw(); });
 }
-function openPrint() {
-  const d = derive(); if (!d.unique) return;
-  const sel = $('pvBatch'); sel.innerHTML = '';
-  const all = document.createElement('option'); all.value = 'all'; all.textContent = T('ทั้งหมด ({0} ใบ)', d.unique); sel.appendChild(all);
-  for (let b = 1; b <= Math.ceil(d.unique / state.batchSize); b++) {
-    const o = document.createElement('option'); o.value = b; o.textContent = T('ชุดที่ {0} ({1} ใบ)', b, d.rows.filter(r => r.batch === b).length); sel.appendChild(o);
+function openPrint(mode) {
+  pvMode = mode === 'assign' ? 'assign' : 'scan';
+  const d = derive(), sel = $('pvBatch'); sel.innerHTML = '';
+  if (pvMode === 'assign') { if (!state.assigns.length) return; }
+  else {
+    if (!d.unique) return;
+    const all = document.createElement('option'); all.value = 'all'; all.textContent = T('ทั้งหมด ({0} ใบ)', d.unique); sel.appendChild(all);
+    for (let b = 1; b <= Math.ceil(d.unique / state.batchSize); b++) {
+      const o = document.createElement('option'); o.value = b; o.textContent = T('ชุดที่ {0} ({1} ใบ)', b, d.rows.filter(r => r.batch === b).length); sel.appendChild(o);
+    }
   }
+  sel.hidden = pvMode === 'assign';                                          // the Assign list is printed whole, not by batch
   $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
 }
 const closePrint = () => { $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
-$('impPrint').addEventListener('click', openPrint);
+$('impPrint').addEventListener('click', () => openPrint('scan'));
+$('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
   if (!IN_VIEWER) { window.print(); return; }                     // claude.ai web copy: no print dialog, so save a file that prints when opened
@@ -3185,6 +3238,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เสียงสแกน', 'Scan sound', 'စကင်န်အသံ'],
   ['ความดัง', 'Volume', 'အသံအတိုးအကျယ်'],
   ['ขอบกระดาษใบปะหน้า', 'Cover sheet margin', 'အဖုံးစာရွက် အနားသတ်'],
+  ['ใส่ชื่อ หรือสแกนรหัสพนักงาน', 'Type a name or scan the staff code', 'နာမည်ရိုက်ပါ သို့မဟုတ် ဝန်ထမ်းကုဒ်ကို စကင်န်ဖတ်ပါ'],
+  ['พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)', 'Print the cover sheet at once when scanned in Assign (numbers ending in A / B)', 'Assign တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို ချက်ချင်း ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['2 มม. (ชิดขอบสุด)', '2 mm (tightest)', '၂ မီလီမီတာ (အကပ်ဆုံး)'],
   ['3 มม.', '3 mm', '၃ မီလီမီတာ'],
   ['4 มม.', '4 mm', '၄ မီလီမီတာ'],
