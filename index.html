@@ -186,6 +186,9 @@ button.assign[hidden]{display:none}
 .fb.warn .ico{background:var(--amber);color:#1d2433}
 .fb.bad{background:var(--badbg);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 28%,transparent)}
 .fb.bad .ico{background:var(--bad);color:var(--card)}
+/* a repeated order ("ซ้ำ"): the card is red like an error, but its "!" badge keeps the amber of a warning */
+.fb.dup{background:var(--badbg);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 28%,transparent)}
+.fb.dup .ico{background:var(--amber);color:#1d2433}
 @keyframes pop{0%{transform:scale(.985)}100%{transform:scale(1)}}
 .fb.pop{animation:pop .18s ease-out}
 @media (prefers-reduced-motion:reduce){.fb.pop{animation:none}button{transition:none}}
@@ -967,7 +970,7 @@ const sfx = {
 
 /* ---------- feedback ---------- */
 const SCAN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></svg>';
-const FB_GLYPH = { ok: '✓', warn: '!', bad: '✕' };
+const FB_GLYPH = { ok: '✓', warn: '!', dup: '!', bad: '✕' };
 function feedback(kind, big, small) {
   const fb = $('fb');
   fb.className = 'fb ' + kind;
@@ -1052,7 +1055,7 @@ function handleScan(raw) {
     if (sheetUsable()) ensureInfo([v]).then(ch => { if (ch) render(); });       // customer name / date / round / sub-district from the Google Sheet, when one is connected
     if (dupOf) {
       sfx.dup();
-      feedback('warn', 'ซ้ำ ' + v,
+      feedback('dup', 'ซ้ำ ' + v,
         `สแกนไปแล้ว ${fmtTime(dupOf.ts)} ${dupOf.emp ? 'โดย ' + dupOf.emp : '(ยังไม่ระบุพนักงาน)'} · บันทึกไว้แต่ไม่นับเข้าชุด`);
     } else {
       const d = derive(); const me = d.rows[d.rows.length - 1];
@@ -2617,7 +2620,7 @@ const SHEET_CSS = `.sheet{--m:4mm;width:210mm;height:296.8mm;margin:14px auto;ba
 .s-tu{display:inline-block;width:2.2em;height:0;margin-left:.1em;border-bottom:1px solid #222}      /* the blank to write the trip on: a thin line (not the bold "____" characters) */
 .s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
-.s-slot{height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900}
+.s-slot{box-sizing:border-box;height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900;border-bottom:1px solid #444}      /* the line under the round box, so a white (uncoloured) one is still seen */
 .s-picker{flex:1;display:flex;align-items:center;padding:0 3mm;font-weight:900;min-width:0}
 @media print{.sheet{margin:0;box-shadow:none}}`;
 { const st = document.createElement('style'); st.textContent = SHEET_CSS; document.head.appendChild(st); }
