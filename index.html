@@ -128,8 +128,9 @@ main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:18px;a
 .card.compact details.settings summary{cursor:pointer;font-weight:600;padding:3px 4px}
 .card.compact details.settings[open]{margin-left:0;flex:1 1 100%}
 .card.compact details.settings .row{margin-top:8px}
-/* the right column is built to end level with the left one: the card with the orange / purple boxes takes up the little height that is left (its boxes stretch with it), so the
-   buttons / settings card under it ends on the same bottom edge as "ส่งออก" on the left. Opening the settings only makes the right column longer — the left one is not touched. */
+/* the two columns end level: the left one is scan / export / tools — the tools card (last) takes the height that is left; the right one is scan list / the card with the green, orange and
+   purple boxes, which stretches the same way (its boxes stretch with it). Opening the settings only makes the left column longer. */
+#toolCard{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center}
 .card.fill{flex:1 1 auto;display:flex;flex-direction:column}
 .card.fill > .twin{flex:1 1 auto}
 /* the orange / purple boxes keep their own (small) height; only the white card around them stretches to meet the left column */
@@ -632,13 +633,6 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <p class="hint" id="scanHint"></p>
       </div>
 
-      <div class="card">
-        <div class="batchhead"><div><p class="sec" style="margin:0 0 2px">ชุดใบปะหน้า</p><b id="batchTitle">ชุดที่ 1</b></div><span id="batchSub"></span></div>
-        <div class="bar" id="bar"><i id="barFill"></i></div>
-        <div class="grid" id="grid"></div>
-        <div class="full" id="fullMsg" hidden></div>
-      </div>
-
       <div class="card compact">
         <p class="sec" style="display:flex;align-items:center;justify-content:space-between">ส่งออก <span id="lockBadge" class="lockbadge shut"></span></p>
         <button id="btnXlsx" class="primary block" type="button">
@@ -651,6 +645,48 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
           <button id="btnTxt" type="button">.txt</button>
         </div>
         <p class="hint" id="pasteHint"></p>
+      </div>
+
+      <div class="card compact" id="toolCard">
+        <div class="row">
+          <button id="btnUndo" type="button">ลบรายการล่าสุด</button>
+          <button id="btnClear" class="danger" type="button">ล้างข้อมูลทั้งหมด</button>
+          <button id="btnRestore" type="button" hidden>กู้คืนที่เพิ่งล้าง</button>
+          <details class="settings">
+            <summary>ตั้งค่า</summary>
+            <div class="row">
+              <label>ใบต่อชุด <input id="optSize" type="number" min="1" max="200"></label>
+              <label><input id="optSound" type="checkbox"> เสียงบี๊บ</label>
+            </div>
+            <div class="row">
+              <label>เสียงสแกน <select id="optBeep">
+                <option value="p1">คมสูง (2.7 kHz)</option>
+                <option value="p2">กลาง (2.0 kHz)</option>
+                <option value="p3">สั้นแหลม (3.5 kHz)</option>
+                <option value="p4">ยาว (2.4 kHz)</option>
+                <option value="p5">นุ่ม (1.8 kHz)</option>
+                <option value="r1">เสียงจริง: เครื่องแคชเชียร์ #1</option>
+                <option value="r2">เสียงจริง: เครื่องแคชเชียร์ #2 (สั้น)</option>
+              </select></label>
+              <label>ความดัง <select id="optVol"><option value="low">เบา</option><option value="mid">กลาง</option><option value="high">ดัง</option></select></label>
+            </div>
+            <div class="row">
+              <label><input id="optStrict" type="checkbox"> รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน</label>
+            </div>
+            <div class="row">
+              <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
+            </div>
+            <div class="row">
+              <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
+            </div>
+            <div class="row">
+              <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
+            </div>
+            <div class="row">
+              <label>ขอบกระดาษใบปะหน้า <select id="optMargin"><option value="2">2 มม. (ชิดขอบสุด)</option><option value="3">3 มม.</option><option value="4">4 มม.</option><option value="5">5 มม.</option></select></label>
+            </div>
+          </details>
+        </div>
       </div>
 
     </section>
@@ -730,47 +766,6 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <div class="rpfoot"><span class="rpclick">กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย</span><button id="rpPrint" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>พิมพ์ใบนี้</button></div>
             </aside>
           </section>
-        </div>
-      </div>
-      <div class="card compact" id="toolCard">
-        <div class="row">
-          <button id="btnUndo" type="button">ลบรายการล่าสุด</button>
-          <button id="btnClear" class="danger" type="button">ล้างข้อมูลทั้งหมด</button>
-          <button id="btnRestore" type="button" hidden>กู้คืนที่เพิ่งล้าง</button>
-          <details class="settings">
-            <summary>ตั้งค่า</summary>
-            <div class="row">
-              <label>ใบต่อชุด <input id="optSize" type="number" min="1" max="200"></label>
-              <label><input id="optSound" type="checkbox"> เสียงบี๊บ</label>
-            </div>
-            <div class="row">
-              <label>เสียงสแกน <select id="optBeep">
-                <option value="p1">คมสูง (2.7 kHz)</option>
-                <option value="p2">กลาง (2.0 kHz)</option>
-                <option value="p3">สั้นแหลม (3.5 kHz)</option>
-                <option value="p4">ยาว (2.4 kHz)</option>
-                <option value="p5">นุ่ม (1.8 kHz)</option>
-                <option value="r1">เสียงจริง: เครื่องแคชเชียร์ #1</option>
-                <option value="r2">เสียงจริง: เครื่องแคชเชียร์ #2 (สั้น)</option>
-              </select></label>
-              <label>ความดัง <select id="optVol"><option value="low">เบา</option><option value="mid">กลาง</option><option value="high">ดัง</option></select></label>
-            </div>
-            <div class="row">
-              <label><input id="optStrict" type="checkbox"> รับเฉพาะรหัสที่อยู่ในรายชื่อพนักงาน</label>
-            </div>
-            <div class="row">
-              <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
-            </div>
-            <div class="row">
-              <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
-            </div>
-            <div class="row">
-              <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
-            </div>
-            <div class="row">
-              <label>ขอบกระดาษใบปะหน้า <select id="optMargin"><option value="2">2 มม. (ชิดขอบสุด)</option><option value="3">3 มม.</option><option value="4">4 มม.</option><option value="5">5 มม.</option></select></label>
-            </div>
-          </details>
         </div>
       </div>
     </section>
@@ -1290,26 +1285,6 @@ function render() {
 
   // batches
   const nBatches = Math.max(1, Math.ceil(d.unique / size));
-  const filled = d.unique === 0 ? 0 : d.unique - (nBatches - 1) * size;
-  $('batchTitle').textContent = 'ชุดที่ ' + nBatches;
-  $('batchSub').textContent = `${filled}/${size} ใบ · ทั้งหมด ${d.unique} ออเดอร์`;
-  $('barFill').style.width = (size ? Math.round(filled / size * 100) : 0) + '%';
-  $('bar').classList.toggle('done', d.unique > 0 && filled === size);
-  const grid = $('grid'); grid.innerHTML = '';
-  const cur = d.rows.filter(r => r.batch === nBatches);
-  let nextMarked = false;
-  for (let s = 1; s <= size; s++) {
-    const c = document.createElement('i'); c.textContent = s;
-    const hit = cur.find(r => r.slot === s);
-    if (hit) { c.className = 'on'; c.title = hit.order; }
-    else if (!nextMarked && filled < size) { c.className = 'next'; nextMarked = true; }
-    grid.appendChild(c);
-  }
-  const fm = $('fullMsg');
-  if (d.unique > 0 && filled === size) {
-    fm.hidden = false;
-    fm.textContent = `ชุดที่ ${nBatches} ครบ ${size} ใบแล้ว — ` + (state.finished ? `คัดลอกไปวางที่ DATA!B${DATA_FIRST_ROW} ได้เลย` : 'สแกนต่อได้ หรือกด "สิ้นสุดการสแกน" เมื่อครบทุกออเดอร์');
-  } else fm.hidden = true;
 
   // batch selector
   const sel = $('batchSel'); const want = selBatch && selBatch <= nBatches ? selBatch : nBatches;
