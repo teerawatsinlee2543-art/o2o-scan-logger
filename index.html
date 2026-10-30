@@ -796,7 +796,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <label><input id="optAutoZoom" type="checkbox"> ขยายเต็มหน้าอัตโนมัติเมื่อคลิกช่อง Assign / Re-Print</label>
             </div>
             <div class="row">
-              <label><input id="optAutoPrint" type="checkbox"> พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)</label>
+              <label><input id="optAutoPrint" type="checkbox"> หลังสแกนใน Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ให้ถามผู้จัดแล้วเปิดหน้าพิมพ์เอง (เลขลงท้าย A / B)</label>
             </div>
             <div class="row">
               <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
@@ -2364,14 +2364,14 @@ function reprintOrder(raw) {
   if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
   const emp = state.mode === 'none' ? '' : (state.emp || '');
   state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp) });
-  const auto = state.autoPrint !== false && AUTO_PRINT_RE.test(v);         // an 11-character order ending in A or B is printed straight away
+  const auto = state.autoPrint !== false && AUTO_PRINT_RE.test(v);         // an 11-character order ending in A or B goes on to the picker window at once, then to the print page
   previewOrder = v;
   save(); sfx.ok();
-  sideMsg('reprint', 'ok', `✓ Re-Print ${v}` + (auto ? ' · กำลังพิมพ์' : state.autoPrint !== false ? ' · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)' : ''));
+  sideMsg('reprint', 'ok', `✓ Re-Print ${v}` + (auto ? ' · รอผู้จัด' : state.autoPrint !== false ? ' · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)' : ''));
   render();
-  // the data of the order (from the Google Sheet, if one is connected) is fetched first: the preview is refreshed when it arrives and the automatic print waits for it (at most 6 s)
-  const got = ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
-  if (auto) Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => autoPrintOrder(v), 60));
+  // the data of the order (from the Google Sheet, if one is connected) is fetched in the background: the print page and the preview are refreshed when it arrives
+  ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
+  if (auto) openRpDlg([v]);                                                // "who is the picker?" pops up: scan the employee badge -> the print page opens by itself with the picker's name
 }
 /* Re-Print, 1 page / 2 orders (the second field): a page carries two DIFFERENT orders, one on each slip. The first scan waits for its pair (the sheet on the right shows it alone on the top slip),
    the second completes the page; like the first field it then prints by itself when the order ends in A / B (with the automatic print switched off every order is paired and the button prints). */
@@ -2395,9 +2395,9 @@ function reprintOrder2(raw) {
     sideMsg('reprint', 'ok', `✓ Re-Print ${v} · รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)`); render(); refresh([v]); return;
   }
   const a = pairWait; pairWait = null; previewOrder = v; previewPair = [a, v];
-  sideMsg('reprint', 'ok', `✓ Re-Print ${a} + ${v}` + (autoOn ? ' · กำลังพิมพ์' : '')); render();
-  const got = refresh([a, v]);
-  if (autoOn) Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => autoPrintPair([a, v]), 60));
+  sideMsg('reprint', 'ok', `✓ Re-Print ${a} + ${v}` + (autoOn ? ' · รอผู้จัด' : '')); render();
+  refresh([a, v]);
+  if (autoOn) openRpDlg([a, v]);                                           // the page is complete: the picker window, then the print page with this one page of two orders
 }
 /* Re-Print, MANY orders in one go (the third field, red border): the orders are only collected here (no print on each scan). Once at least one waits, the red "ไปต่อ" button asks who the picker is
    (a pop-up with the one field that takes a scanned badge or a typed nickname), and then the print page comes up by itself with every waiting order, the picker's name on each sheet.
@@ -2458,7 +2458,7 @@ const AUTO_PRINT_RE = /[AB]$/;
 const hooks = { printFrame: f => f.contentWindow.print() };               // (a hook, so a test can stand in for the real print dialog)
 function reprintRow(order) {                                               // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too
   const d = derive().rows.find(r => r.order === order && !r.dup), rp = state.reprints.find(x => x.order === order) || {};
-  const own = rp.bulk && rp.emp;                                           // the picker named for a many-orders print (third Re-Print field) wins over the scan list's
+  const own = (rp.bulk || rp.picked) && rp.emp;                            // the picker named for this Re-Print go (picker window of any of the three fields) wins over the scan list's
   const emp = own ? rp.emp : d ? d.emp : (rp.emp || ''), name = own ? (rp.name || nameOfEmp(emp)) : ((d && d.name) || rp.name || nameOfEmp(emp));
   return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null };
 }
@@ -2660,7 +2660,7 @@ const last4 = raw => { const d = String(raw).replace(/\D/g, ''); return d.length
    has nobody yet (they are listed in the orange Assign box too, where each can be undone) and the print page comes up by itself. */
 const pendingOrders = () => { const seen = new Set(); derive().rows.forEach(r => { if (!r.dup && !r.emp) seen.add(r.order); }); return [...seen]; };
 const pdIn = $('pdIn');
-let pdMode = 'scan';                                                       // 'scan' = the green bar (the scan list is handed out); 'bulk' = the red "ไปต่อ" button of the third Re-Print field
+let pdMode = 'scan';                                                       // 'scan' = the green bar (the scan list is handed out); 'bulk' = the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button of the third Re-Print field; 'rp' = Re-Print field 1 / 2 (see openRpDlg)
 const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG); m.appendChild(document.createTextNode(text)); }
 const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits); anything else = a nickname
@@ -2679,6 +2679,19 @@ function openBulkDlg() {                                                   // th
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
+/* Re-Print fields 1 and 2: after the order(s) are scanned the same window pops up by itself — scan the employee badge (or type a nickname) and the print page opens at once, with the picker's name on the sheet(s) */
+let rpPick = [], pvRp = [];                                                // the order(s) of the go that waits for its picker · the order(s) the print page shows (1 = the same on both slips, 2 = one page of two orders)
+function openRpDlg(orders) {
+  rpPick = orders.slice(); pdMode = 'rp'; pdNameFor = null; pdNewName = null;
+  $('pdInfo').textContent = orders.length > 1 ? T('{0} + {1} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0], orders[1]) : T('{0} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0]);
+  $('pdSkip').hidden = true;
+  pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
+}
+function rpApply() {                                                       // the picker who was just signed in goes on the order(s), then the print page
+  const emp = state.emp, name = nameOfEmp(emp), orders = rpPick.slice();
+  state.reprints.forEach(x => { if (orders.includes(x.order)) { x.emp = emp; x.name = name; x.picked = true; } });
+  pvRp = orders; save(); render(); openPrint('rp');
+}
 function openPrintDlg() {
   const n = derive().unique; if (!n) return;
   pdMode = 'scan'; pdNameFor = null; pdNewName = null;
@@ -2694,6 +2707,7 @@ const pdAskName = () => pdSay('', T('รหัส {0} ยังไม่มี�
 const pdAskNum = () => pdSay('', T('ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลข 4 ตัวท้ายบัตรประชาชนของคนนี้', pdNewName));
 function pdSubmit(raw) {
   const s = String(raw == null ? pdIn.value : raw).trim();
+  if (!pdNewName && !pdNameFor && ORD_RE.test(s.toUpperCase())) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'นี่คือเลขออเดอร์ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น'); return; }      // an order number scanned here must not become a "nickname"
   if (pdNewName) {                                                           // the second step for a new name: the number (4 last digits of the ID card), typed by the person
     const num = last4(s);
     if (!num) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'ใส่เลข 4 ตัวท้ายบัตรประชาชน (ตัวเลข 4 หลัก)'); return; }
@@ -2715,6 +2729,7 @@ function pdSubmit(raw) {
   pdDone();
 }
 function pdDone() {
+  if (pdMode === 'rp') { $('printDlg').close(); rpApply(); return; }        // Re-Print field 1 / 2: the picker goes on the scanned order(s), then the print page
   if (pdMode === 'bulk') { $('printDlg').close(); bulkApply(); return; }    // the third Re-Print field: the picker goes on the waiting orders, then the print page
   const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
   orders.forEach((o, i) => {
@@ -3167,14 +3182,16 @@ ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(
 }
 let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green box); 'assign' = the orders of the orange Assign list
 const pvRows = () => {
+  if (pvMode === 'rp') return pvRp.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);      // Re-Print field 1 (one order, same on both slips) or field 2 (one page, two orders)
   if (pvMode === 'bulk') return pvBulk.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);
   if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
   const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => r.order && !r.dup && (b === 'all' || r.batch === +b));
 };
 function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
-  $('pvPages').innerHTML = rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
-  $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
+  const two = pvMode === 'rp' && rows.length > 1;                                                       // one page carrying two different orders
+  $('pvPages').innerHTML = two ? sheetHtml(rows[0], rows[1]) : rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
+  $('pvTitle').textContent = two ? T('ตัวอย่างใบปะหน้า — 1 หน้า (2 ออเดอร์ ใบละออเดอร์)') : T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
   const noWho = rows.filter(r => !(nickOf(r.emp) || nameOfEmp(r.emp) || r.name) || /^\d+$/.test(nickOf(r.emp) || nameOfEmp(r.emp) || r.name)).length;      // the sheet prints the picker's name: these have none to print
   $('pvNote').textContent = [miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '',
     noWho ? T('{0} ใบยังไม่มีชื่อผู้จัด — นำเข้ารายชื่อพนักงานใน Update Data หรือ Assign ใหม่ด้วยชื่อเล่น', noWho) : ''].filter(Boolean).join(' · ');
@@ -3189,10 +3206,11 @@ function pvRender() {
   ensureInfo(need).then(() => { if (!$('printView').hidden) pvDraw(); });
 }
 function openPrint(mode) {
-  pvMode = mode === 'assign' ? 'assign' : mode === 'bulk' ? 'bulk' : 'scan';
+  pvMode = mode === 'assign' ? 'assign' : mode === 'bulk' ? 'bulk' : mode === 'rp' ? 'rp' : 'scan';
   const d = derive(), sel = $('pvBatch'); sel.innerHTML = '';
   if (pvMode === 'assign') { if (!state.assigns.length) return; }
   else if (pvMode === 'bulk') { if (!pvBulk.length) return; }
+  else if (pvMode === 'rp') { if (!pvRp.length) return; }
   else {
     if (!d.unique) return;
     const all = document.createElement('option'); all.value = 'all'; all.textContent = T('ทั้งหมด ({0} ใบ)', d.unique); sel.appendChild(all);
@@ -3551,7 +3569,12 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['กำลังพิมพ์', 'Printing', 'ပုံနှိပ်နေသည်'],
   ['ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)', 'Not printed automatically (does not end in A / B)', 'အလိုအလျောက် မပုံနှိပ်ပါ (A / B ဖြင့် မဆုံးပါ)'],
   ['หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์', 'This web page cannot print by itself — press "Print this sheet" to save a print file', 'ဤဝဘ်စာမျက်နှာသည် ကိုယ်တိုင် မပုံနှိပ်နိုင်ပါ — "ဤစာရွက်ကို ပုံနှိပ်ရန်" ကိုနှိပ်၍ ပုံနှိပ်ဖိုင် သိမ်းပါ'],
-  ['พิมพ์ใบปะหน้าอัตโนมัติเมื่อสแกนใน Re-Print (เลขลงท้าย A / B)', 'Print the cover sheet automatically when scanned in Re-Print (numbers ending in A / B)', 'Re-Print တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို အလိုအလျောက် ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
+  ['หลังสแกนใน Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ให้ถามผู้จัดแล้วเปิดหน้าพิมพ์เอง (เลขลงท้าย A / B)', 'After a scan in Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ask for the picker and open the print page by itself (numbers ending in A / B)', 'Re-Print (၁ စာမျက်နှာ / ၁ အော်ဒါ၊ ၁ စာမျက်နှာ / ၂ အော်ဒါ) တွင် စကင်န်ဖတ်ပြီးနောက် ပစ္စည်းကောက်သူကို မေးပြီး ပုံနှိပ်စာမျက်နှာကို အလိုအလျောက် ဖွင့်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
+  ['รอผู้จัด', 'waiting for the picker', 'ပစ္စည်းကောက်သူကို စောင့်နေသည်'],
+  ['{0} + {1} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} + {1} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} + {1} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
+  ['{0} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
+  ['นี่คือเลขออเดอร์ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น', 'This is an order number — scan an employee barcode or type a nickname', 'ဤသည်မှာ အော်ဒါနံပါတ်ဖြစ်သည် — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ'],
+  ['ตัวอย่างใบปะหน้า — 1 หน้า (2 ออเดอร์ ใบละออเดอร์)', 'Cover sheet preview — 1 page (2 orders, one per slip)', 'အဖုံးစာရွက် နမူနာ — ၁ စာမျက်နှာ (အော်ဒါ ၂ ခု၊ တစ်ရွက်လျှင် တစ်ခု)'],
   ['เสียงจริง: เครื่องแคชเชียร์ #1', 'Real recording: checkout beep #1', 'အစစ်အမှန်အသံသွင်း: ငွေရှင်းစက် ပီ့ #1'],
   ['เสียงจริง: เครื่องแคชเชียร์ #2 (สั้น)', 'Real recording: checkout beep #2 (short)', 'အစစ်အမှန်အသံသွင်း: ငွေရှင်းစက် ပီ့ #2 (တို)'],
   // Update Data: tab 2 (Trip routes)
