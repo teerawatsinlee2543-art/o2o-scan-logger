@@ -508,10 +508,23 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .bulkguide li.on{opacity:1}
 .bulkguide li.on b{background:#1f9d57;color:#fff}
 .panel.purple.zoomed.bulkmode .bulkguide{display:grid;gap:10px;margin:0 0 14px;padding:16px 18px;list-style:none;border-radius:16px;background:rgba(255,255,255,.78);border:2px solid #a9dcbe}
-.panel.purple.zoomed.bulkmode .bulkback{display:inline-block;align-self:flex-start;margin:0 0 10px;padding:6px 14px;border:1px solid var(--pbd);border-radius:10px;background:rgba(255,255,255,.7);color:var(--pt);font:700 14px/1.3 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
-.panel.purple.zoomed.bulkmode .bulkback:hover{background:#fff;border-color:var(--dot)}
+/* the way back to the other two fields: a clear purple bar with a round arrow, so it is seen at once */
+.panel.purple.zoomed.bulkmode .bulkback{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 14px;padding:10px 18px 10px 10px;border:0;border-radius:18px;color:#fff;text-align:left;cursor:pointer;
+  background:linear-gradient(135deg,#8b6ce2,#6d3fd0);box-shadow:0 5px 14px rgba(109,63,208,.35);transition:transform .12s,box-shadow .12s,filter .12s}
+.panel.purple.zoomed.bulkmode .bulkback:hover{filter:brightness(1.08);box-shadow:0 7px 18px rgba(109,63,208,.45)}
+.panel.purple.zoomed.bulkmode .bulkback:hover .bbico{transform:translateX(-3px)}
+.panel.purple.zoomed.bulkmode .bulkback:active{transform:translateY(1px)}
+.panel.purple.zoomed.bulkmode .bulkback:focus-visible{outline:3px solid #fff;outline-offset:-3px;box-shadow:0 0 0 4px rgba(109,63,208,.5)}
+.bulkback .bbico{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#fff;color:#6d3fd0;box-shadow:0 2px 6px rgba(43,20,98,.25);transition:transform .15s}
+.bulkback .bbico svg{width:26px;height:26px}
+.bulkback .bbtxt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.bulkback .bbtxt b{font-size:22px;font-weight:800}
+.bulkback .bbtxt small{font-size:15px;font-weight:600;opacity:.92}
+@media (max-width:560px){ .bulkback .bbico{width:40px;height:40px} .bulkback .bbico svg{width:22px;height:22px} .bulkback .bbtxt b{font-size:18px} .bulkback .bbtxt small{font-size:13px} }
 .panel.purple.zoomed.bulkmode #reprintIn,.panel.purple.zoomed.bulkmode #reprintIn2,.panel.purple.zoomed.bulkmode #reprintHint,.panel.purple.zoomed.bulkmode #reprintList,.panel.purple.zoomed.bulkmode .pleft > .prow{display:none}
-.panel.purple.zoomed.bulkmode .bulkhead{display:block;margin:14px 2px 6px;font-size:18px;font-weight:800;color:var(--pt)}
+.panel.purple.zoomed.bulkmode .bulkhead{display:block;margin:10px 2px 6px;font-size:18px;font-weight:800;color:var(--pt)}
+.panel.purple.zoomed.bulkmode .pmsg{min-height:0;margin-top:10px}
+.panel.purple.zoomed.bulkmode .pmsg:empty{display:none}      /* no empty gap between the green button and the list while there is nothing to say */
 .panel.purple.zoomed.bulkmode .bulklist{display:block}
 .panel.purple.zoomed.bulkmode .bulkbar{order:50;margin-top:12px}
 .panel.purple.zoomed.bulkmode button.bulkdel{display:block;flex:1;width:100%;margin-top:0;padding:16px 22px;font-size:22px;border-radius:16px}
@@ -837,7 +850,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <div class="pleft">
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
-            <button id="bulkBack" class="bulkback" type="button">← ใช้ช่องอื่น (1 Page / 1 Order · 1 Page / 2 Order)</button>
+            <button id="bulkBack" class="bulkback" type="button"><span class="bbico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></span><span class="bbtxt"><b>กลับไปใช้ช่องอื่น</b><small>ช่อง 1 Page / 1 Order · 1 Page / 2 Order</small></span></button>
             <ol class="bulkguide" id="bulkGuide" aria-label="วิธีพิมพ์หลายออเดอร์ทีเดียว">
               <li data-step="1"><b>1</b><span>สแกนเลขออเดอร์ทีละใบ (ช่องนี้ยังไม่พิมพ์ทันที)</span></li>
               <li data-step="2"><b>2</b><span>สแกนครบแล้ว กด "เสร็จสิ้น / ใส่ชื่อผู้จัด"</span></li>
@@ -3293,7 +3306,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', 'Finish / enter the picker ({0} sheets)', 'ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန် ({0} ရွက်)'],
   ['เสร็จสิ้น / ใส่ชื่อผู้จัด', 'Finish / enter the picker', 'ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန်'],
   ['ลบทั้งหมด', 'Delete all', 'အားလုံးဖျက်ရန်'],
-  ['← ใช้ช่องอื่น (1 Page / 1 Order · 1 Page / 2 Order)', '← Use the other fields (1 Page / 1 Order · 1 Page / 2 Order)', '← အခြားအကွက်များ သုံးရန် (၁ စာမျက်နှာ / ၁ အော်ဒါ · ၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
+  ['กลับไปใช้ช่องอื่น', 'Back to the other fields', 'အခြားအကွက်များသို့ ပြန်သွားရန်'],
+  ['ช่อง 1 Page / 1 Order · 1 Page / 2 Order', 'Fields 1 Page / 1 Order · 1 Page / 2 Order', 'အကွက် ၁ စာမျက်နှာ / ၁ အော်ဒါ · ၁ စာမျက်နှာ / ၂ အော်ဒါ'],
   ['วิธีพิมพ์หลายออเดอร์ทีเดียว', 'How to print many orders at once', 'အော်ဒါများစွာ တစ်ခါတည်း ပုံနှိပ်နည်း'],
   ['สแกนเลขออเดอร์ทีละใบ (ช่องนี้ยังไม่พิมพ์ทันที)', 'Scan the order numbers one by one (this field does not print at once)', 'အော်ဒါနံပါတ်ကို တစ်ခုချင်း စကင်န်ဖတ်ပါ (ဤအကွက်သည် ချက်ချင်း မပုံနှိပ်ပါ)'],
   ['สแกนครบแล้ว กด "เสร็จสิ้น / ใส่ชื่อผู้จัด"', 'When all are scanned, press "Finish / enter the picker"', 'အားလုံး စကင်န်ဖတ်ပြီးလျှင် "ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန်" ကိုနှိပ်ပါ'],
