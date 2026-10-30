@@ -4085,13 +4085,14 @@ paintThemeBtn();
 
 /* ---------- the same data on every computer (Firestore over plain HTTPS, no extra script) ----------
    Shared: the employee names with nickname + schedule ("people"), the Part-Time staff ("parttime"), the Trip route table ("trips") and the order-sheet link ("sheet"). The scan log,
-   the Assign / Re-Print lists and the settings stay on each computer. Each of the four is one document {json, by, at} of the collection "o2o" in the team's own Firebase project.
+   the Assign / Re-Print lists and the settings stay on each computer. Each of the four is one document {json, by, at} named <prefix><set> (o2o_people, o2o_parttime, o2o_trips, o2o_sheet) in the collection of CLOUD_CONFIG — the team's Firestore (project makro-finder,
+   collection makroFinder, the same one Makro Finder / Pallet / Shelf-Life use; documents of the other apps are never touched, only the four o2o_ ones).
    - an edit on a computer is sent about 1.5 s later; the others fetch it when their page is opened, when it is looked at again (after 20 s), and every 5 minutes
    - a computer that has never synced takes the cloud copy (its own is kept in o2o-cloud-v1-bak-<name>); if nothing is in the cloud yet it sends its own — so the first computer fills it
    - a send carries the version it was based on, so a copy somebody else changed first is never overwritten: the newer cloud copy is taken instead (the replaced one is kept the same way)
    - offline / error: nothing is lost, the edit stays marked and is sent at the next try; scanning is never waiting for this
    Off until CLOUD_CONFIG is filled in, and never on while the page is the Claude viewer or served from this PC (localhost) — so a test never touches the shared data. */
-const CLOUD_CONFIG = null;                      // {apiKey: '…', projectId: '…'} of the Firebase web app; null = the data stays in this browser only
+const CLOUD_CONFIG = { apiKey: 'AIzaSyCOGD2xdLUODa705sQBu_slLJmQng_tLCA', projectId: 'makro-finder', collection: 'makroFinder', prefix: 'o2o_' };      // null = the data stays in this browser only (the web API key is not a secret: it is in Makro Finder's public page too, the rules decide)
 const CLOUD_BLOCKED = IN_VIEWER || (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && !/[?&]live=1(&|$)/.test(location.search));
 const LS_CLOUD = 'o2o-cloud-v1', CLOUD_LIMIT = 900000;
 const cloudLs = (k, v) => { try { if (v === undefined) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
@@ -4109,7 +4110,7 @@ cloudQ = (() => {
   try { const m = JSON.parse(localStorage.getItem(LS_CLOUD) || 'null'); if (m && m.sets && typeof m.sets === 'object') meta = m; } catch (_) {}
   if (!meta.me) meta.me = Math.random().toString(36).slice(2, 8);
   const names = Object.keys(CLOUD_SETS), saveMeta = () => cloudLs(LS_CLOUD, meta), setOf = n => meta.sets[n] || (meta.sets[n] = { rev: null, dirty: false });
-  const docUrl = (n, qs = '') => `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/o2o/${n}?key=${encodeURIComponent(cfg.apiKey)}${qs}`;
+  const docUrl = (n, qs = '') => `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/${encodeURIComponent(cfg.collection || 'o2o')}/${encodeURIComponent((cfg.prefix || '') + n)}?key=${encodeURIComponent(cfg.apiKey)}${qs}`;
   async function req(method, url, body) {
     const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
     try {
