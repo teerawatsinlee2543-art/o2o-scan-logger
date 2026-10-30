@@ -2077,19 +2077,33 @@ function extractEntries(rows, L) {
 function buildPending(rows, src, opt = {}) {
   rows = rows.filter(r => r.some(Boolean));
   if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
-  const raw = rows; let nickLastOk = false, nickLast = false;
-  if (rows.reduce((m, r) => Math.max(m, r.filter(Boolean).length), 0) <= 1) {   // one cell per line: "1234 สมชาย ใจดี" (or "2680 บงกชรัตน์ โพธิชัย มีตี")
+  const raw = rows; let nickLastOk = false, nickLast = false, splitHow = '';
+  if (rows.reduce((m, r) => Math.max(m, r.filter(Boolean).length), 0) <= 1) {   // one cell per line: "1234 สมชาย ใจดี", "00118767  NAW EH POH MOO     แอนั่น" (columns made of spaces)
     rows = rows.map(r => { const m = /^\s*(\S+)\s+(.+?)\s*$/.exec(r[0] || ''); return m ? [m[1], m[2]] : [r[0] || '']; });
-    // names of exactly 3 words in (nearly) every line = first name, surname, NICKNAME: offered (and on by default) so the nickname lands in its own column
-    const lines = rows.filter(r => r.length > 1 && /^\d/.test(r[0]));
-    nickLastOk = lines.length >= 3 && lines.filter(r => r[1].trim().split(/\s+/).length === 3).length >= lines.length * 0.8;
-    nickLast = nickLastOk && opt.nickLast !== false;
-    if (nickLast) rows = rows.map(r => { const t = r.length > 1 ? r[1].trim().split(/\s+/) : []; return t.length === 3 ? [r[0], t.slice(0, 2).join(' '), t[2]] : r; });
+    const lines = rows.filter(r => r.length > 1 && /^\d/.test(r[0])), most = n => lines.length >= 2 && n >= lines.length * 0.6;
+    const bySpaces = r => r[1].split(/\s{2,}/).map(s => s.trim()).filter(Boolean);                  // aligned columns: runs of 2+ spaces
+    const THAI = /[฀-๿]/;
+    const byScript = r => {                                                                          // the line changes script exactly once (English name + Thai nickname, or the other way round)
+      const t = r[1].trim().split(/\s+/), k = t.map(x => THAI.test(x) ? 'T' : /[A-Za-z]/.test(x) ? 'L' : '').filter(Boolean);
+      const cls = []; t.forEach(x => cls.push(THAI.test(x) ? 'T' : /[A-Za-z]/.test(x) ? 'L' : (cls[cls.length - 1] || 'L')));
+      let cut = -1, changes = 0; for (let i = 1; i < cls.length; i++) if (cls[i] !== cls[i - 1]) { changes++; cut = i; }
+      return changes === 1 && k.length > 1 ? [t.slice(0, cut).join(' '), t.slice(cut).join(' ')] : null;
+    };
+    if (most(lines.filter(r => bySpaces(r).length >= 2).length)) {
+      splitHow = 'spaces'; rows = rows.map(r => { const p = r.length > 1 ? bySpaces(r) : []; return p.length >= 2 ? [r[0], ...p] : r; });
+    } else if (most(lines.filter(r => byScript(r)).length)) {
+      splitHow = 'script'; rows = rows.map(r => { const p = r.length > 1 ? byScript(r) : null; return p ? [r[0], ...p] : r; });
+    } else {
+      // names of exactly 3 words in (nearly) every line = first name, surname, NICKNAME: offered (and on by default) so the nickname lands in its own column
+      nickLastOk = lines.length >= 3 && lines.filter(r => r[1].trim().split(/\s+/).length === 3 && THAI.test(r[1])).length >= lines.length * 0.8;      // (Thai names only: 3 English words are usually just a long name)
+      nickLast = nickLastOk && opt.nickLast !== false;
+      if (nickLast) { splitHow = 'last'; rows = rows.map(r => { const t = r.length > 1 ? r[1].trim().split(/\s+/) : []; return t.length === 3 ? [r[0], t.slice(0, 2).join(' '), t[2]] : r; }); }
+    }
   }
   const layout = findLayout(rows);
   if (!layout) return { error: 'หาคอลัมน์เลขพนักงานไม่เจอ — ตั้งหัวคอลัมน์เป็น "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" และชื่อเป็น "ชื่อ" / "Name"', src };
   const ex = extractEntries(rows, layout);
-  return { src, layout, entries: ex.map, extra: ex.extra, bad: ex.bad, dups: ex.dups, clash: ex.clash, clashes: ex.clashes, shortened: ex.shortened, raw, nickLastOk, nickLast };
+  return { src, layout, entries: ex.map, extra: ex.extra, bad: ex.bad, dups: ex.dups, clash: ex.clash, clashes: ex.clashes, shortened: ex.shortened, raw, nickLastOk, nickLast, splitHow };
 }
 
 // --- preview + apply ---
@@ -2122,12 +2136,13 @@ function refreshPreview() {
       + (L.nickCol >= 0 ? ' · ' + T('ชื่อเล่น ← {0}', q(L.nickLabel)) : '') + (L.schedCol >= 0 ? ' · ' + T('ตารางเวลางาน ← {0}', q(L.schedLabel)) : '')
     : T('ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', L.idCol + 1, L.nameCol >= 0 ? T('คอลัมน์ {0} = ชื่อ', L.nameCol + 1) : T('ไม่พบชื่อ'))
       + (L.lastCol >= 0 ? ' · ' + T('คอลัมน์ {0} = นามสกุล', L.lastCol + 1) : '') + (L.nickCol >= 0 ? ' · ' + T('คอลัมน์ {0} = ชื่อเล่น', L.nickCol + 1) : '') + (L.schedCol >= 0 ? ' · ' + T('คอลัมน์ {0} = ตารางเวลางาน', L.schedCol + 1) : '');
+  const how = pending.splitHow === 'spaces' ? ' · ' + T('แยกชื่อกับชื่อเล่นตามช่องว่างหลายช่อง') : pending.splitHow === 'script' ? ' · ' + T('แยกชื่อกับชื่อเล่นตามภาษา (อังกฤษ / ไทย)') : '';
   const srcText = pending.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(pending.src.slice(5))) : T(pending.src);
   const list = (cls, title, ids, withOld) => ids.length ? `<details><summary><span class="${cls}">${title} ${ids.length}</span></summary><ul>` +
     ids.slice(0, 1500).map(id => { const nk = infoFor(id, pending.extra && pending.extra.get(id)).nick;
       return `<li>${id} ${xesc(nameFor(id, pending.entries.get(id)) || roster[id] || '')}${nk ? ' (' + xesc(nk) + ')' : ''}${withOld && roster[id] ? ' <span style="color:var(--muted)">(เดิม: ' + xesc(roster[id]) + ')</span>' : ''}</li>`; }).join('') +
     (ids.length > 1500 ? `<li>… อีก ${ids.length - 1500}</li>` : '') + '</ul></details>' : '';
-  let html = `<div>${T('อ่านได้ {0} คน จาก {1}', '<b>' + pending.entries.size + '</b>', srcText)}<br><small>${cols}</small></div>` +
+  let html = `<div>${T('อ่านได้ {0} คน จาก {1}', '<b>' + pending.entries.size + '</b>', srcText)}<br><small>${cols}${how}</small></div>` +
     `<div><span class="add">เพิ่มใหม่ ${df.add.length}</span> · <span class="chg">แก้ชื่อ ${df.chg.length}</span> · เหมือนเดิม ${df.same.length}` +
     (mode === 'replace' ? ` · <span class="del">ลบออก ${df.del.length}</span>` : '') + '</div>' +
     list('add', 'เพิ่มใหม่', df.add) + list('chg', 'แก้ชื่อ', df.chg, true) + (mode === 'replace' ? list('del', 'จะถูกลบออก', df.del) : '');
@@ -3668,6 +3683,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไฟล์นี้ไม่ใช่ .xlsx', 'This file is not an .xlsx', 'ဤဖိုင်သည် .xlsx မဟုတ်ပါ'],
   ['ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', '.xlsb files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xlsb ဖိုင်ကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
   ['รูปภาพ', 'Pictures', 'ဓာတ်ပုံများ'],
+  ['แยกชื่อกับชื่อเล่นตามช่องว่างหลายช่อง', 'name and nickname separated by the wide gaps', 'အမည်နှင့် အမည်ပြောင်ကို နေရာလွတ်ကျယ်ကျယ်များဖြင့် ခွဲထားသည်'],
+  ['แยกชื่อกับชื่อเล่นตามภาษา (อังกฤษ / ไทย)', 'name and nickname separated by language (English / Thai)', 'အမည်နှင့် အမည်ပြောင်ကို ဘာသာစကားအလိုက် ခွဲထားသည် (အင်္ဂလိပ် / ထိုင်း)'],
   ['แสดง 1500 จาก {0}', 'Showing 1500 of {0}', '{0} မှ 1500 ကို ပြသည်'],
   ['คอลัมน์ {0} = นามสกุล', 'column {0} = surname', 'ကော်လံ {0} = မျိုးရိုးအမည်'],
   ['คอลัมน์ {0} = ชื่อเล่น', 'column {0} = nickname', 'ကော်လံ {0} = အမည်ပြောင်'],
