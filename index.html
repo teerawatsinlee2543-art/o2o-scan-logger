@@ -506,6 +506,21 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 #rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
+/* the third field carries a counter in its right corner: how many orders have been scanned in this go (orange-yellow, dimmed while it is 0, pops when it goes up) */
+.infield{position:relative;margin-top:8px}
+.infield input[type=text]{padding-right:78px;text-overflow:ellipsis}
+.cnt{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;align-items:baseline;gap:4px;padding:2px 9px;border-radius:9px;white-space:nowrap;pointer-events:none;
+  color:#5a2d00;background:linear-gradient(135deg,#ffd75e,#ff9f1c);box-shadow:0 2px 6px rgba(214,120,0,.38);transition:opacity .2s,filter .2s}
+.cnt b{font-size:17px;line-height:1.2;font-weight:800;font-variant-numeric:tabular-nums}
+.cnt small{font-size:11px;font-weight:700}
+.cnt.zero{opacity:.55;filter:saturate(.55)}
+.panel.zoomed .infield input[type=text]{padding-right:clamp(112px,9vw,132px)}
+.panel.zoomed .cnt{right:10px;padding:4px 14px;border-radius:13px}
+.panel.zoomed .cnt b{font-size:clamp(22px,2.6vw,30px);line-height:1.1}
+.panel.zoomed .cnt small{font-size:15px}
+@keyframes cntpop{0%{transform:translateY(-50%) scale(1)}40%{transform:translateY(-50%) scale(1.2)}100%{transform:translateY(-50%) scale(1)}}
+.cnt.pop{animation:cntpop .32s ease-out}
+@media (prefers-reduced-motion:reduce){.cnt.pop{animation:none}}
 /* all three Re-Print fields (1 Page / 1 Order, 1 Page / 2 Order, many orders): the border turns RED while the field is the one that is clicked.
    Clicking the third one (many orders, printed in one go) in the full-page view puts the Re-Print box into "bulkmode": the left side shows only this job — a back bar, a 3-step guide,
    the field with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button right under it, the orders of this go, and at the very bottom the "ลบทั้งหมด" button (the other two fields are tucked away behind the back bar) */
@@ -898,7 +913,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             </ol>
             <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
             <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
-            <input id="reprintIn3" class="rp2 rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (หลายออเดอร์ / พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)">
+            <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (หลายออเดอร์ / พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>ใบ</small></span></div>
             <button id="bulkGo" class="bulkgo" type="button" hidden></button>
             <div class="bulkbar"><button id="bulkDel" class="bulkdel" type="button" disabled>ลบทั้งหมด</button></div>
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
@@ -2644,6 +2659,12 @@ function bulkFinish(raw) { if (pickEmp(raw, (kind, text) => sideMsg('reprint', k
 /* the full-page view of the third field ("bulkmode"): the left side shows only this job. The class follows which Re-Print field was used last. */
 function renderBulk() {
   const list = bulkPending(), nb = list.length, bm = document.querySelector('.panel.purple').classList.contains('bulkmode');
+  const cnt = $('bulkCnt'), cntN = $('bulkCntN');                          // the orange-yellow counter in the corner of the field: orders scanned in this go
+  if (cntN.textContent !== String(nb)) {
+    const up = nb > +cntN.textContent; cntN.textContent = nb;
+    if (up) { cnt.classList.remove('pop'); void cnt.offsetWidth; cnt.classList.add('pop'); }
+  }
+  cnt.classList.toggle('zero', !nb); cnt.setAttribute('aria-label', T('สแกนแล้ว {0} ใบ', nb)); cnt.title = cnt.getAttribute('aria-label');
   $('bulkGo').hidden = !nb && !bm; $('bulkGo').disabled = !nb;
   $('bulkGo').textContent = nb ? T('เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', nb) : T('เสร็จสิ้น / ใส่ชื่อผู้จัด');
   $('bulkDel').disabled = !nb;
@@ -3539,6 +3560,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['มี {0} ออเดอร์ที่ยังไม่ระบุพนักงาน (กด "กลับไปสแกนต่อ" เพื่อใส่ชื่อ)', '{0} orders have no employee yet (press "Resume scanning" to add names)', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {0} ခုရှိသည် ("စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်၍ အမည်ထည့်ပါ)'],
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง', 'you can export Excel in the "Export" box below', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်ပါပြီ'],
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"', 'You can export Excel in the "Export" box below, or press "Resume scanning"', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်သည်၊ သို့မဟုတ် "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
+  ['สแกนแล้ว {0} ใบ', '{0} scanned', 'စကင်န်ဖတ်ပြီး {0} ခု'],
+  ['ใบ', 'pcs', 'ခု'],
   ['ใส่พนักงาน {0} แล้ว', 'Employee {0} assigned', 'ဝန်ထမ်း {0} ကို ထည့်ပြီးပါပြီ'],
   ['ใส่พนักงาน {0} ให้ {1} ออเดอร์ที่ยังไม่ระบุพนักงาน?', 'Assign employee {0} to the {1} orders with no employee?', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {1} ခုကို ဝန်ထမ်း {0} သို့ ထည့်မလား?'],
   ['ใส่พนักงานให้ {0} ออเดอร์แล้ว', 'Employee added to {0} orders', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းထည့်ပြီးပါပြီ'],
