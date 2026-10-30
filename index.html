@@ -834,9 +834,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <section class="impbox flat" id="impBox" aria-label="นำไฟล์เข้า">
               <label class="idrop" id="impDrop" for="impFile" title="ใช้พนักงานที่เข้าระบบอยู่ หรือตามคอลัมน์ &quot;รหัสพนักงาน&quot; ในไฟล์ · ข้ามออเดอร์ที่ซ้ำ · ดูตัวอย่างก่อนนำเข้าทุกครั้ง">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
-                <span><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><small>.xlsx · .csv · .txt · หรือกด Ctrl+V วางจาก Excel</small></span>
+                <span><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><small>.xlsx · .csv · .txt · .pdf · รูปภาพ · หรือกด Ctrl+V วางจาก Excel</small></span>
               </label>
-              <input id="impFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+              <input id="impFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp,.bmp,image/*">
               <div class="impprev" id="impPrev" aria-live="polite" hidden></div>
               <div class="prow" id="impRow" hidden><button id="impApply" class="mini go" type="button">นำเข้า</button><button id="impCancel" class="mini" type="button">ยกเลิก</button></div>
               <p class="phint" id="impHint"></p>
@@ -950,11 +950,12 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <label class="drop" id="rDrop" for="rFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
         <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
-        <small>.xlsx · .csv · .tsv · .txt</small>
+        <small>.xlsx · .csv · .tsv · .txt · .pdf · รูปภาพ</small>
       </label>
-      <input id="rFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <input id="rFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp,.bmp,image/*">
       <textarea id="rPaste" rows="4" spellcheck="false" placeholder="หรือคัดลอก 2 คอลัมน์ (เลขพนักงาน + ชื่อ) จาก Excel มาวางที่นี่ — ไฟล์ .xls/.xlsb ใช้วิธีนี้ได้"></textarea>
       <p class="hint">อ่านคอลัมน์ ชื่อ / Name และ เลขพนักงาน / รหัสพนักงาน / Employee ID ให้เอง (ถ้ามีคอลัมน์ นามสกุล / Last name จะรวมให้) ถ้าไฟล์ไม่มีหัวตารางจะเดาจากเนื้อหา</p>
+      <p class="hint">ไฟล์ PDF และรูปภาพ (JPG / PNG): อ่านตัวหนังสือในเครื่องคุณเอง ไม่อัปโหลดไฟล์ไปไหน — ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่าน ภาพเบลอหรือลายมืออาจอ่านผิด จึงตรวจชื่อและรหัสในตัวอย่างก่อนกดนำเข้าเสมอ</p>
       <div class="modes">
         <label class="modecard"><input type="radio" name="rMode" value="merge" checked><span>เพิ่ม / แก้ชื่อ (ไม่ลบใคร)</span></label>
         <label class="modecard del"><input type="radio" name="rMode" value="replace"><span>ตามไฟล์ทั้งหมด (คนที่ไม่อยู่ในไฟล์ = ลบออก)</span></label>
@@ -997,9 +998,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <label class="drop" id="tDrop" for="tFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
         <b>ลากไฟล์เส้นทางการแบ่ง Trip มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
-        <small>.xlsx · .csv · .tsv · .txt</small>
+        <small>.xlsx · .csv · .tsv · .txt · .pdf · รูปภาพ</small>
       </label>
-      <input id="tFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <input id="tFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp,.bmp,image/*">
       <textarea id="tPaste" rows="4" spellcheck="false" placeholder="หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่"></textarea>
       <p class="hint">รองรับ 2 แบบ: แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว — ใบปะหน้าจะใส่ Trip ให้ตามที่อยู่ของแต่ละออเดอร์ (ต้องนำเข้าไฟล์ Call Center ที่มีคอลัมน์ที่อยู่ในกล่องเขียว)</p>
       <div id="tPreview" class="preview" hidden></div>
@@ -1881,11 +1882,114 @@ function parseDelimited(text) {
   const d = ['\t', ',', ';', '|'].map(x => [x, sample.split(x).length]).sort((a, b) => b[1] - a[1])[0][0];
   return lines.map(l => splitLine(l, d));
 }
-async function fileToRows(file) {
+async function fileToRows(file, say = () => {}) {            // `say(text)` shows what is going on while a PDF / picture is being read (that can take a while)
   const u8 = new Uint8Array(await file.arrayBuffer());
   if (u8[0] === 0x50 && u8[1] === 0x4B) return readXlsx(u8);
   if (u8[0] === 0xD0 && u8[1] === 0xCF) throw new Error('ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง');
+  if (u8[0] === 0x25 && u8[1] === 0x50 && u8[2] === 0x44 && u8[3] === 0x46) return pdfToRows(u8, say);
+  if (isPicture(u8, file)) return imageToRows(file, say);
   return parseDelimited(decodeText(u8));
+}
+/* ---- PDF and picture files. pdf.js (the text a PDF has) and tesseract.js (OCR in Thai + English: pictures, and PDFs that are only scanned pages) are NOT part of this page: they are fetched from a CDN
+   only when such a file is opened (the first picture also downloads the language data, ~3 MB). Everything is read inside this browser — the file is never uploaded. What comes out is turned into rows
+   and cells by the positions of the words and goes through the same column finder and the same preview as an Excel file (OCR can misread, so the preview is always the check). ---- */
+const LIBS = {
+  pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  ocr: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', lang: 'https://tessdata.projectnaptha.com/4.0.0_fast'
+};
+const isPicture = (u, f) => (u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4E && u[3] === 0x47) || (u[0] === 0xFF && u[1] === 0xD8 && u[2] === 0xFF) || (u[0] === 0x47 && u[1] === 0x49 && u[2] === 0x46 && u[3] === 0x38)
+  || (u[0] === 0x52 && u[1] === 0x49 && u[2] === 0x46 && u[3] === 0x46 && u[8] === 0x57 && u[9] === 0x45) || (/\.bmp$/i.test(f.name || '') && u[0] === 0x42 && u[1] === 0x4D) || /^image\//.test(f.type || '');
+const libLoads = {};
+const loadScript = src => libLoads[src] || (libLoads[src] = new Promise((ok, no) => {
+  const s = document.createElement('script'); s.src = src; s.onload = ok;
+  s.onerror = () => { delete libLoads[src]; no(new Error('โหลดตัวอ่าน PDF / รูปภาพไม่ได้ — ต้องต่ออินเทอร์เน็ตตอนอ่านไฟล์ชนิดนี้ (หรือคัดลอกข้อความมาวางแทน)')); };
+  document.head.appendChild(s);
+}));
+function boxesToRows(boxes, opt = {}) {                        // [{x0, x1, y, h, s}] (y grows downward) -> rows of cells: a new row when y changes, a new cell when the gap is wider than `opt.gap` (default: the text height), a space when wider than `opt.space`
+  if (!boxes.length) return [];
+  const H = boxes.map(b => b.h).sort((a, b) => a - b)[boxes.length >> 1] || 10, lines = [], GAP = opt.gap || H, SP = opt.space || H * 0.15;
+  boxes.slice().sort((a, b) => a.y - b.y || a.x0 - b.x0).forEach(b => {
+    const L = lines.find(l => Math.abs(l.y - b.y) <= H * 0.55);
+    if (L) { L.items.push(b); L.y = (L.y * (L.items.length - 1) + b.y) / L.items.length; } else lines.push({ y: b.y, items: [b] });
+  });
+  return lines.sort((a, b) => a.y - b.y).map(l => {
+    const cells = []; let cur = null;
+    l.items.sort((a, b) => a.x0 - b.x0).forEach(it => {
+      if (cur && it.x0 - cur.x1 <= GAP) { cur.s += (it.x0 - cur.x1 > SP ? ' ' : '') + it.s; cur.x1 = Math.max(cur.x1, it.x1); } else { cur = { s: it.s, x1: it.x1 }; cells.push(cur); }
+    });
+    return cells.map(c => c.s.replace(/\s+/g, ' ').trim());
+  }).filter(r => r.some(Boolean));
+}
+let ocrWorker = null, ocrSay = () => {};
+async function getOcr(say) {
+  if (ocrWorker) return ocrWorker;
+  await loadScript(LIBS.ocr);
+  say('กำลังโหลดตัวอ่านภาษาไทย/อังกฤษ (ครั้งแรกครั้งเดียว ประมาณ 3 MB) …');
+  try { ocrWorker = await window.Tesseract.createWorker('tha+eng', 1, { langPath: LIBS.lang, logger: m => { if (m.status === 'recognizing text') ocrSay(Math.round(m.progress * 100)); } }); }
+  catch (e) { throw new Error('โหลดข้อมูลภาษาสำหรับอ่านรูปไม่ได้ — ต้องต่ออินเทอร์เน็ต (หรือคัดลอกข้อความมาวางแทน)'); }
+  return ocrWorker;
+}
+function eraseTableLines(cv) {                                  // the ruled lines of a table make the OCR read garbage: long dark horizontal / vertical runs are painted white first (not for dark pictures)
+  const W = cv.width, H = cv.height, cx = cv.getContext('2d'), id = cx.getImageData(0, 0, W, H), d = id.data, dark = new Uint8Array(W * H); let n = 0;
+  for (let i = 0; i < W * H; i++) { if ((d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000 < 150) { dark[i] = 1; n++; } }
+  if (n > W * H * 0.25) return;
+  const kill = new Uint8Array(W * H), minH = Math.max(60, Math.round(W * 0.05)), minV = Math.max(70, Math.round(H * 0.04));
+  for (let y = 0; y < H; y++) { let s = -1; for (let x = 0; x <= W; x++) { const on = x < W && dark[y * W + x]; if (on && s < 0) s = x; if (!on && s >= 0) { if (x - s >= minH) for (let q = s; q < x; q++) kill[y * W + q] = 1; s = -1; } } }
+  for (let x = 0; x < W; x++) { let s = -1; for (let y = 0; y <= H; y++) { const on = y < H && dark[y * W + x]; if (on && s < 0) s = y; if (!on && s >= 0) { if (y - s >= minV) for (let q = s; q < y; q++) kill[q * W + x] = 1; s = -1; } } }
+  for (let i = 0; i < W * H; i++) if (kill[i]) d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = 255;
+  cx.putImageData(id, 0, 0);
+}
+function ocrLineCells(line) {                                  // one OCR line -> cells: a new cell where the gap between two word boxes is wider than the text is tall; each cell's text is carved out of the OCR's own line text, so its spaces are the OCR's
+  const ws = (line.words || []).filter(x => x.text && x.text.trim() && x.bbox).sort((a, b) => a.bbox.x0 - b.bbox.x0), txt = line.text || '';
+  if (!ws.length) return [];
+  const hs = ws.map(x => x.bbox.y1 - x.bbox.y0).sort((a, b) => a - b), H = hs[hs.length >> 1] || 20, groups = [];
+  ws.forEach((x, i) => { if (i && x.bbox.x0 - ws[i - 1].bbox.x1 <= H) groups[groups.length - 1].push(x); else groups.push([x]); });
+  const sized = g => g.reduce((n, x) => n + x.text.replace(/\s/g, '').length, 0);
+  if (txt.replace(/\s/g, '').length !== groups.reduce((n, g) => n + sized(g), 0)) return groups.map(g => g.map(x => x.text.trim()).join(' ')).filter(Boolean);      // the texts do not line up: plain join
+  let pos = 0;
+  return groups.map(g => { const from = pos; let left = sized(g); while (pos < txt.length && left > 0) { if (!/\s/.test(txt[pos])) left--; pos++; } return txt.slice(from, pos).replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+}
+async function ocrRows(cv, say, page, pages) {                // a canvas -> rows
+  ocrSay = p => say(T('กำลังอ่านตัวหนังสือจากรูป {0}% …', p) + (pages > 1 ? ` (${page}/${pages})` : ''));
+  const w = await getOcr(say); ocrSay(0);
+  eraseTableLines(cv);
+  const { data } = await w.recognize(cv);
+  const rows = (data.lines || []).map(ocrLineCells).filter(r => r.length);
+  if (!rows.length) rows.push(...data.text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => l.split(/\s{2,}/).map(c => c.trim()).filter(Boolean)));
+  rows.ocr = true; return rows;
+}
+async function imageToRows(file, say) {
+  say('กำลังเปิดรูป …');
+  let bmp; try { bmp = await createImageBitmap(file); } catch (_) { throw new Error('เปิดรูปนี้ไม่ได้ — ใช้ไฟล์ JPG / PNG'); }
+  const k = bmp.width > 4000 ? 4000 / bmp.width : Math.min(2.5, Math.max(1, 1600 / bmp.width));      // small pictures are enlarged for the OCR, huge ones shrunk
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+  return ocrRows(cv, say, 1, 1);
+}
+async function pdfToRows(u8, say) {
+  await loadScript(LIBS.pdf);
+  const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = LIBS.pdfWorker;
+  const doc = await pdfjs.getDocument({ data: u8 }).promise, pages = Math.min(doc.numPages, 30), rows = []; let chars = 0, broken = false;
+  for (let p = 1; p <= pages; p++) {
+    say(T('กำลังอ่าน PDF หน้า {0}/{1} …', p, pages));
+    const tc = await (await doc.getPage(p)).getTextContent();
+    const boxes = tc.items.filter(i => i.str && i.str.trim()).map(i => ({ x0: i.transform[4], x1: i.transform[4] + i.width, y: -i.transform[5], h: i.height || Math.abs(i.transform[3]) || 10, s: i.str }));
+    chars += boxes.reduce((n, b) => n + b.s.length, 0); rows.push(...boxesToRows(boxes));
+    if (boxes.some(b => /[\u0000�-]/.test(b.s))) broken = true;       // Thai tone marks that did not come out as text (some PDFs have no proper text mapping)
+  }
+  if (chars >= 20 && !broken) return rows;
+  const out = [];                                              // no text at all (scanned PDF) or the text is damaged: every page is drawn and read like a picture
+  for (let p = 1; p <= pages; p++) {
+    const page = await doc.getPage(p), vp = page.getViewport({ scale: 2.5 }), cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+    out.push(...await ocrRows(cv, say, p, pages));
+  }
+  out.ocr = true; return out;
+}
+const srcNote = rows => rows && rows.ocr ? ' (อ่านจากรูป — ตรวจชื่อและรหัสในตัวอย่างก่อนนำเข้า)' : '';
+async function readFileWithStatus(f, box) {                    // the drop box's small line shows what is going on while the file is read
+  const small = box && box.querySelector('small'), old = small ? small.textContent : '';
+  try { return await fileToRows(f, t => { if (small) small.textContent = t; }); } finally { if (small) small.textContent = old; }
 }
 
 // --- find the columns: header names first (ชื่อ/Name, เลขพนักงาน/รหัสพนักงาน/Employee ID), else guess from content ---
@@ -2037,7 +2141,7 @@ $('rFile').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   $('rPaste').value = '';
   pending = null; refreshPreview();                 // nothing can be applied while the new file is still being read
-  try { pending = buildPending(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  try { const rows = await readFileWithStatus(f, $('rDrop')); pending = buildPending(rows, 'ไฟล์ ' + f.name + srcNote(rows)); }
   catch (err) { pending = { error: err.message || String(err), src: f.name }; }
   e.target.value = ''; refreshPreview();
 });
@@ -2175,7 +2279,7 @@ $('tabEmp').addEventListener('click', () => showTab('emp')); $('tabTrip').addEve
 $('tFile').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   $('tPaste').value = ''; tPending = null; refreshTripPreview();
-  try { tPending = buildTripPending(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  try { const rows = await readFileWithStatus(f, $('tDrop')); tPending = buildTripPending(rows, 'ไฟล์ ' + f.name + srcNote(rows)); }
   catch (err) { tPending = { error: err.message || String(err), src: f.name }; }
   e.target.value = ''; refreshTripPreview();
 });
@@ -2942,7 +3046,7 @@ function importMode(p, v) {
 }
 async function loadImportFile(f) {
   importPending = null; renderImport();                          // nothing can be applied while the new file is still being read
-  try { importPending = buildOrderImport(await fileToRows(f), 'ไฟล์ ' + f.name); }
+  try { const rows = await readFileWithStatus(f, impDrop); importPending = buildOrderImport(rows, 'ไฟล์ ' + f.name + srcNote(rows)); }
   catch (err) { importPending = { error: err.message || String(err), src: f.name }; }
   renderImport();
 }
@@ -3513,6 +3617,16 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เบราว์เซอร์เก่าเกินไปที่จะอ่าน .xlsx — ใช้ Edge/Chrome รุ่นใหม่ หรือคัดลอกจาก Excel มาวาง', 'This browser is too old to read .xlsx — use a recent Edge/Chrome, or copy from Excel and paste', 'ဤဘရောက်ဇာသည် .xlsx ဖတ်ရန် ဟောင်းလွန်းသည် — Edge/Chrome ဗားရှင်းအသစ်ကို သုံးပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
   ['ไฟล์นี้ไม่ใช่ .xlsx', 'This file is not an .xlsx', 'ဤဖိုင်သည် .xlsx မဟုတ်ပါ'],
   ['ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', '.xlsb files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xlsb ဖိုင်ကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
+  ['รูปภาพ', 'Pictures', 'ဓာတ်ပုံများ'],
+  ['ไฟล์ PDF และรูปภาพ (JPG / PNG): อ่านตัวหนังสือในเครื่องคุณเอง ไม่อัปโหลดไฟล์ไปไหน — ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่าน ภาพเบลอหรือลายมืออาจอ่านผิด จึงตรวจชื่อและรหัสในตัวอย่างก่อนกดนำเข้าเสมอ', 'PDF and picture files (JPG / PNG): the text is read on your own computer and the file is not uploaded anywhere — the first time you need the internet to load the reader. Blurry pictures or handwriting can be misread, so always check the names and codes in the preview before importing', 'PDF နှင့် ဓာတ်ပုံဖိုင်များ (JPG / PNG): စာသားကို သင့်ကွန်ပျူတာတွင်ပင် ဖတ်ပြီး ဖိုင်ကို ဘယ်သို့မျှ မတင်ပါ — ပထမအကြိမ် ဖတ်စက်ကို ဒေါင်းလုဒ်လုပ်ရန် အင်တာနက် လိုသည်။ မှုန်ဝါးသောပုံ သို့မဟုတ် လက်ရေးကို မှားဖတ်နိုင်သဖြင့် မထည့်မီ အမည်နှင့် ကုဒ်ကို နမူနာတွင် စစ်ဆေးပါ'],
+  ['โหลดตัวอ่าน PDF / รูปภาพไม่ได้ — ต้องต่ออินเทอร์เน็ตตอนอ่านไฟล์ชนิดนี้ (หรือคัดลอกข้อความมาวางแทน)', 'Could not load the PDF / picture reader — the internet is needed for this kind of file (or copy the text and paste it instead)', 'PDF / ဓာတ်ပုံ ဖတ်စက်ကို မဒေါင်းလုဒ်နိုင်ပါ — ဤဖိုင်အမျိုးအစားအတွက် အင်တာနက်လိုသည် (သို့မဟုတ် စာသားကို ကူးယူ၍ ထည့်ပါ)'],
+  ['โหลดข้อมูลภาษาสำหรับอ่านรูปไม่ได้ — ต้องต่ออินเทอร์เน็ต (หรือคัดลอกข้อความมาวางแทน)', 'Could not load the language data for reading pictures — the internet is needed (or copy the text and paste it instead)', 'ဓာတ်ပုံဖတ်ရန် ဘာသာစကားဒေတာကို မဒေါင်းလုဒ်နိုင်ပါ — အင်တာနက်လိုသည် (သို့မဟုတ် စာသားကို ကူးယူ၍ ထည့်ပါ)'],
+  ['เปิดรูปนี้ไม่ได้ — ใช้ไฟล์ JPG / PNG', 'This picture cannot be opened — use a JPG / PNG file', 'ဤဓာတ်ပုံကို မဖွင့်နိုင်ပါ — JPG / PNG ဖိုင်ကို သုံးပါ'],
+  ['กำลังโหลดตัวอ่านภาษาไทย/อังกฤษ (ครั้งแรกครั้งเดียว ประมาณ 3 MB) …', 'Loading the Thai / English reader (first time only, about 3 MB) …', 'ထိုင်း/အင်္ဂလိပ် ဖတ်စက်ကို ဒေါင်းလုဒ်လုပ်နေသည် (ပထမအကြိမ်သာ၊ ၃ MB ခန့်) …'],
+  ['กำลังอ่านตัวหนังสือจากรูป {0}% …', 'Reading the text from the picture {0}% …', 'ဓာတ်ပုံမှ စာသားကို ဖတ်နေသည် {0}% …'],
+  ['กำลังอ่าน PDF หน้า {0}/{1} …', 'Reading PDF page {0}/{1} …', 'PDF စာမျက်နှာ {0}/{1} ကို ဖတ်နေသည် …'],
+  ['กำลังเปิดรูป …', 'Opening the picture …', 'ဓာတ်ပုံကို ဖွင့်နေသည် …'],
+  ['(อ่านจากรูป — ตรวจชื่อและรหัสในตัวอย่างก่อนนำเข้า)', '(read from a picture — check the names and codes in the preview before importing)', '(ဓာတ်ပုံမှ ဖတ်ထားသည် — မထည့်မီ နမူနာတွင် အမည်နှင့် ကုဒ်ကို စစ်ဆေးပါ)'],
   ['ไม่ใช่ไฟล์ Excel (.xlsx)', 'This is not an Excel (.xlsx) file', 'Excel (.xlsx) ဖိုင် မဟုတ်ပါ'],
   ['ไม่พบข้อมูลในชีตแรก', 'No data found in the first sheet', 'ပထမစာမျက်နှာတွင် ဒေတာ မတွေ့ပါ'],
   ['ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', 'Old .xls files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xls ဖိုင်ဟောင်းကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
