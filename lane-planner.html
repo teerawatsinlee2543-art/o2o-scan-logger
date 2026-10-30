@@ -60,14 +60,18 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
 .cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:15px}
 .cmp th,.cmp td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right}
 .cmp th:first-child,.cmp td:first-child{text-align:left}
+.tw{overflow-x:auto}
+.zt td{vertical-align:top}
+.zt th:nth-child(2),.zt td:nth-child(2){text-align:left}
+.zt select{max-width:110px}
 .note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn);font-size:14px}
 @media (max-width:560px){.wrap{padding:12px 12px 50px}h1{font-size:22px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>จัดเลน — แบ่งออเดอร์เข้า Trip 1-20</h1>
-  <p class="sub">เอาออเดอร์ของวันมานับตามแขวง/เขตและรอบเวลา แล้วเสนอว่าแขวงไหนควรอยู่ Trip ไหน ให้ใกล้กันและแต่ละเที่ยวมีออเดอร์ไม่น้อยเกินไป · อ่านอย่างเดียว ไม่แก้ชีตหรือไฟล์ · ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
+  <h1>จัดเลน — ตรวจโซน Trip 1-20</h1>
+  <p class="sub">ใช้ตารางโซนที่คนวางแผนไว้แล้ว (Trip 1-20) เป็นหลัก: ดูว่าออเดอร์ของวันเข้าโซนไหน ออเดอร์ไหนอยู่นอกโซน แล้วเสนอ Trip ที่ใกล้ที่สุดให้เพิ่มเข้าไป · อ่านอย่างเดียว ไม่แก้ชีตหรือไฟล์ · ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
 
   <section class="card">
     <h2><span class="num">1</span>ข้อมูลออเดอร์</h2>
@@ -84,9 +88,28 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
     </div>
   </section>
 
-  <section class="card">
-    <h2><span class="num">2</span>ตั้งค่า</h2>
-    <div class="row">
+  <section class="card" id="zoneCard">
+    <h2><span class="num">2</span>ตรวจโซนตามตาราง Trip 1-20 ที่คนวางแผนไว้</h2>
+    <p class="muted" style="margin:0 0 8px">ตารางโซนพิมพ์จากรูป (ตรวจและแก้ได้) — 1 บรรทัดต่อ 1 Trip: <code>เลข Trip [Tab] โซน / โซน / โซน</code> · ชื่อเรียกอื่นของโซนเดียวกันคั่นด้วย <code>|</code> เช่น <code>นิมิตรใหม่ | นิมิตใหม่</code> · ชื่อในวงเล็บนับเป็นโซนเพิ่ม · ดี4 (รับหน้ากระจก) ไม่นำมาจับออเดอร์ · โปรแกรมเทียบชื่อโซนกับที่อยู่ในไฟล์ <b>ในเบราว์เซอร์นี้เท่านั้น</b> ไม่ส่งที่อยู่ไปไหน</p>
+    <textarea id="zoneIn" spellcheck="false" style="min-height:300px"></textarea>
+    <div class="row" style="margin-top:8px">
+      <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือกด้านบน)</label>
+      <button id="btnZone" class="primary" type="button" disabled>ตรวจโซน</button>
+      <button id="btnZoneReset" type="button">คืนค่าตารางจากรูป</button>
+    </div>
+    <div id="zoneMsg" class="msg"></div>
+    <div id="zoneOut" hidden></div>
+    <details style="margin-top:12px">
+      <summary>ใช้พิกัดจริงของแขวง (ไม่บังคับ)</summary>
+      <p class="muted" style="margin:6px 0">วาง 1 บรรทัดต่อ 1 แขวง: <code>ชื่อแขวง,ละติจูด,ลองจิจูด</code> เช่น <code>บางชัน,13.8205,100.7132</code> — ถ้ามีพิกัดครบเกือบทุกแขวง โปรแกรมจะเลือก Trip ที่ใกล้ที่สุดจากพิกัด (ระยะ × 1.35 ให้ใกล้ระยะถนน) แทนการดูว่าแขวงเดียวกัน/เขตที่ติดกันมี Trip อะไรอยู่แล้ว · ที่ตั้งร้านแม็คโคร รามอินทรา 13.8110547, 100.6960359 · ตารางระยะจาก Google Maps / OpenStreetMap วางที่นี่ได้ภายหลัง</p>
+      <textarea id="geoIn" spellcheck="false" placeholder="บางชัน,13.8205,100.7132"></textarea>
+      <div id="geoMsg" class="msg"></div>
+    </details>
+  </section>
+
+  <details class="card" id="autoPlan">
+    <summary>ทดลอง: จัดเที่ยวใหม่อัตโนมัติ (ไม่ใช้ตารางโซนของคนวางแผน)</summary>
+    <div class="row" style="margin-top:10px">
       <label class="f">ขั้นต่ำต่อเที่ยว <input id="pMin" type="number" min="1" max="200" value="15"> ใบ</label>
       <label class="f">ขั้นสูงต่อเที่ยว <input id="pMax" type="number" min="5" max="300" value="35"> ใบ</label>
       <label class="f">จำนวนเลน <input id="pLanes" type="number" min="1" max="60" value="20"></label>
@@ -95,16 +118,9 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
       <label class="f"><input id="pWave" type="checkbox" checked> แยกตามรอบเวลา (05-08, 08-12, 12-16, 16-20)</label>
       <label class="f"><input id="pCancel" type="checkbox" checked> ไม่รวมออเดอร์ที่ยกเลิก/ตีกลับ</label>
     </div>
-    <details style="margin-top:10px">
-      <summary>ใช้พิกัดจริงของแขวง (ไม่บังคับ)</summary>
-      <p class="muted" style="margin:6px 0">วาง 1 บรรทัดต่อ 1 แขวง: <code>ชื่อแขวง,ละติจูด,ลองจิจูด</code> เช่น <code>บางชัน,13.8205,100.7132</code> — ถ้ามีพิกัดครบเกือบทุกแขวง โปรแกรมจะใช้ระยะตามพิกัด (คูณ 1.35 ให้ใกล้ระยะถนน) แทนการประมาณจากเขตที่ติดกัน · จุดเริ่มต้นคือแม็คโคร รามอินทรา (13.8110547, 100.6960359) · ตารางระยะจาก Google Maps / OpenStreetMap วางที่นี่ได้ภายหลัง</p>
-      <textarea id="geoIn" spellcheck="false" placeholder="บางชัน,13.8205,100.7132"></textarea>
-      <div id="geoMsg" class="msg"></div>
-    </details>
-    <div class="row" style="margin-top:12px"><button id="btnPlan" class="primary" type="button" disabled>จัดเลน</button></div>
-  </section>
-
-  <section id="out" class="card" hidden></section>
+    <div class="row" style="margin-top:12px"><button id="btnPlan" class="primary" type="button" disabled>จัดเที่ยวใหม่</button></div>
+    <section id="out" hidden style="margin-top:14px"></section>
+  </details>
 </div>
 
 <script>
@@ -200,7 +216,7 @@ function waveOf(t) {
   const h = +m[1]; return h < 8 ? '05:00-08:00' : h < 12 ? '08:00-12:00' : h < 16 ? '12:00-16:00' : h < 20 ? '16:00-20:00' : 'อื่น ๆ';
 }
 const WAVES = ['05:00-08:00', '08:00-12:00', '12:00-16:00', '16:00-20:00', 'อื่น ๆ'];
-const KEYS = { no: ['ordernumber'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'] };
+const KEYS = { no: ['ordernumber'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'], addr: ['shippingaddress'], zip: ['postcode'] };
 function rowsToOrders(rows) {
   const hi = rows.findIndex(r => r.some(c => normH(c) === 'ordernumber')); if (hi < 0) throw new Error('ไม่พบหัวคอลัมน์ "Order Number" — ต้องเป็นไฟล์ออเดอร์ของ Call Center');
   const head = rows[hi].map(normH), at = k => head.map((h, i) => KEYS[k].includes(h) ? i : -1).filter(i => i >= 0), I = {}; for (const k of Object.keys(KEYS)) I[k] = at(k);
@@ -209,7 +225,7 @@ function rowsToOrders(rows) {
   const out = [];
   for (let i = hi + 1; i < rows.length; i++) {
     const r = rows[i], no = get(r, 'no'); if (!no) continue;
-    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype') });
+    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype'), addr: get(r, 'addr'), zip: get(r, 'zip') });
   }
   return out;
 }
@@ -229,7 +245,7 @@ async function ordersFromSheet(dateText) {
   const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
   const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
   if (!cols.no || !cols.date || !(cols.sd || cols.d)) throw new Error('ชีตไม่มีคอลัมน์ Order Number / Original Expected Date / Sub District');
-  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype'].filter(k => cols[k]), esc1 = dateText.replace(/'/g, "''");
+  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), esc1 = dateText.replace(/'/g, "''");
   const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${cols.date} contains '${esc1}'`);
   const rows = parseDelimited(text); if (!rows.length) return [];
   const fake = [want.map(k => KEYS[k][0])].concat(rows.slice(1));           // (the first row of the answer is the column labels)
@@ -298,7 +314,7 @@ function setOrders(orders, src) {
   const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
   const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
   $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
-  $('btnPlan').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน (${src})` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
+  $('btnPlan').disabled = !list.length; $('btnZone').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน (${src})` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
 }
 const dateNum = s => { const m = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s); return m ? +m[3] * 10000 + (MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()) + 1) * 100 + +m[1] : 0; };
 async function loadFile(f) {
@@ -368,8 +384,147 @@ function run() {
   }
   render(res, P, day);
 }
-$('btnPlan').addEventListener('click', run);
-window.LANE = { rowsToOrders, parseDelimited, readXlsx, fileToRows, setOrders, planWave, assignLanes, run, hooks, canonSd, canonD, hops, state: S };
+/* ---------- the zone table that somebody already keeps (Trip 1-20): which orders are outside it, and which Trip is the nearest for them ---------- */
+const LS_ZONES = 'o2o-lane-zones-v1';
+const DEFAULT_ZONES = [
+  'ดี4\tจอดหน้ากระจกทั้งหมด (ดีเฮง, สมชาย, เอกบุรพา, ละมุนลิ้น)',
+  '1\tนิมิตรใหม่ | นิมิตใหม่ | นิมิใหม่ / ประชาร่วมใจ / ไมตรีจิต',
+  '2\tหทัยราษฎร์ / ราษฎร์นิมิตร | ราษฎร์นิมิต',
+  '3\tพระยาสุเรนทร์',
+  '4\tรามอินทรา',
+  '5\tร่มเกล้า / บึงขวาง / คุ้มเกล้า',
+  '6\tรามคำแหง',
+  '7\tเสรีไทย | เสรีไท / สวนสยาม (บ้านไร่, ทรงวิทย์)',
+  '8\tสีหะบุรานุกิจ / ราษฎร์อุทิศ | ราษอุทิศ | ราฏร์อุทิศ',
+  '9\tราษฎร์พัฒนา / เคหะร่มเกล้า',
+  '10\tแฟชั่น | แฟชั่นไอส์แลนด์ / ปัญญา / คู้บอน / บางชัน',
+  '11\tนวมินทร์ / นวลจันทร์ / ประเสริฐมนูกิจ / ลาดพร้าว',
+  '12\tสุขา 5 | สุขาภิบาล 5 / ท่าแร้ง / เทพรักษ์',
+  '13\tคู้บอน 27 / เลียบกาญจนา',
+  '14\tไทยรามัญ / จตุโชติ / หนองระแหง',
+  '15\tทับช้าง / สะพานสูง / ศรีนครินทร์',
+  '16\tสุเหร่าคลองหนึ่ง | สุเหร่า / เจริญพัฒนา',
+  '17\tซาฟารี / เลียบคลองสอง / เลกาซี',
+  '18\tวัชรพล / ถนอมมิตร',
+  '19\tสุวินทวงศ์ | สุวินทวงค์ / CP ทุกโรง',
+  '20\tพี่แดง',
+].join('\n');
+const fz = s => String(s == null ? '' : s).toLowerCase().replace(/[\s._\-,()\/\\'"\u200b\u200c\u200d]/g, '').replace(/[ะ์่้๊๋]/g, '').replace(/ฎ/g, 'ฏ');      // spelling-tolerant: no spaces, no sara a / thanthakhat / tone marks, ฎ = ฏ
+const nk = s => fz(String(s == null ? '' : s).trim().replace(/^(ถนน|ซอย|แขวง|เขต|ถ\.|ซ\.)/, ''));
+const WEAK = new Set(['รามอินทรา', 'รามคำแหง', 'ลาดพร้าว', 'นวมินทร์', 'สุวินทวงศ์', 'สุวินทวงค์', 'เสรีไทย', 'เสรีไท', 'ศรีนครินทร์', 'สะพานสูง'].map(nk));      // big roads / districts that pass through many areas: only used when nothing more specific is found
+function parseZones(text) {
+  const trips = [], errs = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const m = /^\s*(ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)\s*(.+)$/.exec(line); if (!m) { errs.push(line.trim().slice(0, 30)); continue; }
+    const label = m[1].replace(/\s+/g, ''), num = /^\d+$/.test(label) ? +label : null, extras = [];
+    const base = m[2].replace(/[(（]([^)）]*)[)）]/g, (_, x) => { x.split(/[,，]/).forEach(s => s.trim() && extras.push(s.trim())); return ' '; });
+    const zones = base.split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean).concat(extras).map(z => ({ raw: z, names: z.split('|').map(s => s.trim()).filter(Boolean) }));
+    trips.push({ label, num, line: line.trim(), zones, special: num === null });
+  }
+  return { trips, errs };
+}
+function buildMatcher(zt) {
+  const kws = [], kmap = new Map(), dups = [];
+  for (const t of zt.trips) if (!t.special) for (const z of t.zones) for (const nm of z.names) {
+    const k = nk(nm); if (k.length < 2) continue;
+    if (kmap.has(k)) { if (kmap.get(k) !== t.num) dups.push(`"${nm}" อยู่ทั้ง Trip ${kmap.get(k)} และ ${t.num} (ใช้ Trip ${kmap.get(k)})`); continue; }
+    kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k) });
+  }
+  kws.sort((a, b) => b.k.length - a.k.length);
+  return { kws, kmap, dups };
+}
+function matchOrder(o, M) {                                          // -> {trip, how} ; how: road (a zone name in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
+  const sdk = nk(o.sd), dk = nk(o.d);
+  let text = fz(o.addr);
+  for (const x of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(o.zip || '')]) if (x && x.length > 1) text = text.split(x).join('|');      // the administrative words of the address are not road names
+  for (const w of M.kws) if (!w.weak && text.includes(w.k)) return { trip: w.trip, how: 'road' };
+  if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };
+  for (const w of M.kws) if (w.weak && text.includes(w.k)) return { trip: w.trip, how: 'weak' };
+  if (M.kmap.has(dk)) return { trip: M.kmap.get(dk), how: 'weak' };
+  return { trip: null, how: '' };
+}
+const Z = { groups: new Map(), zt: null, rows: [], day: '' };
+const roadBase = r => String(r).replace(/^(ถ\.|ซ\.)/, '').replace(/[0-9\-\/].*$/, '');
+function roadHint(r) { const v = Z.roadVotes && Z.roadVotes.get(roadBase(r)); if (!v || !v.size) return ''; let b = null; for (const [t, n] of v) if (!b || n > b[1]) b = [t, n]; return ' → Trip ' + b[0]; }
+function roadsOf(addr) {                                                // road / soi / village names written in an address (no house numbers): what is missing from the table is told by these
+  const s = String(addr || ''), res = new Set(); let m;
+  const re = /(ถนน|ถ\.|ซอย|ซ\.|หมู่บ้าน|ม\.บ\.|โครงการ)\s*([^\s,\/()]{2,28})/g;
+  while ((m = re.exec(s))) { const nm = m[2].replace(/^[0-9\-\/]+$/, ''); if (!nm || /^\d/.test(nm) && nm.length < 4) continue; const kind = /^(ถนน|ถ\.)$/.test(m[1]) ? 'ถ.' : /^(ซอย|ซ\.)$/.test(m[1]) ? 'ซ.' : ''; res.add(kind + nm.replace(/^(\d)/, '$1')); if (res.size >= 3) break; }
+  return res;
+}
+function suggestFor(g, stat, geoOK, cent) {                           // g = {sd, d, n} an area outside the table; stat = what the matched orders say
+  const best = m => { let b = null; for (const [t, n] of m) if (!b || n > b[1]) b = [t, n]; return b; };
+  const bySd = stat.sd.get(g.sd + '|' + g.d); if (bySd && bySd.size) { const b = best(bySd), all = [...bySd].sort((x, y) => y[1] - x[1]), tot = all.reduce((x, y) => x + y[1], 0); return { trip: b[0], conf: all.length > 3 && b[1] < tot * 0.5 ? 'กลาง' : 'สูง', why: `แขวงเดียวกันที่เข้าโซนแล้ว ${tot} ใบ: ${all.slice(0, 3).map(([t, n]) => `Trip ${t} (${n})`).join('  ')}${all.length > 3 ? '  …' : ''}${all.length > 1 ? ' — แขวงนี้ถูกแบ่งหลาย Trip ดูถนนที่พบประกอบ' : ''}` }; }
+  if (geoOK && geo.get(g.sd) && cent.size) { let b = null; for (const [t, c] of cent) { const dd = hav(geo.get(g.sd), c) * 1.35; if (!b || dd < b[1]) b = [t, dd]; } return { trip: b[0], conf: b[1] < 3 ? 'สูง' : b[1] < 8 ? 'กลาง' : 'ต่ำ', why: `ใกล้โซนของ Trip ${b[0]} ที่สุด ~${b[1].toFixed(1)} กม. (จากพิกัด)` }; }
+  const byD = stat.d.get(g.d); if (byD && byD.size) { const b = best(byD); return { trip: b[0], conf: 'กลาง', why: `เขต${g.d}: Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; }
+  for (let h = 1; h <= 3; h++) { const m = new Map(); for (const [d, tm] of stat.d) if (hops(g.d, d) === h) for (const [t, n] of tm) m.set(t, (m.get(t) || 0) + n); if (m.size) { const b = best(m); return { trip: b[0], conf: 'ต่ำ', why: `เขตที่ติดกัน (ข้าม ${h} เขต): Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; } }
+  return { trip: null, conf: '—', why: 'หาโซนใกล้เคียงไม่ได้ — เลือก Trip เอง' };
+}
+function runZones() {
+  const zt = parseZones($('zoneIn').value); try { localStorage.setItem(LS_ZONES, $('zoneIn').value); } catch (_) {}
+  const M = buildMatcher(zt), msg = $('zoneMsg'), nums = zt.trips.filter(t => !t.special).map(t => t.num).sort((a, b) => a - b);
+  if (!nums.length) { msg.className = 'msg err'; msg.textContent = 'ยังไม่มีโซนของ Trip ในตาราง'; return; }
+  const day = $('daySel').value, useAll = $('zAll').checked;
+  const orders = S.orders.filter(o => (useAll || o.date === day) && !/cancel|return/i.test(o.status));
+  const g = parseGeo($('geoIn').value); geo = g.m;
+  const how = { road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
+  for (const o of orders) {
+    const r = matchOrder(o, M); o.zt = r.trip; o.zhow = r.how;
+    if (r.trip == null) { how.none++; out.push(o); continue; }
+    how[r.how]++; byTrip.set(r.trip, (byTrip.get(r.trip) || 0) + 1);
+    for (const rd of roadsOf(o.addr)) { const b = roadBase(rd); if (b.length >= 3) { const v = roadVotes.get(b) || roadVotes.set(b, new Map()).get(b); v.set(r.trip, (v.get(r.trip) || 0) + 1); } }
+    const k = o.sd + '|' + o.d; (stat.sd.get(k) || stat.sd.set(k, new Map()).get(k)).set(r.trip, ((stat.sd.get(k).get(r.trip)) || 0) + 1);
+    (stat.d.get(o.d) || stat.d.set(o.d, new Map()).get(o.d)).set(r.trip, ((stat.d.get(o.d).get(r.trip)) || 0) + 1);
+  }
+  const areaKeys = new Set(orders.map(o => o.sd)); let withGeo = 0; for (const k of areaKeys) if (geo.has(k)) withGeo++; const geoOK = geo.size > 0 && withGeo / Math.max(1, areaKeys.size) >= 0.9;
+  const cent = new Map(); if (geoOK) { const acc = new Map(); for (const o of orders) if (o.zt != null && geo.has(o.sd)) { const p = geo.get(o.sd), a = acc.get(o.zt) || [0, 0, 0]; a[0] += p[0]; a[1] += p[1]; a[2]++; acc.set(o.zt, a); } for (const [t, a] of acc) cent.set(t, [a[0] / a[2], a[1] / a[2]]); }
+  const groups = new Map(); for (const o of out) { const k = o.sd + '|' + o.d; (groups.get(k) || groups.set(k, { sd: o.sd, d: o.d, n: 0, orders: [], roads: new Map() }).get(k)).n++; groups.get(k).orders.push(o); for (const r of roadsOf(o.addr)) groups.get(k).roads.set(r, (groups.get(k).roads.get(r) || 0) + 1); }
+  for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
+  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, noAddr: orders.length && !orders.some(o => o.addr) });
+  renderZones(); msg.className = 'msg ok'; msg.textContent = `ตรวจ ${orders.length.toLocaleString()} ออเดอร์ (${Z.day})${M.dups.length ? ' · ' + M.dups.join(' · ') : ''}${zt.errs.length ? ' · ข้ามบรรทัดที่อ่านไม่ได้ ' + zt.errs.length + ' บรรทัด' : ''}`;
+}
+const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
+function addedByTrip() { const m = new Map(); for (const g of Z.groups.values()) if (g.pick) m.set(+g.pick, (m.get(+g.pick) || 0) + g.n); return m; }
+function renderTripTable() {
+  const add = addedByTrip(); let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง</th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th></tr>';
+  for (const t of Z.zt.trips) {
+    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td colspan="3" class="muted">ไม่นำมาจับออเดอร์</td></tr>`; continue; }
+    const a = Z.byTrip.get(t.num) || 0, b = add.get(t.num) || 0;
+    h += `<tr><td><b>${t.num}</b></td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td>${a}</td><td>${b ? '+' + b : ''}</td><td><b>${a + b}</b></td></tr>`;
+  }
+  $('ztTrips').innerHTML = h + '</table>';
+}
+function renderZones() {
+  const { how, groups, orders } = Z, outN = how.none, tot = orders.length, inN = tot - outN, rows = [...groups.values()].sort((a, b) => b.n - a.n);
+  const opts = pick => '<option value="">ไม่เพิ่ม</option>' + Z.nums.map(n => `<option value="${n}"${String(n) === pick ? ' selected' : ''}>Trip ${n}</option>`).join('');
+  let h = `<div class="sum" style="margin-top:12px"><div class="chip"><b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small></div><div class="chip"><b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small></div>
+    <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div></div>
+    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
+  if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
+  if (!Z.geoOK) h += '<p class="note">ยังไม่มีพิกัดแขวง จึงเลือก "โซนที่ใกล้ที่สุด" จากข้อมูลจริง: แขวงเดียวกันมีออเดอร์อยู่ Trip ไหนอยู่แล้ว → เขตเดียวกัน → เขตที่ติดกัน — เป็นคำแนะนำให้คุณตรวจ ปรับ Trip ในช่องได้ ถ้าวางพิกัดแขวงจะคิดจากระยะจริง</p>';
+  h += '<h3 style="margin:14px 0 6px">แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)</h3><div id="ztTrips" class="tw"></div>';
+  h += `<h3 style="margin:16px 0 6px">แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด</h3><div class="tw"><table class="cmp zt"><tr><th>แขวง</th><th>เขต</th><th>ใบ</th><th>เพิ่มเข้า</th><th>มั่นใจ</th><th>ถนน/ซอยที่พบ</th><th>เหตุผล</th></tr>`;
+  rows.slice(0, 200).forEach(g => { h += `<tr><td>${esc(g.sd)}</td><td>${esc(g.d)}</td><td>${g.n}</td><td><select data-g="${esc(g.sd + '|' + g.d)}">${opts(g.pick)}</select></td><td><span class="tag ${g.conf === 'สูง' ? 'ok' : g.conf === 'ต่ำ' || g.conf === '—' ? 'warn' : ''}">${g.conf}</span></td><td style="text-align:left;font-size:13px">${esc([...g.roads].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ('+ c + ')' + roadHint(r)).join('  ·  '))}</td><td style="text-align:left;font-size:14px">${esc(g.why)}</td></tr>`; });
+  h += '</table></div>' + (rows.length > 200 ? `<p class="muted">แสดง 200 แขวงแรกจาก ${rows.length}</p>` : '') + (rows.length ? '' : '<p class="ok">ทุกออเดอร์อยู่ในโซนของตารางแล้ว</p>');
+  h += '<div class="row" style="margin-top:12px"><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div>';
+  const el = $('zoneOut'); el.hidden = false; el.innerHTML = h; renderTripTable();
+  el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
+  $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
+  $('zCsvOut').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Suggested Trip,Confidence'].concat([...Z.groups.values()].flatMap(g => g.orders.map(o => [o.no, o.date, o.wave, o.sd, o.d, g.pick, g.pick ? g.conf : ''].map(csvCell).join(',')))), 'orders-outside-zones.csv');
+  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const gr = o.zt == null ? Z.groups.get(o.sd + '|' + o.d) : null; const trip = o.zt != null ? o.zt : (gr && gr.pick) || ''; const by = o.zt != null ? ({ road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : (gr && gr.pick ? 'แนะนำ(' + gr.conf + ')' : 'ไม่มี'); return [o.no, o.date, o.wave, o.sd, o.d, trip, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
+}
+const csvCell = c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c);
+function saveCsv(lines, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+function extendedTable() {
+  const by = new Map(); for (const g of Z.groups.values()) if (g.pick) (by.get(+g.pick) || by.set(+g.pick, []).get(+g.pick)).push(g.sd + (g.d ? ` (เขต${g.d})` : ''));
+  return Z.zt.trips.map(t => t.special || !by.has(t.num) ? t.line : t.line + ' / [เพิ่ม] ' + by.get(t.num).join(' / ')).join('\n');
+}
+$('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
+$('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
+$('btnZone').addEventListener('click', runZones);
+$('btnPlan').addEventListener('click', () => { $('autoPlan').open = true; run(); });
+window.LANE = { rowsToOrders, parseDelimited, readXlsx, fileToRows, setOrders, planWave, assignLanes, run, hooks, canonSd, canonD, hops, state: S, parseZones, buildMatcher, matchOrder, runZones, DEFAULT_ZONES, Z };
 </script>
 </body>
 </html>
