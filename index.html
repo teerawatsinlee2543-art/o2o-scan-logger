@@ -807,6 +807,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
               <label><input id="optAutoPrint" type="checkbox"> หลังสแกนใน Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ให้ถามผู้จัดแล้วเปิดหน้าพิมพ์เอง (เลขลงท้าย A / B)</label>
             </div>
             <div class="row">
+              <label><input id="optPrintGo" type="checkbox"> พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที</label>
+            </div>
+            <div class="row">
               <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
             </div>
             <div class="row">
@@ -1506,7 +1509,7 @@ function render() {
   $('empty').hidden = d.rows.length > 0;
 
   $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
-  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
   $('btnRestore').hidden = !hasBackup();
   // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
   const fin = !!state.finished;
@@ -1539,6 +1542,7 @@ $('optSound').addEventListener('change', e => { state.sound = e.target.checked; 
 $('optStrict').addEventListener('change', e => { state.requireRoster = e.target.checked; save(); });
 $('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
 $('optAutoPrint').addEventListener('change', e => { state.autoPrint = e.target.checked; save(); });
+$('optPrintGo').addEventListener('change', e => { state.printGo = e.target.checked; save(); });
 $('optAssignPrint').addEventListener('change', e => { state.assignAutoPrint = e.target.checked; save(); render(); });
 $('optMargin').addEventListener('change', e => { state.margin = +e.target.value; save(); render(); });      // the white margin round the cover sheets (render() redraws an open preview)
 function sheetMargin() { return [2, 3, 4, 5].includes(+state.margin) ? +state.margin : 2; }
@@ -3360,10 +3364,21 @@ function openPrint(mode) {
   sel.hidden = pvMode !== 'scan';                                            // the Assign list and the many-orders go are printed whole, not by batch
   $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
+  if ((pvMode === 'rp' || pvMode === 'bulk') && state.printGo !== false && !IN_VIEWER) pvAutoPrint();      // from a Re-Print field: the print button is pressed by itself
+}
+let pvAutoT = null;
+function pvAutoPrint() {                                                   // shortly (0.7 s) after the print page opened, the print button is pressed by itself; while the order data is still being fetched (the button is disabled) it waits, at most 7 s in all
+  clearTimeout(pvAutoT);
+  const t0 = Date.now(), mode = pvMode, go = () => {
+    if ($('printView').hidden || pvMode !== mode) return;                  // closed, or another page opened meanwhile
+    if ($('pvPrint').disabled && Date.now() - t0 < 7000) { pvAutoT = setTimeout(go, 200); return; }
+    if (!$('pvPrint').disabled) $('pvPrint').click();
+  };
+  pvAutoT = setTimeout(go, 700);                                           // (the page itself shows ~0.1-0.2 s after the scan, so the print starts within about a second of it)
 }
 const pvFit = () => $('pvPages').style.setProperty('--pvz', String(Math.min(1, (innerWidth - 16) / 800).toFixed(3)));
 window.addEventListener('resize', pvFit); pvFit();
-const closePrint = () => { $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
+const closePrint = () => { clearTimeout(pvAutoT); $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
@@ -3726,6 +3741,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์', 'This web page cannot print by itself — press "Print this sheet" to save a print file', 'ဤဝဘ်စာမျက်နှာသည် ကိုယ်တိုင် မပုံနှိပ်နိုင်ပါ — "ဤစာရွက်ကို ပုံနှိပ်ရန်" ကိုနှိပ်၍ ပုံနှိပ်ဖိုင် သိမ်းပါ'],
   ['หลังสแกนใน Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ให้ถามผู้จัดแล้วเปิดหน้าพิมพ์เอง (เลขลงท้าย A / B)', 'After a scan in Re-Print (1 Page / 1 Order, 1 Page / 2 Order) ask for the picker and open the print page by itself (numbers ending in A / B)', 'Re-Print (၁ စာမျက်နှာ / ၁ အော်ဒါ၊ ၁ စာမျက်နှာ / ၂ အော်ဒါ) တွင် စကင်န်ဖတ်ပြီးနောက် ပစ္စည်းကောက်သူကို မေးပြီး ပုံနှိပ်စာမျက်နှာကို အလိုအလျောက် ဖွင့်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['รอผู้จัด', 'waiting for the picker', 'ပစ္စည်းကောက်သူကို စောင့်နေသည်'],
+  ['พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที', 'When the print page opens from any of the 3 Re-Print fields, start printing by itself within 1 second', 'Re-Print အကွက် ၃ ခုမှ ပုံနှိပ်စာမျက်နှာ ပွင့်သည်နှင့် ၁ စက္ကန့်အတွင်း အလိုအလျောက် ပုံနှိပ်သည်'],
   ['{0} + {1} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} + {1} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} + {1} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
   ['{0} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
   ['นี่คือเลขออเดอร์ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น', 'This is an order number — scan an employee barcode or type a nickname', 'ဤသည်မှာ အော်ဒါနံပါတ်ဖြစ်သည် — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ'],
