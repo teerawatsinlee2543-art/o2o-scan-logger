@@ -449,8 +449,10 @@ input.aw{margin-bottom:6px}
 .plist .o{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .plist .e{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;min-width:0}
 .plist .k{font-size:12px;font-weight:700;color:var(--k);grid-column:2 / 4}
-.plist li button{border:none;background:none;box-shadow:none;padding:0 6px;font-size:18px;line-height:1;color:var(--muted)}
-.plist li button:hover:not(:disabled){color:var(--bad);border:none}
+.plist li button{display:grid;place-items:center;min-width:26px;height:22px;padding:0 6px;border:0;border-radius:7px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;font-size:16px;font-weight:800;line-height:1;box-shadow:0 2px 5px rgba(201,42,47,.35)}      /* the × of a row is a red box, easy to see */
+.plist li button:hover:not(:disabled){border:0;color:#fff;filter:brightness(1.12)}
+.plist li button:disabled{opacity:.35;box-shadow:none;cursor:default}
+.panel.zoomed .plist li button{min-width:36px;height:30px;font-size:20px;border-radius:9px}
 .plist .none{display:block;text-align:center;color:var(--muted);padding:10px}
 .prow{display:flex;gap:8px;margin-top:8px}
 .prow button{color:var(--pt);background:rgba(255,255,255,.7);border:1px solid var(--pbd);box-shadow:none}
