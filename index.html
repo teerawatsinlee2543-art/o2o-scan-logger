@@ -1966,6 +1966,7 @@ async function imageToRows(file, say) {
   const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bmp, 0, 0, cv.width, cv.height);
   return ocrRows(cv, say, 1, 1);
 }
+const BAD_TEXT = new RegExp("[" + String.fromCharCode(0) + String.fromCharCode(0xFFFD) + String.fromCharCode(0xE000) + "-" + String.fromCharCode(0xF8FF) + "]");      // NUL, the replacement character, private-use characters: text that did not come out of the PDF properly
 async function pdfToRows(u8, say) {
   await loadScript(LIBS.pdf);
   const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = LIBS.pdfWorker;
@@ -1975,7 +1976,7 @@ async function pdfToRows(u8, say) {
     const tc = await (await doc.getPage(p)).getTextContent();
     const boxes = tc.items.filter(i => i.str && i.str.trim()).map(i => ({ x0: i.transform[4], x1: i.transform[4] + i.width, y: -i.transform[5], h: i.height || Math.abs(i.transform[3]) || 10, s: i.str }));
     chars += boxes.reduce((n, b) => n + b.s.length, 0); rows.push(...boxesToRows(boxes));
-    if (boxes.some(b => /[\u0000�-]/.test(b.s))) broken = true;       // Thai tone marks that did not come out as text (some PDFs have no proper text mapping)
+    if (boxes.some(b => BAD_TEXT.test(b.s))) broken = true;       // Thai tone marks that did not come out as text (some PDFs have no proper text mapping)
   }
   if (chars >= 20 && !broken) return rows;
   const out = [];                                              // no text at all (scanned PDF) or the text is damaged: every page is drawn and read like a picture
