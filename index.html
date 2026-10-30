@@ -2623,7 +2623,8 @@ function pickEmp(raw, say) {                                               // si
   if (!EMP_RE.test(v)) { sfx.bad(); say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); return false; }
   if (state.requireRoster && rosterCount() > 0 && !isKnownEmp(v)) { sfx.bad(); say('bad', `ไม่พบรหัส ${v} ในรายชื่อพนักงาน`); return false; }
   state.emp = v; state.mode = 'with'; save(); sfx.emp();
-  say('ok', `✓ ผู้จัด ${v}` + (nameOfEmp(v) ? ' · ' + nameOfEmp(v) : '') + (v in ptime && !(v in roster) ? ' (Part-Time)' : ''));
+  if (nameOfEmp(v)) say('ok', `✓ ผู้จัด ${v} · ${nameOfEmp(v)}` + (v in ptime && !(v in roster) ? ' (Part-Time)' : ''));
+  else say('warn', `ผู้จัด ${v} ยังไม่มีชื่อ — ใบปะหน้าจะไม่มีชื่อผู้จัด พิมพ์ชื่อเล่นแทนได้`);      // the sheet prints the name, never the number
   render(); return true;
 }
 function rpEmpScan(raw) { pickEmp(raw, (kind, text) => sideMsg('reprint', kind, text)); }      // a badge scanned into an order field of Re-Print: the answer is shown under that field
@@ -2653,29 +2654,44 @@ function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind
 const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits); anything else = a nickname
 function pdSync() {                                                        // the lock message follows what is in the field
   const v = pdIn.value.trim();
+  if (pdNameFor) { if (v && !/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — กด Enter เพื่อบันทึกชื่อ แล้วไปหน้าพิมพ์'); else pdAskName(); return; }
   if (!v) pdSay('', 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
   else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
   else pdSay('ok', /^\d+$/.test(v) ? 'พร้อมแล้ว — ไปหน้าพิมพ์เอง' : 'พร้อมแล้ว — กด Enter เพื่อไปหน้าพิมพ์');
 }
 function openBulkDlg() {                                                   // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
   const n = bulkPending().length; if (!n) return;
-  pdMode = 'bulk';
+  pdMode = 'bulk'; pdNameFor = null;
   $('pdInfo').textContent = T('{0} ออเดอร์ที่สแกนไว้ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', n);
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
 function openPrintDlg() {
   const n = derive().unique; if (!n) return;
-  pdMode = 'scan';
+  pdMode = 'scan'; pdNameFor = null;
   const np = pendingOrders().length;
   $('pdInfo').textContent = np ? T('{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', np, n) : T('ทุกออเดอร์มีพนักงานแล้ว');
   $('pdSkip').hidden = np > 0;                                             // nothing to hand out: the window has nothing to wait for
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
+/* The sheet prints the picker's NAME, never the badge number. A badge nobody has a name for (no roster / not a Part-Time person) is not let through silently: the window asks for the name
+   (`pdNameFor` = that code), saves it as a Part-Time-style name for the code, and only then goes on to the print page. */
+let pdNameFor = null;
+const pdAskName = () => pdSay('', T('รหัส {0} ยังไม่มีชื่อ — พิมพ์ชื่อเล่นของคนนี้ แล้วกด Enter ใบปะหน้าจะได้มีชื่อผู้จัด', pdNameFor));
 function pdSubmit(raw) {
   const s = String(raw == null ? pdIn.value : raw).trim();
+  if (pdNameFor) {                                                           // the second step: the name for the badge that had none
+    const nm = s.replace(/\s+/g, ' ').slice(0, 40);
+    if (!nm || /^\d+$/.test(nm)) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'พิมพ์เป็นชื่อเล่น ไม่ใช่ตัวเลข'); return; }
+    ptime[pdNameFor] = { name: nm, ts: Date.now() }; savePt(); pdNameFor = null; sfx.ok(); render();
+    return pdDone();
+  }
   if (!s || !pdValid(s)) { sfx.bad(); pdSay('bad', !s ? 'สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน' : 'รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก'); return; }
   if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; return; }                // an unknown code: the reason stays on screen and the way on stays locked
+  if (!nameOfEmp(state.emp)) { pdNameFor = state.emp; pdIn.value = ''; pdAskName(); return; }
+  pdDone();
+}
+function pdDone() {
   if (pdMode === 'bulk') { $('printDlg').close(); bulkApply(); return; }    // the third Re-Print field: the picker goes on the waiting orders, then the print page
   const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
   orders.forEach((o, i) => {
@@ -2689,6 +2705,7 @@ function pdSubmit(raw) {
 }
 $('printWho').addEventListener('click', openPrintDlg);
 $('pdCancel').addEventListener('click', () => $('printDlg').close());
+$('printDlg').addEventListener('close', () => { pdNameFor = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
 wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);
@@ -3022,7 +3039,8 @@ function slotStyle(time) {
    round box very bold, the hand-written lines running the full width. Every [data-fit] text is given its biggest size (pt) and shrunk by fitSheets() when it is wider than its box. */
 function sheetHtml(r, r2) {                       // r2: undefined = the same order on both slips; null = nothing on the bottom slip; a row = another order on the bottom slip
   const slipOf = r => {
-  const inf = orderInfo[r.order] || {}, picker = nickOf(r.emp) || r.name || r.emp || '', nm = inf.name || '';      // the picker is shown by nickname when the roster has one
+  // the picker is shown by NAME, never by the 4-digit badge number: the roster nickname, else the name the person has now (roster / Part-Time), else the name saved with the scan — blank when nobody knows the name
+  const pk = nickOf(r.emp) || nameOfEmp(r.emp) || r.name || '', picker = /^\d+$/.test(pk) ? '' : pk, inf = orderInfo[r.order] || {}, nm = inf.name || '';
   return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
@@ -3116,7 +3134,9 @@ function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
   $('pvPages').innerHTML = rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
   $('pvTitle').textContent = T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
-  $('pvNote').textContent = miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '';
+  const noWho = rows.filter(r => !(nickOf(r.emp) || nameOfEmp(r.emp) || r.name) || /^\d+$/.test(nickOf(r.emp) || nameOfEmp(r.emp) || r.name)).length;      // the sheet prints the picker's name: these have none to print
+  $('pvNote').textContent = [miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '',
+    noWho ? T('{0} ใบยังไม่มีชื่อผู้จัด — นำเข้ารายชื่อพนักงานใน Update Data หรือ Assign ใหม่ด้วยชื่อเล่น', noWho) : ''].filter(Boolean).join(' · ');
   $('pvPrint').disabled = !rows.length;
 }
 function pvRender() {
@@ -3525,6 +3545,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น (แล้วกด Enter)', 'Scan the staff barcode or type a nickname (then press Enter)', 'ဝန်ထမ်းဘားကုဒ်ကို စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ (ပြီးလျှင် Enter နှိပ်ပါ)'],
   ['{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', '{0} orders have no employee yet — scan a barcode or type a nickname and the print page ({1} sheets) opens by itself', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိသေးပါ — ဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ ({1} ရွက်) အလိုအလျောက် ပွင့်ပါမည်'],
   ['ทุกออเดอร์มีพนักงานแล้ว', 'Every order already has its employee', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီးဖြစ်သည်'],
+  ['รหัส {0} ยังไม่มีชื่อ — พิมพ์ชื่อเล่นของคนนี้ แล้วกด Enter ใบปะหน้าจะได้มีชื่อผู้จัด', 'Code {0} has no name yet — type this person\'s nickname and press Enter so the sheet carries the picker\'s name', 'ကုဒ် {0} တွင် အမည် မရှိသေးပါ — ဤသူ၏ အမည်ပြောင်ကို ရိုက်ပြီး Enter နှိပ်ပါ၊ စာရွက်တွင် ပစ္စည်းကောက်သူအမည် ပါလာပါမည်'],
+  ['{0} ใบยังไม่มีชื่อผู้จัด — นำเข้ารายชื่อพนักงานใน Update Data หรือ Assign ใหม่ด้วยชื่อเล่น', '{0} sheets have no picker name — import the staff list in Update Data or Assign again with a nickname', 'ရွက် {0} တွင် ပစ္စည်းကောက်သူအမည် မရှိပါ — Update Data တွင် ဝန်ထမ်းစာရင်း ထည့်ပါ သို့မဟုတ် အမည်ပြောင်ဖြင့် Assign ပြန်လုပ်ပါ'],
+  ['พิมพ์เป็นชื่อเล่น ไม่ใช่ตัวเลข', 'Type a nickname, not a number', 'နံပါတ် မဟုတ်ဘဲ အမည်ပြောင် ရိုက်ပါ'],
+  ['พร้อมแล้ว — กด Enter เพื่อบันทึกชื่อ แล้วไปหน้าพิมพ์', 'Ready — press Enter to save the name and go to the print page', 'အဆင်သင့်ဖြစ်ပြီ — Enter နှိပ်၍ အမည်သိမ်းပြီး ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['ผู้จัด {0} ยังไม่มีชื่อ — ใบปะหน้าจะไม่มีชื่อผู้จัด พิมพ์ชื่อเล่นแทนได้', 'Picker {0} has no name yet — the sheet will have no picker name; you can type a nickname instead', 'ပစ္စည်းကောက်သူ {0} တွင် အမည် မရှိသေးပါ — စာရွက်တွင် အမည် ပါမည်မဟုတ်ပါ၊ အမည်ပြောင် ရိုက်နိုင်သည်'],
   ['ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน', 'No orders to print yet — scan or import a file first', 'ပုံနှိပ်ရန် အော်ဒါ မရှိသေးပါ — အရင်စကင်န်ဖတ်ပါ သို့မဟုတ် ဖိုင်ထည့်ပါ'],
   ['พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)', 'Print the cover sheet at once when scanned in Assign (numbers ending in A / B)', 'Assign တွင် စကင်န်ဖတ်လျှင် အဖုံးစာရွက်ကို ချက်ချင်း ပုံနှိပ်ရန် (A / B ဖြင့်ဆုံးသော နံပါတ်များ)'],
   ['2 มม. (ชิดขอบสุด)', '2 mm (tightest)', '၂ မီလီမီတာ (အကပ်ဆုံး)'],
