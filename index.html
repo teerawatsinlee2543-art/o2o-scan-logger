@@ -489,6 +489,8 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpview{display:none}
 .panel.purple.zoomed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:24px;padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px)}
 .panel.purple.zoomed .pleft{display:flex;flex-direction:column;min-width:0;min-height:0}
+/* nothing but the lists may shrink in a full-page view: on a short screen a message line was squeezed below the height of its own text, which was then drawn over the next line (now the panel scrolls instead) */
+.panel.zoomed > :not(.plist):not(.pleft):not(.rpview),.panel.purple.zoomed .pleft > :not(.plist){flex-shrink:0}
 .panel.purple.zoomed .rpview{display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px;border:1px solid var(--pbd);border-radius:16px;background:rgba(255,255,255,.55);overflow:hidden}
 .rphead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;font-size:15px;color:var(--pt)}
 .rphead b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2651,7 +2653,7 @@ function renderBulk() {
   const ul = $('bulkList'); ul.innerHTML = '';
   if (!nb) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่ได้สแกนออเดอร์ — สแกนได้เลย'; ul.appendChild(li); return; }
   list.slice().reverse().forEach(a => {
-    const li = sideItem(a, () => { const i = state.reprints.indexOf(a); if (i >= 0) state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจากรอบนี้`); }, 'เอาออกจากรอบนี้');
+    const li = sideItem(a, () => { const i = state.reprints.indexOf(a); if (i >= 0) state.reprints.splice(i, 1); save(); sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจากรอบนี้`); }, 'เอาออกจากรอบนี้');
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
     li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = null; renderRpView(); renderBulk(); });
     ul.appendChild(li);
@@ -2665,7 +2667,7 @@ function syncBulkMode() {
 function bulkDone() {                                 // the print button of the print page was pressed: these orders are done, the next scan starts a new go
   if (pvMode !== 'bulk') return;
   let ch = false; state.reprints.forEach(x => { if (x.bulk && !x.batched && pvBulk.includes(x.order)) { x.batched = true; ch = true; } });
-  if (ch) { save(); render(); }
+  if (ch) { save(); sideMsg('reprint', '', ''); render(); }                // (the "N waiting" line is not true any more)
 }
 
 /* ---- the cover sheet that is about to be printed, shown on the right half of the zoomed Re-Print box ---- */
@@ -2822,7 +2824,7 @@ $('bulkBack').addEventListener('click', () => { lastRp = reprintIn; syncBulkMode
 $('bulkDel').addEventListener('click', async () => {
   const n = bulkPending().length; if (!n) return;
   if (!await ask(`ลบออเดอร์ที่สแกนไว้ ${n} ใบ ออกจากรอบนี้?`)) return;
-  state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched)); save(); render(); toast('ลบแล้ว'); reprintIn3.focus();
+  state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); reprintIn3.focus();
 });
 async function copyList(items, label) {
   const ok = await copyText(items.map(x => x.order).join('\r\n'));
