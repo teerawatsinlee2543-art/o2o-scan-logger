@@ -488,11 +488,10 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 #rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
-/* the two single-order fields of Re-Print (1 Page / 1 Order, 1 Page / 2 Order): their border turns RED while they are the one that is clicked */
-#reprintIn:focus,#reprintIn2:focus{border-color:#d92d20;box-shadow:0 0 0 4px rgba(217,45,32,.28)}
-/* the third field (many orders, printed in one go): its border turns GREEN while it is the one that is clicked. Clicking it in the full-page view puts the Re-Print box into "bulkmode": the left side shows only
-   this job — a 3-step guide, the field with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button right under it, the orders of this go, and at the very bottom the "ลบทั้งหมด" button (the other two fields are tucked away behind a "← ใช้ช่องอื่น" link) */
-.panel input[type=text].rp3:focus{border-color:#1f9d57;box-shadow:0 0 0 4px rgba(31,157,87,.28)}
+/* all three Re-Print fields (1 Page / 1 Order, 1 Page / 2 Order, many orders): the border turns RED while the field is the one that is clicked.
+   Clicking the third one (many orders, printed in one go) in the full-page view puts the Re-Print box into "bulkmode": the left side shows only this job — a back bar, a 3-step guide,
+   the field with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button right under it, the orders of this go, and at the very bottom the "ลบทั้งหมด" button (the other two fields are tucked away behind the back bar) */
+#reprintIn:focus,#reprintIn2:focus,#reprintIn3:focus{border-color:#d92d20;box-shadow:0 0 0 4px rgba(217,45,32,.28)}
 .bulkbar{display:flex;gap:8px}
 button.bulkgo{flex:none;width:100%;display:block;margin-top:8px;padding:9px 12px;border:0;border-radius:10px;color:#fff;font:800 15px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);cursor:pointer}
 button.bulkgo[hidden]{display:none}
