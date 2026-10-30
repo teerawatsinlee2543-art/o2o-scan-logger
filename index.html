@@ -533,10 +533,18 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
 .panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
 .ptdlg{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c}
-.panel.zoomed .ptdlg input[type=text]{height:62px;font-size:24px;border-radius:16px;padding:0 20px}
-.panel.zoomed .ptdlg input[type=text]::placeholder{font-size:17px}
+.ptdlg input[type=text]{height:62px;font-size:24px;border-radius:16px;padding:0 20px}      /* (also when the window is opened from the orange Assign box, where the purple box is not full page) */
+.ptdlg input[type=text]::placeholder{font-size:17px}
+.ptdlg .eadd #ptName{flex:1 1 0;min-width:0}
+.ptdlg .eadd #ptNum{flex:0 0 235px;width:235px;padding:0 12px;text-align:center;font-weight:800;letter-spacing:.12em}
+.ptdlg .eadd #ptNum::placeholder{letter-spacing:0;font-weight:600;font-size:15px}
+.bigdlg .bdclose{margin-left:auto;align-self:flex-start;padding:12px 24px;border-radius:14px;font-size:20px}      /* the red close button, top right of the window */
+.bigdlg .bdclose svg{width:18px;height:18px}
+.ptdlg .ptdelall{color:#b42318;border:2px solid #f0b8b4;background:#fff}
+.ptdlg .ptdelall:hover:not(:disabled){background:#fde3e3}
+.ptdlg .ptdelall:disabled{opacity:.45;cursor:default}
 .ptdlg .eadd{gap:12px}
-.ptdlg .eadd button{padding:0 28px;border-radius:16px;font-size:19px}
+.ptdlg .eadd button{padding:0 22px;border-radius:16px;font-size:19px}
 .ptdlg .pmsg{min-height:24px;margin-top:10px;font-size:16px}
 .ptdlg .ptlist{flex:1 1 auto;min-height:110px;max-height:none;margin-top:12px;border-radius:16px;border-width:2px}
 .ptdlg .ptlist li{gap:16px;padding:12px 16px}
@@ -548,7 +556,7 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .ptdlg .ewho{margin-top:14px;font-size:17px}
 .ptdlg .ewho button{padding:6px 16px;font-size:15px}.eadd{display:flex;gap:8px}
 .eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
-@media (max-width:560px){ .ptdlg .eadd{flex-direction:column} .ptdlg .eadd button{padding:14px 0;font-size:17px} .ptdlg .ptlist{min-height:200px} .ptdlg .ptlist li{grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 12px} .ptdlg .ptlist .pta{justify-self:start} .ptdlg .ptlist .ptbar svg{max-width:100%;height:auto} }      /* phones: the name field gets its own line (its placeholder was cut off beside the button), and each Part-Time card is stacked: barcode, name, buttons */
+@media (max-width:560px){ .ptdlg .eadd{flex-direction:column} .ptdlg .eadd #ptName,.ptdlg .eadd #ptNum{flex:none;width:100%} .bigdlg .bdclose{padding:8px 14px;font-size:16px} .ptdlg .eadd button{padding:14px 0;font-size:17px} .ptdlg .ptlist{min-height:200px} .ptdlg .ptlist li{grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 12px} .ptdlg .ptlist .pta{justify-self:start} .ptdlg .ptlist .ptbar svg{max-width:100%;height:auto} }      /* phones: the name field gets its own line (its placeholder was cut off beside the button), and each Part-Time card is stacked: barcode, name, buttons */
 .ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
 .ptlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
 .ptlist li.sel{background:#e4f6ec}
@@ -867,13 +875,13 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button><button id="ptOpen" class="mini go" type="button" title="พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14" stroke-dasharray="14 0"/></svg>บาร์โค้ดพนักงาน</button></div>
             <dialog id="ptDlg" class="bigdlg ptdlg" aria-labelledby="ptTitle">
-              <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span><div><h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3><p class="bdsub">พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p></div></div>
+              <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span><div><h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3><p class="bdsub">พิมพ์ชื่อ + ใส่เลข 4 ตัวท้ายบัตรประชาชน แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p></div><button id="ptClose" type="button" class="closebtn bdclose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button></div>
               <div class="bdbody">
-                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
+                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><input id="ptNum" class="ptnum" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="13" placeholder="เลข 4 ตัวท้ายบัตรประชาชน" aria-label="เลข 4 ตัวท้ายบัตรประชาชนของพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
                 <div class="pmsg" id="ptMsg" aria-live="polite"></div>
                 <ul class="ptlist" id="ptList"></ul>
                 <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
-                <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptClose" type="button">ปิด</button></div>
+                <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptDelAll" class="ptdelall" type="button" disabled>ลบข้อมูลทั้งหมด</button></div>
               </div>
             </dialog>
             </div>
@@ -2617,7 +2625,7 @@ $('reprintClear').addEventListener('click', async () => {
    1 regular staff: scan the badge — 8 digits, only the last 4 are read (a 4-digit code works too); it signs that person in, exactly like the employee field of the main page.
    2 Part-Time staff: type a name, the system picks a free 4-digit number for it and shows it as a barcode (and prints a card); scanning that barcode signs the person in under the typed
      name. They live in their own store (ptime) — the regular roster is not touched. Scanning a badge in one of the two order fields of Re-Print lands here too. */
-const ptName = $('ptName');
+const ptName = $('ptName'), ptNum = $('ptNum');
 function pickEmp(raw, say) {                                               // sign an employee in from a badge scan (8 digits -> the last 4, or 4 digits); `say(kind, text)` shows the answer where the scan was made
   const v0 = String(raw).replace(/[^\d]/g, ''), v = EMP8_RE.test(v0) ? v0.slice(-4) : v0;
   if (!EMP_RE.test(v)) { sfx.bad(); say('bad', `ต้องเป็นบาร์โค้ดพนักงาน 8 หลัก (หรือรหัส 4 หลัก) — ได้ "${String(raw).slice(0, 16)}"`); return false; }
@@ -2636,13 +2644,17 @@ function assignWhoGo(raw, say) {                                          // ret
   const s = String(raw).replace(/\s+/g, ' ').trim(); if (!s) return false;
   const tell = say || ((kind, text) => sideMsg('assign', kind, text));
   if (rpEmpScan.isBadge(s)) return pickEmp(s, tell);
-  const lc = s.toLowerCase(), eq = x => String(x || '').toLowerCase() === lc;
-  const id = Object.keys(roster).find(k => eq(roster[k]) || eq(nickOf(k))) || Object.keys(ptime).find(k => eq(ptime[k].name));
+  const id = findPersonByName(s);
   if (id) return pickEmp(id, tell);
-  const nid = newPtId(); if (!nid) { sfx.bad(); tell('bad', 'หาเลขว่างไม่ได้'); return false; }
-  ptime[nid] = { name: s.slice(0, 40), ts: Date.now() }; savePt();
-  return pickEmp(nid, (kind, text) => tell(kind, kind === 'ok' ? `${text} · ชื่อใหม่ → เลข ${nid}` : text));
+  // a name nobody knows: no number is invented — the Part-Time window opens with the name filled in and asks for the 4 last digits of the person's ID card; once it is saved the person is signed in as the picker
+  sfx.bad(); tell('warn', `ยังไม่มีชื่อ "${s.slice(0, 40)}" ในระบบ — ใส่เลข 4 ตัวท้ายบัตรประชาชนในหน้าต่างที่เปิดขึ้น`);
+  openPtDlg(s.slice(0, 40), true); return false;
 }
+function findPersonByName(s) {                                             // a regular employee (name or nickname) or a Part-Time person with this name -> their 4-digit code
+  const lc = String(s).trim().toLowerCase(), eq = x => String(x || '').toLowerCase() === lc;
+  return Object.keys(roster).find(k => eq(roster[k]) || eq(nickOf(k))) || Object.keys(ptime).find(k => eq(ptime[k].name)) || null;
+}
+const last4 = raw => { const d = String(raw).replace(/\D/g, ''); return d.length === 4 || d.length === 13 ? d.slice(-4) : null; };      // 4 digits typed, or a whole 13-digit ID card number of which only the LAST 4 are kept (the rest is never stored)
 /* the green "พิมพ์ใบปะหน้า" bar: clicking it opens a window with ONE field that takes both a scanned staff badge (8 digits -> the last 4, or 4 digits) and a typed nickname. The way to the
    print page is locked until something valid is in it; there is no button — a scan goes on at once, a typed name with Enter. Then that employee is given every order of the scan list that
    has nobody yet (they are listed in the orange Assign box too, where each can be undone) and the print page comes up by itself. */
@@ -2654,6 +2666,7 @@ function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind
 const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits); anything else = a nickname
 function pdSync() {                                                        // the lock message follows what is in the field
   const v = pdIn.value.trim();
+  if (pdNewName) { if (v && last4(v)) pdSay('ok', 'พร้อมแล้ว — กด Enter เพื่อบันทึก แล้วไปหน้าพิมพ์'); else pdAskNum(); return; }
   if (pdNameFor) { if (v && !/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — กด Enter เพื่อบันทึกชื่อ แล้วไปหน้าพิมพ์'); else pdAskName(); return; }
   if (!v) pdSay('', 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
   else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
@@ -2661,14 +2674,14 @@ function pdSync() {                                                        // th
 }
 function openBulkDlg() {                                                   // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
   const n = bulkPending().length; if (!n) return;
-  pdMode = 'bulk'; pdNameFor = null;
+  pdMode = 'bulk'; pdNameFor = null; pdNewName = null;
   $('pdInfo').textContent = T('{0} ออเดอร์ที่สแกนไว้ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', n);
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
 function openPrintDlg() {
   const n = derive().unique; if (!n) return;
-  pdMode = 'scan'; pdNameFor = null;
+  pdMode = 'scan'; pdNameFor = null; pdNewName = null;
   const np = pendingOrders().length;
   $('pdInfo').textContent = np ? T('{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', np, n) : T('ทุกออเดอร์มีพนักงานแล้ว');
   $('pdSkip').hidden = np > 0;                                             // nothing to hand out: the window has nothing to wait for
@@ -2676,10 +2689,19 @@ function openPrintDlg() {
 }
 /* The sheet prints the picker's NAME, never the badge number. A badge nobody has a name for (no roster / not a Part-Time person) is not let through silently: the window asks for the name
    (`pdNameFor` = that code), saves it as a Part-Time-style name for the code, and only then goes on to the print page. */
-let pdNameFor = null;
+let pdNameFor = null, pdNewName = null;                                    // pdNameFor: a scanned code with no name (asks the name) · pdNewName: a typed name nobody knows (asks the 4 last digits of the ID card)
 const pdAskName = () => pdSay('', T('รหัส {0} ยังไม่มีชื่อ — พิมพ์ชื่อเล่นของคนนี้ แล้วกด Enter ใบปะหน้าจะได้มีชื่อผู้จัด', pdNameFor));
+const pdAskNum = () => pdSay('', T('ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลข 4 ตัวท้ายบัตรประชาชนของคนนี้', pdNewName));
 function pdSubmit(raw) {
   const s = String(raw == null ? pdIn.value : raw).trim();
+  if (pdNewName) {                                                           // the second step for a new name: the number (4 last digits of the ID card), typed by the person
+    const num = last4(s);
+    if (!num) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'ใส่เลข 4 ตัวท้ายบัตรประชาชน (ตัวเลข 4 หลัก)'); return; }
+    if (isKnownEmp(num)) { sfx.bad(); pdIn.value = ''; pdSay('bad', T('เลข {0} มีคนใช้แล้ว ({1}) — ใส่เลขอื่น', num, nameOfEmp(num) || T('พนักงานประจำ'))); return; }
+    ptime[num] = { name: pdNewName, ts: Date.now() }; savePt(); pdNewName = null;
+    if (!pickEmp(num, pdSay)) return;
+    return pdDone();
+  }
   if (pdNameFor) {                                                           // the second step: the name for the badge that had none
     const nm = s.replace(/\s+/g, ' ').slice(0, 40);
     if (!nm || /^\d+$/.test(nm)) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'พิมพ์เป็นชื่อเล่น ไม่ใช่ตัวเลข'); return; }
@@ -2687,6 +2709,7 @@ function pdSubmit(raw) {
     return pdDone();
   }
   if (!s || !pdValid(s)) { sfx.bad(); pdSay('bad', !s ? 'สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน' : 'รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก'); return; }
+  if (!/^\d+$/.test(s) && !findPersonByName(s)) { pdNewName = s.replace(/\s+/g, ' ').slice(0, 40); pdIn.value = ''; pdAskNum(); return; }      // a new name: no number is invented, it is asked for here
   if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; return; }                // an unknown code: the reason stays on screen and the way on stays locked
   if (!nameOfEmp(state.emp)) { pdNameFor = state.emp; pdIn.value = ''; pdAskName(); return; }
   pdDone();
@@ -2705,7 +2728,7 @@ function pdDone() {
 }
 $('printWho').addEventListener('click', openPrintDlg);
 $('pdCancel').addEventListener('click', () => $('printDlg').close());
-$('printDlg').addEventListener('close', () => { pdNameFor = null; });
+$('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
 wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);
@@ -2719,13 +2742,31 @@ function addPartTime() {
   if (!name) { sfx.bad(); say('bad', 'พิมพ์ชื่อก่อน เช่น วา'); ptName.focus(); return; }
   const same = Object.keys(ptime).find(id => ptime[id].name.toLowerCase() === name.toLowerCase());
   if (same) { sfx.dup(); say('warn', `มีชื่อ "${name}" อยู่แล้ว — เลข ${same}`); renderEmpBox(); return; }
-  const id = newPtId(); if (!id) { sfx.bad(); say('bad', 'หาเลขว่างไม่ได้'); return; }
+  const id = last4(ptNum.value);                                           // the number is typed by the person: the 4 last digits of the ID card (the system no longer invents one)
+  if (!id) { sfx.bad(); say('bad', 'ใส่เลข 4 ตัวท้ายบัตรประชาชนของคนนี้ (ตัวเลข 4 หลัก)'); ptNum.focus(); return; }
+  if (isKnownEmp(id)) { sfx.bad(); say('bad', T('เลข {0} มีคนใช้แล้ว ({1}) — ใส่เลขอื่น', id, nameOfEmp(id) || T('พนักงานประจำ'))); ptNum.focus(); ptNum.select(); return; }
   ptime[id] = { name, ts: Date.now() }; savePt(); sfx.ok();
-  say('ok', `✓ ${name} → เลข ${id} · สแกนบาร์โค้ดนี้ = ชื่อ ${name}`); ptName.value = '';
-  renderEmpBox(); render();
+  say('ok', `✓ ${name} → เลข ${id} · สแกนบาร์โค้ดนี้ = ชื่อ ${name}`); ptName.value = ''; ptNum.value = '';
+  if (ptThenUse) { $('ptDlg').close(); pickEmp(id, (kind, text) => sideMsg('assign', kind, text)); return; }      // opened from a typed name in the orange picker field: the new person is the picker at once
+  renderEmpBox(); render(); ptName.focus();
 }
+let ptThenUse = false;
+function openPtDlg(prefill, thenUse) {                                     // the Part-Time window; `prefill` = a typed name to make a person of (then the number is asked for)
+  ptThenUse = !!thenUse; ptName.value = prefill || ''; ptNum.value = ''; $('ptMsg').textContent = ''; $('ptMsg').className = 'pmsg';
+  $('ptDlg').showModal(); renderEmpBox(); (prefill ? ptNum : ptName).focus();
+}
+$('ptDlg').addEventListener('close', () => { ptThenUse = false; });
 $('ptAdd').addEventListener('click', addPartTime);
-ptName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPartTime(); } });
+ptName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!ptNum.value.trim() && ptName.value.trim()) ptNum.focus(); else addPartTime(); } });
+ptNum.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPartTime(); } });
+ptNum.addEventListener('input', () => { ptNum.value = ptNum.value.replace(/\D/g, ''); });
+$('ptDelAll').addEventListener('click', async () => {                      // the button where "ปิด" used to be: forget every Part-Time person (the regular roster and the scan list are not touched)
+  const ids = Object.keys(ptime); if (!ids.length) return;
+  if (!await ask(`ลบพนักงานชั่วคราวทั้งหมด ${ids.length} คน?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม · รายชื่อพนักงานประจำไม่ถูกแตะ)`)) return;
+  const cur = state.emp && (state.emp in ptime) && !(state.emp in roster);
+  ids.forEach(id => delete ptime[id]); savePt(); if (cur) { state.emp = null; save(); }
+  render(); renderEmpBox(); toast('ลบแล้ว');
+});
 function renderEmpBox() {
   if (!$('ptDlg').open) return;                                            // only drawn while the Part-Time window is open
   const nm = state.emp ? nameOfEmp(state.emp) : '';
@@ -2733,7 +2774,7 @@ function renderEmpBox() {
   $('rpWhoClr').hidden = !state.emp;
   const ul = $('ptList'); ul.innerHTML = '';
   const ids = Object.keys(ptime).sort((a, b) => ptime[b].ts - ptime[a].ts);
-  $('ptPrintAll').disabled = !ids.length;
+  $('ptPrintAll').disabled = !ids.length; $('ptDelAll').disabled = !ids.length;
   if (!ids.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีพนักงานชั่วคราว'; ul.appendChild(li); return; }
   ids.forEach(id => {
     const li = document.createElement('li'); if (state.emp === id) li.classList.add('sel');
@@ -2751,7 +2792,7 @@ function renderEmpBox() {
   });
 }
 $('rpWhoClr').addEventListener('click', () => { state.emp = null; save(); render(); });
-$('ptOpen').addEventListener('click', () => { $('ptMsg').textContent = ''; $('ptMsg').className = 'pmsg'; $('ptDlg').showModal(); renderEmpBox(); ptName.focus(); });
+$('ptOpen').addEventListener('click', () => openPtDlg());
 $('ptClose').addEventListener('click', () => $('ptDlg').close());
 /* the Part-Time card: name, barcode and number, 2 cards across an A4 page */
 function ptCardsHtml(ids, interactive) {
@@ -3344,7 +3385,18 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['สร้างบาร์โค้ด', 'Make barcode', 'ဘားကုဒ်ပြုလုပ်ရန်'],
   ['บาร์โค้ดพนักงาน', 'Staff barcode', 'ဝန်ထမ်းဘားကုဒ်'],
   ['บาร์โค้ดพนักงานชั่วคราว (Part-Time)', 'Temporary staff barcode (Part-Time)', 'ယာယီဝန်ထမ်း ဘားကုဒ် (Part-Time)'],
-  ['พิมพ์ชื่อ ระบบสุ่มเลขให้เอง แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)', 'Type a name, the system picks a number and makes a barcode — scan it anywhere and that name becomes the picker (the regular roster is not touched)', 'အမည်ရိုက်ပါ၊ စနစ်က နံပါတ်ရွေး၍ ဘားကုဒ်ပြုလုပ်ပေးသည် — ဘယ်နေရာမှာမဆို စကင်န်ဖတ်လျှင် ထိုအမည်သည် ပစ္စည်းကောက်သူဖြစ်သည် (ပုံမှန်စာရင်းကို မထိပါ)'],
+  ['พิมพ์ชื่อ + ใส่เลข 4 ตัวท้ายบัตรประชาชน แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)', 'Type a name + the 4 last digits of the ID card and make a barcode — scan it anywhere and that name becomes the picker (the regular roster is not touched)', 'အမည်ရိုက်ပြီး မှတ်ပုံတင်၏ နောက်ဆုံး ဂဏန်း ၄ လုံး ထည့်ပါ၊ ဘားကုဒ်ပြုလုပ်ပါ — ဘယ်နေရာမှာမဆို စကင်န်ဖတ်လျှင် ထိုအမည်သည် ပစ္စည်းကောက်သူဖြစ်သည် (ပုံမှန်စာရင်းကို မထိပါ)'],
+  ['เลข 4 ตัวท้ายบัตรประชาชน', 'Last 4 digits of the ID card', 'မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး'],
+  ['เลข 4 ตัวท้ายบัตรประชาชนของพนักงานชั่วคราว', 'Last 4 digits of the temporary employee\'s ID card', 'ယာယီဝန်ထမ်း၏ မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး'],
+  ['ลบข้อมูลทั้งหมด', 'Delete all data', 'ဒေတာအားလုံး ဖျက်ရန်'],
+  ['ใส่เลข 4 ตัวท้ายบัตรประชาชนของคนนี้ (ตัวเลข 4 หลัก)', 'Enter this person\'s last 4 ID-card digits (4 digits)', 'ဤသူ၏ မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး ထည့်ပါ (ဂဏန်း ၄ လုံး)'],
+  ['ใส่เลข 4 ตัวท้ายบัตรประชาชน (ตัวเลข 4 หลัก)', 'Enter the last 4 ID-card digits (4 digits)', 'မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး ထည့်ပါ (ဂဏန်း ၄ လုံး)'],
+  ['เลข {0} มีคนใช้แล้ว ({1}) — ใส่เลขอื่น', 'Number {0} is already used ({1}) — enter another', 'နံပါတ် {0} ကို သုံးပြီးသား ({1}) — အခြားနံပါတ် ထည့်ပါ'],
+  ['พนักงานประจำ', 'Regular employee', 'ပုံမှန်ဝန်ထမ်း'],
+  ['ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลข 4 ตัวท้ายบัตรประชาชนในหน้าต่างที่เปิดขึ้น', 'No "{0}" in the system yet — enter the last 4 ID-card digits in the window that opened', 'စနစ်တွင် "{0}" မရှိသေးပါ — ပွင့်လာသော ဝင်းဒိုးတွင် မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး ထည့်ပါ'],
+  ['ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลข 4 ตัวท้ายบัตรประชาชนของคนนี้', 'No "{0}" in the system yet — enter this person\'s last 4 ID-card digits', 'စနစ်တွင် "{0}" မရှိသေးပါ — ဤသူ၏ မှတ်ပုံတင် နောက်ဆုံး ဂဏန်း ၄ လုံး ထည့်ပါ'],
+  ['พร้อมแล้ว — กด Enter เพื่อบันทึก แล้วไปหน้าพิมพ์', 'Ready — press Enter to save and go to the print page', 'အဆင်သင့်ဖြစ်ပြီ — Enter နှိပ်၍ သိမ်းပြီး ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['ลบพนักงานชั่วคราวทั้งหมด {0} คน?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม · รายชื่อพนักงานประจำไม่ถูกแตะ)', 'Delete all {0} temporary employees?\n(Orders already scanned keep their names · the regular roster is not touched)', 'ယာယီဝန်ထမ်း {0} ဦးလုံးကို ဖျက်မလား?\n(စကင်န်ဖတ်ပြီးသော အော်ဒါများတွင် အမည်ကျန်နေမည် · ပုံမှန်ဝန်ထမ်းစာရင်းကို မထိပါ)'],
   ['ยังไม่มีผู้จัด', 'No picker yet', 'ပစ္စည်းကောက်သူ မရှိသေးပါ'],
   ['พิมพ์บัตรทั้งหมด', 'Print all cards', 'ကတ်အားလုံး ပုံနှိပ်ရန်'],
   ['พิมพ์บัตร', 'Print card', 'ကတ်ပုံနှိပ်ရန်'],
