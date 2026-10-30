@@ -347,15 +347,11 @@ td.x{width:34px;text-align:center}
 .bigdlg .bdsub{margin:4px 0 0;font-size:16px;line-height:1.4;opacity:.94;color:#fff;white-space:normal}
 .bigdlg .bdbody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:26px 30px 28px;overflow:auto}
 .bigdlg .bdfoot{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}
-.bigdlg .bdfoot button.blue{display:inline-flex;align-items:center;gap:10px;border:0;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 4px 14px rgba(11,92,173,.38)}      /* the blue buttons: print the regular-employee barcode */
-.bigdlg .bdfoot button.blue:hover:not(:disabled){filter:brightness(1.08);border:0}
-.bigdlg .bdfoot button.blue svg{width:22px;height:22px;flex:none}
-.bigdlg .bdfoot #ptDelAll{margin-left:auto}      /* (stays at the right end even when the three buttons wrap) */
-.edlg .pdin{border-color:#a8c8f0}
-.edlg .pdin:focus{border-color:#3d8fe8;box-shadow:0 0 0 6px rgba(61,143,232,.28)}
-.bigdlg.edlg .bdhead{background:linear-gradient(135deg,#3d8fe8,#0b5cad)}      /* the regular-employee window is blue like its button */
-.edlg .pdmsg.ok{background:#e3effd;color:#0b5cad}
-.empprev{display:flex;align-items:center;gap:16px;margin-top:14px;padding:12px 16px;border:2px solid #a8c8f0;border-radius:16px;background:#fff;color:#1d2433}
+.bigdlg .bdfoot button.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;color:#fff;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 4px 14px rgba(27,127,72,.38)}      /* the green button: print the regular-employee barcode */
+.bigdlg .bdfoot button.gbtn:hover:not(:disabled){filter:brightness(1.08);border:0}
+.bigdlg .bdfoot button.gbtn svg{width:22px;height:22px;flex:none}
+.bigdlg .bdfoot #ptDelAll{margin-left:auto}      /* (stays at the right end even when the buttons wrap) */
+.empprev{display:flex;align-items:center;gap:16px;margin-top:14px;padding:12px 16px;border:2px solid #a9dcbe;border-radius:16px;background:#fff;color:#1d2433}
 .empprev .en{min-width:0;flex:1;font-size:24px;font-weight:900;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .empprev .en small{display:block;font-size:14px;font-weight:600;color:#667085}
 .empprev svg{flex:none;max-width:46%}
@@ -631,6 +627,65 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .ptdlg .ewho button{padding:6px 16px;font-size:15px}.eadd{display:flex;gap:8px}
 .eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
 @media (max-width:560px){ .ptdlg .eadd{flex-direction:column} .ptdlg .eadd #ptName,.ptdlg .eadd #ptNum{flex:none;width:100%} .bigdlg .bdclose{padding:8px 14px;font-size:16px} .ptdlg .eadd button{padding:14px 0;font-size:17px} .ptdlg .ptlist{min-height:200px} .ptdlg .ptlist li{grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 12px} .ptdlg .ptlist .pta{justify-self:start} .ptdlg .ptlist .ptbar svg{max-width:100%;height:auto} }      /* phones: the name field gets its own line (its placeholder was cut off beside the button), and each Part-Time card is stacked: barcode, name, buttons */
+/* the window in two halves, side by side: the regular employees on the left (green), the Part-Time staff on the right (blue) */
+.ptdlg.twodlg{width:min(1180px,96vw);max-height:96vh;max-height:96dvh}
+.twodlg .tdbar{flex:none;display:flex;align-items:center;gap:16px;padding:12px 22px 10px}
+.twodlg .tdbar h3{color:var(--ink);font-size:24px}
+.twodlg .tdbar .bdclose{margin-left:auto;align-self:center;padding:9px 20px;font-size:18px}
+.twodlg .tdcols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:auto minmax(0,1fr);gap:0 18px;padding:0 22px 20px}
+.twodlg .tdcol{grid-row:1 / span 2;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden;border:2px solid var(--pbd);border-radius:22px;background:var(--card)}
+@supports (grid-template-rows:subgrid){ .twodlg .tdcol{grid-template-rows:subgrid} }      /* (the two headers are then level, whatever their text length) */
+.twodlg .tdcol .bdhead{gap:14px;padding:14px 20px}
+.twodlg .tdcol .bdico{width:48px;height:48px}
+.twodlg .tdcol .bdico svg{width:26px;height:26px}
+.twodlg .tdcol h3{font-size:24px}
+.twodlg .tdcol .bdsub{font-size:14px}
+.twodlg .tdcol .bdbody{padding:16px 20px 20px}
+.twodlg .tdcol .bdfoot{margin-top:auto;padding-top:16px}
+.twodlg .tdcol .bdfoot button{padding:12px 22px;font-size:17px}
+.twodlg .tdcol.emp .bdfoot button{flex:1}
+.twodlg .tdcol.emp .pdmsg{min-height:0;margin-top:12px;font-size:16px}
+.twodlg #empNoMsg:empty,.empprev[hidden]{display:none}
+.twodlg .tdcol.pt{--pt:#0b4f96;--pbd:#a8c8f0;--dot:#3d8fe8;--ok:#0b5cad}      /* the Part-Time half is blue (the inputs, message and focus ring follow these tokens) */
+.twodlg .tdcol.pt .bdhead{background:linear-gradient(135deg,#3d8fe8,#0b5cad)}
+.twodlg .tdcol.pt .eadd{flex-wrap:wrap}
+.twodlg .tdcol.pt .eadd #ptName{flex:1 1 200px}
+.twodlg .tdcol.pt .eadd #ptNum{flex:0 0 235px;width:235px}
+.twodlg .tdcol.pt .eadd button{flex:1 1 100%;height:50px;padding:0 22px;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 4px 14px rgba(11,92,173,.32)}
+.twodlg .tdcol.pt .ptlist{min-height:150px;border-color:#a8c8f0}
+.twodlg .tdcol .pdin,.twodlg .tdcol.pt .eadd input[type=text]{height:56px;font-size:22px}
+.twodlg .tdcol.pt .pmsg:empty{display:none}
+.twodlg .tdcol.pt .ptlist li{gap:12px;padding:10px 14px}
+.twodlg .tdcol.pt .ptlist li.sel{background:#e3effd}
+.twodlg .tdcol.pt .ptlist .pta button{padding:7px 12px;font-size:15px;border-color:#a8c8f0;color:#0b4f96}
+.twodlg .tdcol.pt .ptlist .pta button.go{background:#2f7fd8;border-color:#2f7fd8;color:#fff}
+@media (max-width:900px){                                   /* narrower windows: the halves are stacked, the whole window scrolls */
+  .ptdlg.twodlg{width:min(640px,96vw)}
+  .twodlg .tdcols{display:block;overflow:auto;padding:0 16px 16px}
+  .twodlg .tdcol{display:block;margin-bottom:16px}
+  .twodlg .tdcol:last-child{margin-bottom:0}
+  .twodlg .tdcol .bdbody{overflow:visible}
+  .twodlg .tdcol .bdfoot{margin-top:0}
+  .twodlg .tdcol.pt .ptlist{min-height:150px;max-height:340px}
+}
+@media (max-width:560px){
+  .twodlg .tdbar{padding:12px 16px 10px}
+  .twodlg .tdbar h3{font-size:20px}
+  .twodlg .tdbar .bdclose{padding:8px 14px;font-size:16px}
+  .twodlg .tdcol .bdhead{gap:10px;padding:14px 16px}
+  .twodlg .tdcol .bdico{width:38px;height:38px}
+  .twodlg .tdcol .bdico svg{width:20px;height:20px}
+  .twodlg .tdcol h3{font-size:20px}
+  .twodlg .tdcol .bdsub{font-size:13px}
+  .twodlg .tdcol .bdbody{padding:14px 16px 16px}
+  .twodlg .tdcol.pt .eadd{flex-direction:column;flex-wrap:nowrap}      /* (one field per line: no wrap, so the inputs keep their own height) */
+  .twodlg .tdcol.pt .eadd #ptName,.twodlg .tdcol.pt .eadd #ptNum{flex:none;width:100%}
+  .twodlg .tdcol.pt .eadd button{flex:none;height:auto;padding:14px 0}
+  .twodlg .tdcol.pt .ptlist li{padding:10px 12px}
+  .twodlg .tdcol .pdin::placeholder{font-size:12px}      /* (the long hint of the green field fits one line on a phone) */
+  html[lang="my"] .twodlg .tdcol h3{line-height:1.5}
+  html[lang="my"] .twodlg .tdcol .bdsub{line-height:1.55}
+}
 .ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
 .ptlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
 .ptlist li.sel{background:#e4f6ec}
@@ -969,14 +1024,43 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <p class="phint" id="reprintHint"></p>
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button><button id="ptOpen" class="mini go" type="button" title="พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path fill="currentColor" stroke="none" d="M5.5 5.5h2v2h-2zM16.5 5.5h2v2h-2zM5.5 16.5h2v2h-2zM14 14h2.5v2.5H14zM18.5 14H21v2.5h-2.5zM16.2 16.2h2.6v2.6h-2.6zM14 18.5h2.5V21H14zM18.5 18.5H21V21h-2.5z"/></svg>บาร์โค้ดพนักงาน</button></div>
-            <dialog id="ptDlg" class="bigdlg ptdlg" aria-labelledby="ptTitle">
-              <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span><div><h3 id="ptTitle">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3><p class="bdsub">พิมพ์ชื่อ + ใส่เลข 4 ตัวท้ายบัตรประชาชน แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p></div><button id="ptClose" type="button" class="closebtn bdclose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button></div>
-              <div class="bdbody">
-                <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><input id="ptNum" class="ptnum" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="13" placeholder="เลข 4 ตัวท้ายบัตรประชาชน" aria-label="เลข 4 ตัวท้ายบัตรประชาชนของพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
-                <div class="pmsg" id="ptMsg" aria-live="polite"></div>
-                <ul class="ptlist" id="ptList"></ul>
-                <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
-                <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><button id="ptPrintEmp" class="blue" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg>พิมพ์บาร์โค้ดพนักงานประจำ</button><span class="sp"></span><button id="ptDelAll" class="ptdelall" type="button" disabled>ลบข้อมูลทั้งหมด</button></div>
+            <dialog id="ptDlg" class="bigdlg ptdlg pdlg twodlg" aria-labelledby="ptTitle">
+              <div class="tdbar"><h3 id="ptTitle">บาร์โค้ดพนักงาน</h3><button id="ptClose" type="button" class="closebtn bdclose">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+ปิด</button></div>
+              <div class="tdcols">
+                <section class="tdcol emp" aria-labelledby="empTitle">
+                  <div class="bdhead"><span class="bdico">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg>
+</span><div><h3 id="empTitle">พิมพ์บาร์โค้ดพนักงานประจำ</h3><p class="bdsub">ใส่เลข 4 ตัวท้ายของเลขพนักงาน (หรือสแกนบัตร 8 หลัก) ระบบหาชื่อจากรายชื่อพนักงาน แล้วเปิดหน้าพิมพ์บัตรให้เอง</p></div></div>
+                  <div class="bdbody">
+                    
+<input id="empNoIn" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="8" placeholder="เลขท้ายเลขพนักงาน 4 ตัว (แล้วกด Enter)" aria-label="เลข 4 ตัวท้ายของเลขพนักงาน">
+                    
+<div class="pdmsg" id="empNoMsg" aria-live="polite"></div>
+                    
+<div class="empprev" id="empPrev" hidden></div>
+                    <div class="bdfoot"><button id="empNoGo" class="gbtn" type="button">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg>
+ พิมพ์บัตร</button></div>
+                  </div>
+                </section>
+                <section class="tdcol pt" aria-labelledby="ptHead">
+                  <div class="bdhead"><span class="bdico">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg>
+</span><div><h3 id="ptHead">บาร์โค้ดพนักงานชั่วคราว (Part-Time)</h3><p class="bdsub">พิมพ์ชื่อ + ใส่เลข 4 ตัวท้ายบัตรประชาชน แล้วทำเป็นบาร์โค้ด — สแกนบาร์โค้ดนี้ที่ไหนก็ได้ ชื่อนี้จะเป็นผู้จัด (ไม่แตะรายชื่อพนักงานประจำ)</p></div></div>
+                  <div class="bdbody">
+                    
+<div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><input id="ptNum" class="ptnum" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="13" placeholder="เลข 4 ตัวท้ายบัตรประชาชน" aria-label="เลข 4 ตัวท้ายบัตรประชาชนของพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
+                    
+<div class="pmsg" id="ptMsg" aria-live="polite"></div>
+                    
+<ul class="ptlist" id="ptList"></ul>
+                    
+<div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
+                    <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptDelAll" class="ptdelall" type="button" disabled>ลบข้อมูลทั้งหมด</button></div>
+                  </div>
+                </section>
               </div>
             </dialog>
             </div>
@@ -999,15 +1083,6 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 </dialog>
 
 
-<dialog id="empDlg" class="bigdlg pdlg edlg" aria-labelledby="empTitle">
-  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span><div><h3 id="empTitle">พิมพ์บาร์โค้ดพนักงานประจำ</h3><p class="bdsub">ใส่เลข 4 ตัวท้ายของเลขพนักงาน (หรือสแกนบัตร 8 หลัก) ระบบหาชื่อจากรายชื่อพนักงาน แล้วเปิดหน้าพิมพ์บัตรให้เอง</p></div></div>
-  <div class="bdbody">
-    <input id="empNoIn" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="8" placeholder="เลขท้ายเลขพนักงาน 4 ตัว (แล้วกด Enter)" aria-label="เลข 4 ตัวท้ายของเลขพนักงาน">
-    <div class="pdmsg" id="empNoMsg" aria-live="polite"></div>
-    <div class="empprev" id="empPrev" hidden></div>
-    <div class="bdfoot"><button id="empNoGo" class="blue" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg> พิมพ์บัตร</button><span class="sp"></span><button id="empNoClose" type="button">ปิด</button></div>
-  </div>
-</dialog>
 <dialog id="printDlg" class="bigdlg pdlg" aria-labelledby="pdTitle">
   <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><div><h3 id="pdTitle">ใครเป็นผู้จัด?</h3><p class="bdsub" id="pdInfo"></p></div></div>
   <div class="bdbody">
@@ -3056,9 +3131,9 @@ function addPartTime() {
 let ptThenUse = false;
 function openPtDlg(prefill, thenUse) {                                     // the Part-Time window; `prefill` = a typed name to make a person of (then the number is asked for)
   ptThenUse = !!thenUse; ptName.value = prefill || ''; ptNum.value = ''; $('ptMsg').textContent = ''; $('ptMsg').className = 'pmsg';
-  $('ptDlg').showModal(); renderEmpBox(); (prefill ? ptNum : ptName).focus();
+  resetEmpSide(); $('ptDlg').showModal(); renderEmpBox(); (prefill ? ptNum : ptName).focus();
 }
-$('ptDlg').addEventListener('close', () => { ptThenUse = false; });
+$('ptDlg').addEventListener('close', () => { ptThenUse = false; clearTimeout(empNoT); });
 $('ptAdd').addEventListener('click', addPartTime);
 ptName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!ptNum.value.trim() && ptName.value.trim()) ptNum.focus(); else addPartTime(); } });
 ptNum.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPartTime(); } });
@@ -3120,7 +3195,7 @@ async function printPtCards(ids) {
   printDoc(ptCardsHtml(ids, false));
 }
 $('ptPrintAll').addEventListener('click', () => printPtCards(Object.keys(ptime).sort((a, b) => ptime[a].ts - ptime[b].ts)));
-/* The blue "พิมพ์บาร์โค้ดพนักงานประจำ" button of the Part-Time window: the last digits of an employee number are typed (or a badge of 8 digits scanned) -> the name comes from the roster -> the card
+/* The left (green) half of the barcode window: the last digits of an employee number are typed (or a badge of 8 digits scanned) -> the name comes from the roster -> the card
    (name + Code 128 barcode of the 4-digit number, like the Part-Time cards) goes to the print window. The window stays open for the next person. */
 const empNoIn = $('empNoIn'), empNoMsg = $('empNoMsg'), empPrev = $('empPrev');
 const empSay = (kind, text) => { empNoMsg.className = 'pdmsg ' + kind; empNoMsg.textContent = text; };
@@ -3143,10 +3218,8 @@ function empNoGo() {
   empPrev.innerHTML = `<span class="en">${xesc(nick || full)}${hasNick ? `<small>${xesc(full)}</small>` : ''}</span>${barcodeSvg(id, 1.6, 56, 'px')}`; empPrev.hidden = false;
   printEmpCard(id); empNoIn.focus();
 }
-function openEmpDlg() { empNoIn.value = ''; empPrev.hidden = true; empNoMsg.className = 'pdmsg'; empNoMsg.textContent = rosterCount() ? '' : T('ยังไม่มีรายชื่อพนักงานประจำ — นำเข้าที่ Update Data → ชื่อพนักงาน ก่อน'); $('empDlg').showModal(); empNoIn.focus(); }
-$('ptPrintEmp').addEventListener('click', openEmpDlg);
+function resetEmpSide() { empNoIn.value = ''; clearTimeout(empNoT); empPrev.hidden = true; empNoMsg.className = 'pdmsg'; empNoMsg.textContent = rosterCount() ? '' : T('ยังไม่มีรายชื่อพนักงานประจำ — นำเข้าที่ Update Data → ชื่อพนักงาน ก่อน'); }
 $('empNoGo').addEventListener('click', empNoGo);
-$('empNoClose').addEventListener('click', () => $('empDlg').close());
 attachLayoutFix(empNoIn, false);                                           // (a Thai / Burmese keyboard layout: the digits are read from the physical keys)
 empNoIn.addEventListener('input', () => { empNoIn.value = empNoIn.value.replace(/\D/g, ''); clearTimeout(empNoT); if (empNoIn.value.length === 8) empNoGo(); else if (empNoIn.value.length === 4) empNoT = setTimeout(() => { if (empNoIn.value.length === 4) empNoGo(); }, 700); });      // 8 digits = a scanned badge: at once; 4 digits and nothing more for 0.7 s: the typed last digits
 let empNoT = null;
@@ -3718,7 +3791,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ย่อ', 'Shrink', 'ချုံ့ရန်'],
   ['พิมพ์บาร์โค้ดพนักงานประจำ', 'Print regular-employee barcode', 'ပုံမှန်ဝန်ထမ်း ဘားကုဒ် ပုံနှိပ်ရန်'],
   ['ใส่เลข 4 ตัวท้ายของเลขพนักงาน (หรือสแกนบัตร 8 หลัก) ระบบหาชื่อจากรายชื่อพนักงาน แล้วเปิดหน้าพิมพ์บัตรให้เอง', 'Type the last 4 digits of the employee number (or scan the 8-digit badge): the name is found in the roster and the card print window opens by itself', 'ဝန်ထမ်းနံပါတ်၏ နောက်ဆုံး ၄ လုံးကို ရိုက်ပါ (သို့မဟုတ် ၈ လုံးပါ ကတ်ကို စကင်န်ဖတ်ပါ) — အမည်ကို စာရင်းမှ ရှာပြီး ကတ်ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်မည်'],
-  ['เลขท้ายเลขพนักงาน 4 ตัว (แล้วกด Enter)', 'Last 4 digits of the employee number (then Enter)', 'ဝန်ထမ်းနံပါတ် နောက်ဆုံး ၄ လုံး (ပြီးလျှင် Enter)'],
+  ['เลขท้ายเลขพนักงาน 4 ตัว (แล้วกด Enter)', 'Last 4 digits (then Enter)', 'နောက်ဆုံး ၄ လုံး (ပြီးလျှင် Enter)'],
   ['เลข 4 ตัวท้ายของเลขพนักงาน', 'Last 4 digits of the employee number', 'ဝန်ထမ်းနံပါတ် နောက်ဆုံး ၄ လုံး'],
   ['พิมพ์บัตร', 'Print card', 'ကတ်ပုံနှိပ်ရန်'],
   ['ใส่เลขท้ายของเลขพนักงานอย่างน้อย 4 ตัว', 'Enter at least the last 4 digits of the employee number', 'ဝန်ထမ်းနံပါတ် နောက်ဆုံး ၄ လုံးအနည်းဆုံး ထည့်ပါ'],
