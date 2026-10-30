@@ -1327,7 +1327,41 @@ function handleScan(raw) {
    The value decides what it is, so a scan landing in the "wrong" field still goes to the right place. */
 const empIn = $('empIn');
 const resets = new Map();
-function wire(el, ownRe, normalize) {
+/* Keyboard layout. A barcode scanner types like a keyboard, so with the computer set to Thai (TH), Burmese … the digits and letters of a scan come out as Thai / Burmese characters. The scan fields therefore read the
+   PHYSICAL key (event.code — "Digit8", "KeyA"), which does not depend on the layout, and type the Latin character themselves: a Latin-only field (order / badge fields) does it key by key, so the digits show up as they
+   are scanned. The picker field takes names too (Thai nicknames), so there the keys are only remembered and, when what was typed turns out to be a badge or an order number, that replaces the Thai characters. */
+const MIXED_FIELD = new WeakSet(), KEY_CODES = new WeakMap();
+const latinOfKey = e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return '';
+  const c = e.code || '';
+  if (/^Digit\d$/.test(c)) return c.slice(5);
+  if (/^Numpad\d$/.test(c)) return c.slice(6);
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3);                              // letters upper-case: every scan is upper-cased anyway
+  return '';
+};
+const looksScan = s => ORD_RE.test(s) || /^(\d{4}|\d{8})$/.test(s);
+function attachLayoutFix(el, mixed) {
+  if (mixed) MIXED_FIELD.add(el);
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'Delete') { KEY_CODES.delete(el); return; }
+    const ch = latinOfKey(e); if (!ch) return;
+    if (mixed) { KEY_CODES.set(el, (KEY_CODES.get(el) || '') + ch); return; }
+    if (/^[A-Za-z0-9]$/.test(e.key)) return;                                // a Latin layout: nothing to fix
+    e.preventDefault(); el.setRangeText(ch, el.selectionStart, el.selectionEnd, 'end'); el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  el.addEventListener('input', () => {
+    if (!el.value) { KEY_CODES.delete(el); return; }
+    if (!mixed || !/[^\x00-\x7F]/.test(el.value)) return;
+    const c = KEY_CODES.get(el) || '';
+    if (c.length === el.value.length && looksScan(c)) el.value = c;         // what was "typed" is a badge / order: show it as the Latin text it is
+  });
+}
+function fixTyped(el) {                                                     // the value to submit (the keys' Latin text when a badge / order was typed with a non-Latin layout)
+  const v = el.value, c = KEY_CODES.get(el) || ''; KEY_CODES.delete(el);
+  return MIXED_FIELD.has(el) && /[^\x00-\x7F]/.test(v) && c.length === v.length && looksScan(c) ? c : v;
+}
+function wire(el, ownRe, normalize, mixed) {
+  attachLayoutFix(el, mixed);
   let tFirst = 0, tLast = 0, t1 = null, t2 = null;
   const stop = () => { clearTimeout(t1); clearTimeout(t2); };
   resets.set(el, () => { tFirst = 0; stop(); });
@@ -1369,7 +1403,7 @@ function focusNext() {
 const sideHandlers = new Map();      // Assign / Re-Print fields: their own handler, and focus stays so several orders can be scanned in a row
 function submitFrom(el) {
   resets.get(el)();
-  const v = el.value; el.value = '';
+  const v = fixTyped(el); el.value = '';
   if (sideHandlers.has(el)) { sideHandlers.get(el)(v); el.focus(); return; }
   handleScan(v);
   empIn.value = state.emp || '';
@@ -2904,8 +2938,9 @@ $('pdCancel').addEventListener('click', () => $('printDlg').close());
 $('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
-wire(pdIn, /^(\d{4}|\d{8})$/); sideHandlers.set(pdIn, pdSubmit);
-assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = assignWho.value; assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
+wire(pdIn, /^(\d{4}|\d{8})$/, null, true); sideHandlers.set(pdIn, pdSubmit);      // (names too: the layout fix only remembers the keys here)
+attachLayoutFix(assignWho, true);
+assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = fixTyped(assignWho); assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
   for (let n = 0; n < 5000; n++) { const id = String(1000 + Math.floor(Math.random() * 9000)); if (!isKnownEmp(id)) return id; }
   return null;
