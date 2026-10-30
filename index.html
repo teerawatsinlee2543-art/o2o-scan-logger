@@ -484,7 +484,7 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .panel.zoomed .pzoom .zt{display:inline}
 @media (max-width:760px),(pointer:coarse){ .pzoom{width:38px;height:38px} .plist li button{min-width:36px;min-height:32px} }      /* finger-sized */
 .panel.zoomed input[type=text]{height:clamp(60px,9vh,84px);font-size:clamp(26px,3.4vw,40px);border-radius:16px;padding:0 18px}
-.panel.zoomed input[type=text]::placeholder{font-size:clamp(16px,1.8vw,22px)}
+.panel.zoomed input[type=text]::placeholder{font-size:clamp(17px,2vw,26px)}
 .panel.zoomed .pmode{font-size:15px;padding:8px 8px 8px 14px}
 .panel.zoomed .pmsg{font-size:18px;min-height:44px;padding-top:6px;padding-bottom:6px}
 .panel.zoomed .phint{font-size:16px}
@@ -513,25 +513,27 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 #rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
-/* the third field carries a counter in its right corner: how many orders have been scanned in this go (orange-yellow, dimmed while it is 0, pops when it goes up) */
+/* the counter in the corner of the many-orders fields (3 and 4): how many orders have been scanned in this go. A rounded yellow chip with the number and the word "Order", set in from the edges so it never
+   touches the border, dimmed while it is 0, pops when it goes up */
 .infield{position:relative;margin-top:8px}
-.infield input[type=text]{padding-right:78px;text-overflow:ellipsis}
-.cnt{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;align-items:baseline;gap:4px;padding:2px 9px;border-radius:9px;white-space:nowrap;pointer-events:none;
-  color:#5a2d00;background:linear-gradient(135deg,#ffd75e,#ff9f1c);box-shadow:0 2px 6px rgba(214,120,0,.38);transition:opacity .2s,filter .2s}
-.cnt b{font-size:17px;line-height:1.2;font-weight:800;font-variant-numeric:tabular-nums}
-.cnt small{font-size:11px;font-weight:700}
-.cnt.zero{opacity:.55;filter:saturate(.55)}
-.panel.zoomed .infield input[type=text]{padding-right:clamp(112px,9vw,132px)}
-@media (max-width:420px){ .cnt small{display:none} .infield input[type=text]{padding-right:54px} .panel.zoomed .infield input[type=text]{padding-right:84px} }      /* a phone: the counter is just the number, so the hint has more room */
+.infield input[type=text]{padding-right:66px;text-overflow:ellipsis}
+.infield .cnt{position:absolute;right:9px;top:6px;bottom:6px;display:flex;align-items:center;gap:5px;padding:0 11px;border-radius:11px;white-space:nowrap;pointer-events:none;
+  color:#5a3b00;background:linear-gradient(160deg,#ffe98a,#ffc83d);box-shadow:0 1px 0 rgba(255,255,255,.65) inset,0 3px 8px rgba(214,150,0,.34);transition:opacity .2s,filter .2s}
+.infield .cnt b{font-size:17px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.infield .cnt small{display:none;font-size:11px;font-weight:800;letter-spacing:.02em;opacity:.85}      /* the word "Order" shows in the full-page view only (the small box has no room), and not once the count has 3 digits */
+.infield .cnt.zero{opacity:.6;filter:saturate(.6)}
+.panel.zoomed .infield input[type=text]{padding-right:clamp(128px,11vw,176px)}
+.panel.zoomed .infield .cnt{right:clamp(12px,1.2vw,18px);top:clamp(8px,1.5vh,14px);bottom:clamp(8px,1.5vh,14px);padding:0 clamp(12px,1.3vw,20px);border-radius:14px;gap:6px}
+.panel.zoomed .infield .cnt b{font-size:clamp(20px,2.2vw,30px)}
+.panel.zoomed .infield .cnt small{display:inline;font-size:clamp(13px,1.35vw,18px)}
+.panel.zoomed .infield .cnt.big small{display:none}
+@media (max-width:420px){ .panel.zoomed .infield .cnt small{display:none} .infield input[type=text]{padding-right:62px} .panel.zoomed .infield input[type=text]{padding-right:84px} }      /* a phone: the counter is just the number, so the hint has more room */
 .infield{container-type:inline-size}      /* (the hint of the many-orders fields shrinks with the width of its field, down to 11px, so on a phone it is cut off later) */
 .infield input[type=text]::placeholder{font-size:clamp(11px,4.3cqw,13.5px)}
-.panel.zoomed .infield input[type=text]::placeholder{font-size:clamp(11px,4.3cqw,clamp(16px,1.8vw,22px))}
-.panel.zoomed .cnt{right:10px;padding:4px 14px;border-radius:13px}
-.panel.zoomed .cnt b{font-size:clamp(22px,2.6vw,30px);line-height:1.1}
-.panel.zoomed .cnt small{font-size:15px}
-@keyframes cntpop{0%{transform:translateY(-50%) scale(1)}40%{transform:translateY(-50%) scale(1.2)}100%{transform:translateY(-50%) scale(1)}}
-.cnt.pop{animation:cntpop .32s ease-out}
-@media (prefers-reduced-motion:reduce){.cnt.pop{animation:none}}
+.panel.zoomed .infield input[type=text]::placeholder{font-size:clamp(11px,4.1cqw,clamp(17px,2vw,26px))}
+@keyframes cntpop{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+.infield .cnt.pop{animation:cntpop .32s ease-out}
+@media (prefers-reduced-motion:reduce){.infield .cnt.pop{animation:none}}
 /* the four Re-Print fields (1 Page / 1 Order, 1 Page / 2 Order, many orders, many orders 1 Page / 2 Order): the border turns RED while the field is the one that is clicked, and nothing moves —
    the box stays as it is (an earlier "bulkmode" that swapped the left side for a screen of its own when the many-orders field was clicked is gone). Under a many-orders field, once orders wait,
    comes a row with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button and a red-outline "ลบทั้งหมด" */
@@ -560,8 +562,9 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .panel.zoomed .pright{gap:clamp(4px,.9vh,8px)}
 .panel.zoomed .pzoom{padding-block:clamp(4px,.9vh,9px);font-size:clamp(14px,2.2vh,17px)}
 .panel.zoomed .pcount{padding-block:clamp(1px,.4vh,3px);font-size:clamp(14px,2.2vh,18px)}
+#assignCount,#reprintCount{border:0;color:#5a3b00;background:linear-gradient(160deg,#ffe98a,#ffc83d);box-shadow:0 1px 0 rgba(255,255,255,.65) inset,0 2px 6px rgba(214,150,0,.34)}      /* the "รวม N Order" pill is yellow */
 .panel.zoomed .pmode{margin-bottom:clamp(5px,1vh,10px);padding-block:clamp(3px,.7vh,8px)}
-.panel.zoomed input[type=text]{height:clamp(46px,calc(9vh - 12px),84px);font-size:clamp(20px,min(3.4vw,4.4vh),40px)}
+.panel.zoomed input[type=text]{height:clamp(52px,calc(10.5vh - 12px),100px);font-size:clamp(22px,min(3.6vw,5vh),46px)}
 .panel.zoomed input.rp2,.panel.zoomed .infield{margin-top:clamp(4px,.9vh,8px)}
 .panel.zoomed .pmsg{min-height:clamp(26px,4.8vh,44px);font-size:clamp(14px,2.4vh,18px);padding-block:clamp(2px,.6vh,6px)}
 .panel.zoomed .phint{font-size:clamp(13px,2.2vh,16px);margin-block:clamp(2px,.5vh,4px) clamp(4px,.9vh,8px)}
@@ -583,7 +586,8 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 @media (min-width:901px){ .panel.purple.zoomed #reprintMode{display:none} }
 @media (min-width:1100px){
   .panel.purple.zoomed .pleft{position:relative}
-  .panel.purple.zoomed .phead .pright{position:absolute;top:0;right:0}
+  .panel.purple.zoomed .phead .pright{display:contents}      /* (the pill then belongs to the title row: the same line as "Re-Print ใบปะหน้า") */
+  .panel.purple.zoomed .phead .pzoom{position:absolute;top:0;right:0}
 }
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
 .panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
@@ -941,9 +945,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
             <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
             <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
-            <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>ใบ</small></span></div>
+            <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>Order</small></span></div>
             <div class="bulkrow" id="bulkRow" hidden><button id="bulkGo" class="bulkgo" type="button"></button><button id="bulkDel" class="bulkdel" type="button">ลบทั้งหมด</button></div>
-            <div class="infield"><input id="reprintIn4" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)"><span class="cnt zero" id="bulk2Cnt" role="img"><b id="bulk2CntN">0</b><small>ใบ</small></span></div>
+            <div class="infield"><input id="reprintIn4" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)"><span class="cnt zero" id="bulk2Cnt" role="img"><b id="bulk2CntN">0</b><small>Order</small></span></div>
             <div class="bulkrow" id="bulk2Row" hidden><button id="bulk2Go" class="bulkgo" type="button"></button><button id="bulk2Del" class="bulkdel" type="button">ลบทั้งหมด</button></div>
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
             <p class="phint" id="reprintHint"></p>
@@ -2696,7 +2700,7 @@ function renderBulkOne(two) {                         // the counter in the corn
     const up = nb > +cntN.textContent; cntN.textContent = nb;
     if (up) { cnt.classList.remove('pop'); void cnt.offsetWidth; cnt.classList.add('pop'); }
   }
-  cnt.classList.toggle('zero', !nb); cnt.setAttribute('aria-label', T('สแกนแล้ว {0} ใบ', nb)); cnt.title = cnt.getAttribute('aria-label');
+  cnt.classList.toggle('zero', !nb); cnt.classList.toggle('big', nb > 99); cnt.setAttribute('aria-label', T('สแกนแล้ว {0} Order', nb)); cnt.title = cnt.getAttribute('aria-label');
   $(rowId).hidden = !nb; $(goId).textContent = T('เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', nb);
 }
 const renderBulk = () => { renderBulkOne(false); renderBulkOne(true); };
@@ -3581,7 +3585,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['มี {0} ออเดอร์ที่ยังไม่ระบุพนักงาน (กด "กลับไปสแกนต่อ" เพื่อใส่ชื่อ)', '{0} orders have no employee yet (press "Resume scanning" to add names)', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {0} ခုရှိသည် ("စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်၍ အမည်ထည့်ပါ)'],
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง', 'you can export Excel in the "Export" box below', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်ပါပြီ'],
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"', 'You can export Excel in the "Export" box below, or press "Resume scanning"', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်သည်၊ သို့မဟုတ် "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
-  ['สแกนแล้ว {0} ใบ', '{0} scanned', 'စကင်န်ဖတ်ပြီး {0} ခု'],
+  ['สแกนแล้ว {0} Order', '{0} scanned', 'စကင်န်ဖတ်ပြီး {0} Order'],
   ['ซิงค์แล้ว {0}', 'Synced {0}', '{0} တွင် ထပ်တူကူးပြီး'],
   ['กำลังซิงค์ …', 'Syncing …', 'ထပ်တူကူးနေသည် …'],
   ['ซิงค์ไม่ได้ — จะลองใหม่เอง (ข้อมูลยังอยู่ในเครื่องนี้)', 'Cannot sync — will try again by itself (the data is still on this computer)', 'ထပ်တူမကူးနိုင်ပါ — ကိုယ်တိုင် ပြန်စမ်းပါမည် (ဒေတာသည် ဤကွန်ပျူတာတွင် ရှိနေသေးသည်)'],
@@ -3590,7 +3594,6 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['อัปเดตข้อมูลจากเครื่องอื่นแล้ว', 'Data updated from another computer', 'အခြားကွန်ပျူတာမှ ဒေတာ အပ်ဒိတ်လုပ်ပြီး'],
   ['ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)', 'The data was changed on another computer first — its newer copy is used (this computer\'s copy is kept as a backup)', 'ဒေတာကို အခြားကွန်ပျူတာတွင် အရင်ပြင်ထားသည် — ထိုနေရာ၏ နောက်ဆုံးဒေတာကို သုံးသည် (ဤကွန်ပျူတာ၏ ဒေတာကို အရန်သိမ်းထားသည်)'],
   ['ข้อมูลใหญ่เกินไปที่จะแชร์ข้ามเครื่อง — ยังใช้ได้เฉพาะเครื่องนี้', 'The data is too big to share between computers — it still works on this one', 'ဒေတာသည် ကွန်ပျူတာများကြား မျှဝေရန် ကြီးလွန်းသည် — ဤကွန်ပျူတာတွင်သာ သုံးနိုင်သေးသည်'],
-  ['ใบ', 'pcs', 'ခု'],
   ['ใส่พนักงาน {0} แล้ว', 'Employee {0} assigned', 'ဝန်ထမ်း {0} ကို ထည့်ပြီးပါပြီ'],
   ['ใส่พนักงาน {0} ให้ {1} ออเดอร์ที่ยังไม่ระบุพนักงาน?', 'Assign employee {0} to the {1} orders with no employee?', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {1} ခုကို ဝန်ထမ်း {0} သို့ ထည့်မလား?'],
   ['ใส่พนักงานให้ {0} ออเดอร์แล้ว', 'Employee added to {0} orders', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းထည့်ပြီးပါပြီ'],
