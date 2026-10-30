@@ -698,7 +698,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 /* (the sheet / slip styles are in SHEET_CSS in the script: the same text is used by this page and by the saved print file) */
 @media print{
   @page{size:A4;margin:0}
-  body.has-print .app,body.has-print .toast,body.has-print dialog{display:none!important}
+  body.has-print .app,body.has-print .toast,body.has-print dialog,body.has-print iframe.printframe{display:none!important}      /* (a hidden print frame left over from an earlier print would add an EMPTY page to the printed page) */
   body.has-print{overflow:visible!important;background:#fff}
   body.has-print #printView{position:static;overflow:visible;background:#fff}
   .pvbar{display:none}
@@ -2701,9 +2701,9 @@ window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
    (start the browser with --kiosk-printing, see Open-O2O-Scan-Logger-AutoPrint.bat, and it prints at once without that window) */
 function printDoc(html, prep) {                                          // a complete page goes into a hidden frame, `prep` (optional) runs once its fonts have arrived, then it is printed
-  const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+  const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1; f.className = 'printframe';
   f.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;visibility:hidden';
-  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; if (prep) prep(f); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 120000); };
+  f.onload = async () => { try { await f.contentWindow.document.fonts.ready; if (prep) prep(f); } catch (_) {} hooks.printFrame(f); setTimeout(() => f.remove(), 30000); };
   f.srcdoc = html; document.body.appendChild(f);
 }
 function printSheets(rows) {                                               // a row = one order on both slips, [row, row] = two orders on one page
@@ -3456,7 +3456,7 @@ const closePrint = () => { clearTimeout(pvAutoT); $('printView').hidden = true; 
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
-  if (!IN_VIEWER) { window.print(); bulkDone(); return; }         // claude.ai web copy: no print dialog, so save a file that prints when opened
+  if (!IN_VIEWER) { document.querySelectorAll('iframe.printframe').forEach(f => f.remove()); window.print(); bulkDone(); return; }         // claude.ai web copy: no print dialog, so save a file that prints when opened (leftover hidden print frames are removed first: they would print as an extra blank page)
   if (await download(new Blob([printFileHtml($('pvPages').innerHTML)], { type: 'text/html' }), `cover-sheets_${stamp()}.html`)) {
     toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง'); bulkDone();
   }
