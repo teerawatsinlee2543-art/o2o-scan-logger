@@ -674,6 +674,11 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 #printView[hidden]{display:none}
 .pvbar{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px;background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
 .pvbar .sp{flex:1}
+/* the print page: the big "พิมพ์" button sits at the bottom right of the screen (always in reach, over the sheets); "ปิด" stays at the top right, twice its old size */
+#pvPrint{position:fixed;right:28px;bottom:28px;z-index:5;padding:22px 64px;font-size:34px;border-radius:20px;box-shadow:0 10px 30px rgba(11,92,173,.45)}
+#pvClose{padding:16px 30px;font-size:32px;border-radius:18px}
+@media screen{ #pvPages{padding-bottom:130px} }      /* (room under the last sheet for the print button) */
+@media (max-width:560px){ #pvPrint{left:16px;right:16px;bottom:16px;padding:16px;font-size:24px} #pvClose{padding:10px 18px;font-size:22px} }
 .pvnote{flex:1 1 100%;font-size:13px;color:var(--warn);empty-cells:hide}
 .pvnote:empty{display:none}
 @media screen{ #pvPages{zoom:var(--pvz,1)} }      /* the A4 sheets are shrunk to fit a narrow screen (--pvz is set from the window width); printing is not scaled */
