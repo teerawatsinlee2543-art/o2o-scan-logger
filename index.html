@@ -653,8 +653,9 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .preview .err{color:var(--bad)}
 .preview details{margin-top:4px}
 .preview summary{cursor:pointer;color:var(--muted)}
-.preview ul{margin:4px 0 0;padding-left:18px;max-height:140px;overflow:auto}
-.rlist{max-height:280px;margin-top:10px}
+.preview ul{margin:4px 0 0;padding-left:18px;max-height:min(40vh,320px);overflow:auto}      /* every person read from the file is listed (scrolls), not only the first few */
+.preview label.nicklast{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;font-weight:700}
+.rlist{max-height:min(58vh,520px);margin-top:10px}      /* the saved roster: tall enough to see many people at once (it scrolls inside) */
 .rlist td.sched{font-size:13px;color:var(--muted);max-width:210px}
 
 .askdlg{width:min(420px,92vw);padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
@@ -2023,10 +2024,25 @@ function findLayout(rows) {
   let nameCol = -1; best = 0;
   for (let c = 0; c < ncol; c++) { if (c === idCol) continue; const v = col(c); const f = v.length ? v.filter(x => /[A-Za-z฀-๿]/.test(x)).length / v.length : 0; if (f > best) { best = f; nameCol = c; } }
   const start = Math.max(0, rows.findIndex(r => ID_LONG.test(r[idCol] || '')));
-  return { how: 'guess', idCol, nameCol: best >= 0.6 ? nameCol : -1, lastCol: -1, nickCol: -1, schedCol: -1, start };
+  // no header: the other columns are guessed too — hours like 06:00-15:00 = the work schedule, a short word (not a number) = the nickname
+  const body = rows.slice(start, start + 60);
+  let nickCol = -1, schedCol = -1, lastCol = -1; const cands = [];
+  for (let c = 0; c < ncol; c++) {
+    if (c === idCol || c === nameCol) continue;
+    const v = body.map(r => String(r[c] == null ? '' : r[c]).trim()).filter(Boolean);
+    if (v.length < Math.max(2, body.length * 0.4)) continue;
+    if (schedCol < 0 && v.filter(x => /\d{1,2}\s*[:.]\s*\d{2}/.test(x)).length >= v.length * 0.6) { schedCol = c; continue; }
+    if (v.filter(x => /^[\d\s.\-+]+$/.test(x)).length >= v.length * 0.5) continue;
+    cands.push({ c, avg: v.reduce((n, x) => n + x.length, 0) / v.length });
+  }
+  cands.sort((a, b) => a.avg - b.avg);
+  if (cands.length && cands[0].avg <= 6) nickCol = cands[0].c;                    // the shortest text column is the nickname (a surname is longer)
+  const sur = cands.find(x => x.c !== nickCol && x.avg > 4);
+  if (sur && sur.c === nameCol + 1) lastCol = sur.c;                              // a longer text column right after the name = the surname
+  return { how: 'guess', idCol, nameCol: best >= 0.6 ? nameCol : -1, lastCol: best >= 0.6 ? lastCol : -1, nickCol, schedCol, start };
 }
 function extractEntries(rows, L) {
-  const map = new Map(), extra = new Map(), full = new Map(), bad = []; let dups = 0, clash = 0, shortened = 0;
+  const map = new Map(), extra = new Map(), full = new Map(), bad = [], clashes = []; let dups = 0, clash = 0, shortened = 0;
   const cell = (row, c) => c >= 0 && row[c] != null ? String(row[c]).replace(/\s+/g, ' ').trim() : '';
   for (let r = L.start; r < rows.length; r++) {
     const row = rows[r], rawId = (row[L.idCol] || '').trim();
@@ -2039,23 +2055,30 @@ function extractEntries(rows, L) {
     if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');            // Excel drops leading zeros of numeric cells
     else if (/^\d{5,}$/.test(id)) { id = id.slice(-4); shortened++; }      // 8-digit employee number -> the last 4 digits
     if (!EMP_RE.test(id)) { bad.push({ row: r + 1, raw: rawId }); continue; }
-    if (map.has(id)) { dups++; if (full.get(id) !== fullId) clash++; }       // same last 4 digits but a different full number = two people mixed up
+    if (map.has(id)) { dups++; if (full.get(id) !== fullId) { clash++; clashes.push({ id, oldFull: full.get(id), newFull: fullId, oldName: map.get(id), newName: name }); } }       // same last 4 digits but a different full number = two people mixed up
     full.set(id, fullId);
     map.set(id, name);
     const nick = cell(row, L.nickCol), sched = cell(row, L.schedCol);
     if (nick || sched) extra.set(id, { nick, sched }); else extra.delete(id);
   }
-  return { map, extra, bad, dups, clash, shortened };
+  return { map, extra, bad, dups, clash, clashes, shortened };
 }
-function buildPending(rows, src) {
+function buildPending(rows, src, opt = {}) {
   rows = rows.filter(r => r.some(Boolean));
   if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
-  if (Math.max(...rows.map(r => r.filter(Boolean).length)) <= 1)                // one cell per line: "1234 สมชาย ใจดี"
+  const raw = rows; let nickLastOk = false, nickLast = false;
+  if (rows.reduce((m, r) => Math.max(m, r.filter(Boolean).length), 0) <= 1) {   // one cell per line: "1234 สมชาย ใจดี" (or "2680 บงกชรัตน์ โพธิชัย มีตี")
     rows = rows.map(r => { const m = /^\s*(\S+)\s+(.+?)\s*$/.exec(r[0] || ''); return m ? [m[1], m[2]] : [r[0] || '']; });
+    // names of exactly 3 words in (nearly) every line = first name, surname, NICKNAME: offered (and on by default) so the nickname lands in its own column
+    const lines = rows.filter(r => r.length > 1 && /^\d/.test(r[0]));
+    nickLastOk = lines.length >= 3 && lines.filter(r => r[1].trim().split(/\s+/).length === 3).length >= lines.length * 0.8;
+    nickLast = nickLastOk && opt.nickLast !== false;
+    if (nickLast) rows = rows.map(r => { const t = r.length > 1 ? r[1].trim().split(/\s+/) : []; return t.length === 3 ? [r[0], t.slice(0, 2).join(' '), t[2]] : r; });
+  }
   const layout = findLayout(rows);
   if (!layout) return { error: 'หาคอลัมน์เลขพนักงานไม่เจอ — ตั้งหัวคอลัมน์เป็น "รหัสพนักงาน" / "เลขพนักงาน" / "Employee ID" และชื่อเป็น "ชื่อ" / "Name"', src };
   const ex = extractEntries(rows, layout);
-  return { src, layout, entries: ex.map, extra: ex.extra, bad: ex.bad, dups: ex.dups, clash: ex.clash, shortened: ex.shortened };
+  return { src, layout, entries: ex.map, extra: ex.extra, bad: ex.bad, dups: ex.dups, clash: ex.clash, clashes: ex.clashes, shortened: ex.shortened, raw, nickLastOk, nickLast };
 }
 
 // --- preview + apply ---
@@ -2086,12 +2109,13 @@ function refreshPreview() {
   const cols = L.how === 'header'
     ? T('เลขพนักงาน ← {0}', q(L.idLabel)) + ' · ' + T('ชื่อ ← {0}', L.nameCol >= 0 ? q(L.nameLabel) + (L.lastCol >= 0 ? ' + ' + q(L.lastLabel) : '') : T('(ไม่พบคอลัมน์ชื่อ)'))
       + (L.nickCol >= 0 ? ' · ' + T('ชื่อเล่น ← {0}', q(L.nickLabel)) : '') + (L.schedCol >= 0 ? ' · ' + T('ตารางเวลางาน ← {0}', q(L.schedLabel)) : '')
-    : T('ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', L.idCol + 1, L.nameCol >= 0 ? T('คอลัมน์ {0} = ชื่อ', L.nameCol + 1) : T('ไม่พบชื่อ'));
+    : T('ไม่มีหัวตาราง เดาจากเนื้อหา: คอลัมน์ {0} = รหัส, {1}', L.idCol + 1, L.nameCol >= 0 ? T('คอลัมน์ {0} = ชื่อ', L.nameCol + 1) : T('ไม่พบชื่อ'))
+      + (L.lastCol >= 0 ? ' · ' + T('คอลัมน์ {0} = นามสกุล', L.lastCol + 1) : '') + (L.nickCol >= 0 ? ' · ' + T('คอลัมน์ {0} = ชื่อเล่น', L.nickCol + 1) : '') + (L.schedCol >= 0 ? ' · ' + T('คอลัมน์ {0} = ตารางเวลางาน', L.schedCol + 1) : '');
   const srcText = pending.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(pending.src.slice(5))) : T(pending.src);
   const list = (cls, title, ids, withOld) => ids.length ? `<details><summary><span class="${cls}">${title} ${ids.length}</span></summary><ul>` +
-    ids.slice(0, 60).map(id => { const nk = infoFor(id, pending.extra && pending.extra.get(id)).nick;
+    ids.slice(0, 1500).map(id => { const nk = infoFor(id, pending.extra && pending.extra.get(id)).nick;
       return `<li>${id} ${xesc(nameFor(id, pending.entries.get(id)) || roster[id] || '')}${nk ? ' (' + xesc(nk) + ')' : ''}${withOld && roster[id] ? ' <span style="color:var(--muted)">(เดิม: ' + xesc(roster[id]) + ')</span>' : ''}</li>`; }).join('') +
-    (ids.length > 60 ? `<li>… อีก ${ids.length - 60}</li>` : '') + '</ul></details>' : '';
+    (ids.length > 1500 ? `<li>… อีก ${ids.length - 1500}</li>` : '') + '</ul></details>' : '';
   let html = `<div>${T('อ่านได้ {0} คน จาก {1}', '<b>' + pending.entries.size + '</b>', srcText)}<br><small>${cols}</small></div>` +
     `<div><span class="add">เพิ่มใหม่ ${df.add.length}</span> · <span class="chg">แก้ชื่อ ${df.chg.length}</span> · เหมือนเดิม ${df.same.length}` +
     (mode === 'replace' ? ` · <span class="del">ลบออก ${df.del.length}</span>` : '') + '</div>' +
@@ -2099,7 +2123,9 @@ function refreshPreview() {
   if (pending.bad.length) html += '<div class="err">' + T('ข้าม {0} แถว (รหัสไม่ใช่เลข 4 หลัก): {1}', pending.bad.length,
     pending.bad.slice(0, 4).map(b => T('แถว {0} "{1}"', b.row, xesc(b.raw))).join(', ') + (pending.bad.length > 4 ? ' …' : '')) + '</div>';
   if (pending.shortened) html += `<div class="add">${T('เลขพนักงานยาวกว่า 4 หลัก {0} คน — ใช้ 4 ตัวท้าย', pending.shortened)}</div>`;
-  if (pending.clash) html += `<div class="err">${T('4 ตัวท้ายซ้ำกัน {0} คน (เลขเต็มไม่เหมือนกัน ถูกรวมเป็นคนเดียว) — ตรวจไฟล์', pending.clash)}</div>`;
+  if (pending.clash) html += `<div class="err">${T('4 ตัวท้ายซ้ำกัน {0} คน (เลขเต็มไม่เหมือนกัน ถูกรวมเป็นคนเดียว) — ตรวจไฟล์', pending.clash)}` +
+    (pending.clashes && pending.clashes.length ? `<details><summary>${T('ดูว่าใครเลขซ้ำ (ใช้คนหลังในไฟล์)')}</summary><ul>` + pending.clashes.slice(0, 1500).map(c => `<li>${c.id} · ${xesc(c.oldName)} (${xesc(c.oldFull)}) ↔ ${xesc(c.newName)} (${xesc(c.newFull)})</li>`).join('') + '</ul></details>' : '') + '</div>';
+  if (pending.nickLastOk) html += `<label class="nicklast"><input type="checkbox" id="rNickLast"${pending.nickLast ? ' checked' : ''}> ${T('ชื่อมี 3 คำ — ถือว่าคำสุดท้ายคือชื่อเล่น (ติ๊กออกถ้าไม่ใช่)')}</label>`;
   if (pending.dups) html += `<div class="chg">รหัสซ้ำกันในไฟล์ ${pending.dups} แถว — ใช้แถวล่างสุด</div>`;
   if (!pending.entries.size) html += '<div class="err">ไม่มีรหัสที่ใช้ได้ในไฟล์นี้</div>';
   box.innerHTML = html;
@@ -2118,7 +2144,7 @@ function renderRoster() {
   const ids = Object.keys(roster).sort().filter(id => { if (!q) return true; const i = rosterInfo[id] || {}; return id.includes(q) || (roster[id] || '').toLowerCase().includes(q) || (i.nick || '').toLowerCase().includes(q) || (i.sched || '').toLowerCase().includes(q); });
   $('rCount').textContent = `(${rosterCount()} คน)`;
   const body = $('rBody'); body.innerHTML = '';
-  ids.slice(0, 300).forEach(id => {
+  ids.slice(0, 1500).forEach(id => {
     const tr = document.createElement('tr'), info = rosterInfo[id] || {};
     const a = document.createElement('td'); a.className = 'mono'; a.textContent = id;
     const b = document.createElement('td'); b.textContent = roster[id] || '';
@@ -2129,7 +2155,7 @@ function renderRoster() {
     bx.addEventListener('click', () => { backupRoster(); delete roster[id]; delete rosterInfo[id]; saveRoster(); saveRInfo(); renderRoster(); render(); toast(`ลบ ${id} ออกจากรายชื่อแล้ว`); });
     x.appendChild(bx); tr.append(a, b, n, s, x); body.appendChild(tr);
   });
-  if (ids.length > 300) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 5; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${ids.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
+  if (ids.length > 1500) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 5; td.className = 'empty'; td.textContent = `แสดง 1500 จาก ${ids.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
   $('rEmpty').hidden = ids.length > 0; $('rEmpty').textContent = rosterCount() ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีรายชื่อ';
   $('rUndo').hidden = !hasRosterBackup();
   $('rClear').disabled = !rosterCount(); $('rExport').disabled = !rosterCount();
@@ -2160,6 +2186,7 @@ $('rPaste').addEventListener('input', () => {
   pasteT = setTimeout(() => { const t = $('rPaste').value; pending = t.trim() ? buildPending(parseDelimited(t), 'ข้อความที่วาง') : null; refreshPreview(); }, 250);
 });
 document.querySelectorAll('input[name=rMode]').forEach(r => r.addEventListener('change', refreshPreview));
+$('rPreview').addEventListener('change', e => { if (e.target.id === 'rNickLast' && pending && pending.raw) { pending = buildPending(pending.raw, pending.src, { nickLast: e.target.checked }); refreshPreview(); } });      // the "last word = nickname" tick
 $('rApply').addEventListener('click', () => {
   if (!pending || pending.error) return;
   const mode = rMode(), df = diffRoster(pending.entries, mode, pending.extra);
@@ -2263,8 +2290,8 @@ function renderTrip() {
   const list = Object.values(tripMap).sort((a, b) => a.t.localeCompare(b.t, undefined, { numeric: true }) || a.a.localeCompare(b.a)).filter(e => !q || e.a.toLowerCase().includes(q) || e.t.toLowerCase().includes(q));
   $('tCount').textContent = T('{0} พื้นที่ · {1} Trip', Object.keys(tripMap).length, tripCount());
   const body = $('tBody'); body.innerHTML = '';
-  list.slice(0, 300).forEach(e => { const tr = document.createElement('tr'), a = document.createElement('td'), t = document.createElement('td'); a.textContent = e.a; t.textContent = e.t; t.className = 'mono'; tr.append(a, t); body.appendChild(tr); });
-  if (list.length > 300) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 2; td.className = 'empty'; td.textContent = `แสดง 300 จาก ${list.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
+  list.slice(0, 1500).forEach(e => { const tr = document.createElement('tr'), a = document.createElement('td'), t = document.createElement('td'); a.textContent = e.a; t.textContent = e.t; t.className = 'mono'; tr.append(a, t); body.appendChild(tr); });
+  if (list.length > 1500) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 2; td.className = 'empty'; td.textContent = `แสดง 1500 จาก ${list.length} — ใช้ช่องค้นหา`; tr.appendChild(td); body.appendChild(tr); }
   $('tEmpty').hidden = list.length > 0; $('tEmpty').textContent = Object.keys(tripMap).length ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีเส้นทาง';
   let hasBak = false; try { hasBak = !!localStorage.getItem(LS_TRIP_BAK); } catch (_) {}
   $('tUndo').hidden = !hasBak; $('tClear').disabled = !Object.keys(tripMap).length; $('tExport').disabled = !Object.keys(tripMap).length;
@@ -3619,6 +3646,12 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไฟล์นี้ไม่ใช่ .xlsx', 'This file is not an .xlsx', 'ဤဖိုင်သည် .xlsx မဟုတ်ပါ'],
   ['ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', '.xlsb files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xlsb ဖိုင်ကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
   ['รูปภาพ', 'Pictures', 'ဓာတ်ပုံများ'],
+  ['แสดง 1500 จาก {0}', 'Showing 1500 of {0}', '{0} မှ 1500 ကို ပြသည်'],
+  ['คอลัมน์ {0} = นามสกุล', 'column {0} = surname', 'ကော်လံ {0} = မျိုးရိုးအမည်'],
+  ['คอลัมน์ {0} = ชื่อเล่น', 'column {0} = nickname', 'ကော်လံ {0} = အမည်ပြောင်'],
+  ['คอลัมน์ {0} = ตารางเวลางาน', 'column {0} = work schedule', 'ကော်လံ {0} = အလုပ်ချိန်ဇယား'],
+  ['ดูว่าใครเลขซ้ำ (ใช้คนหลังในไฟล์)', 'See who shares a number (the later one in the file is used)', 'ဘယ်သူတွေ နံပါတ်တူသည်ကို ကြည့်ရန် (ဖိုင်ထဲက နောက်ဆုံးလူကို သုံးသည်)'],
+  ['ชื่อมี 3 คำ — ถือว่าคำสุดท้ายคือชื่อเล่น (ติ๊กออกถ้าไม่ใช่)', 'The names have 3 words — treat the last word as the nickname (untick if it is not)', 'အမည်တွင် စကားလုံး ၃ လုံးရှိသည် — နောက်ဆုံးစကားလုံးကို အမည်ပြောင်အဖြစ် သတ်မှတ်သည် (မဟုတ်လျှင် အမှန်ခြစ်ဖြုတ်ပါ)'],
   ['ไฟล์ PDF และรูปภาพ (JPG / PNG): อ่านตัวหนังสือในเครื่องคุณเอง ไม่อัปโหลดไฟล์ไปไหน — ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่าน ภาพเบลอหรือลายมืออาจอ่านผิด จึงตรวจชื่อและรหัสในตัวอย่างก่อนกดนำเข้าเสมอ', 'PDF and picture files (JPG / PNG): the text is read on your own computer and the file is not uploaded anywhere — the first time you need the internet to load the reader. Blurry pictures or handwriting can be misread, so always check the names and codes in the preview before importing', 'PDF နှင့် ဓာတ်ပုံဖိုင်များ (JPG / PNG): စာသားကို သင့်ကွန်ပျူတာတွင်ပင် ဖတ်ပြီး ဖိုင်ကို ဘယ်သို့မျှ မတင်ပါ — ပထမအကြိမ် ဖတ်စက်ကို ဒေါင်းလုဒ်လုပ်ရန် အင်တာနက် လိုသည်။ မှုန်ဝါးသောပုံ သို့မဟုတ် လက်ရေးကို မှားဖတ်နိုင်သဖြင့် မထည့်မီ အမည်နှင့် ကုဒ်ကို နမူနာတွင် စစ်ဆေးပါ'],
   ['โหลดตัวอ่าน PDF / รูปภาพไม่ได้ — ต้องต่ออินเทอร์เน็ตตอนอ่านไฟล์ชนิดนี้ (หรือคัดลอกข้อความมาวางแทน)', 'Could not load the PDF / picture reader — the internet is needed for this kind of file (or copy the text and paste it instead)', 'PDF / ဓာတ်ပုံ ဖတ်စက်ကို မဒေါင်းလုဒ်နိုင်ပါ — ဤဖိုင်အမျိုးအစားအတွက် အင်တာနက်လိုသည် (သို့မဟုတ် စာသားကို ကူးယူ၍ ထည့်ပါ)'],
   ['โหลดข้อมูลภาษาสำหรับอ่านรูปไม่ได้ — ต้องต่ออินเทอร์เน็ต (หรือคัดลอกข้อความมาวางแทน)', 'Could not load the language data for reading pictures — the internet is needed (or copy the text and paste it instead)', 'ဓာတ်ပုံဖတ်ရန် ဘာသာစကားဒေတာကို မဒေါင်းလုဒ်နိုင်ပါ — အင်တာနက်လိုသည် (သို့မဟုတ် စာသားကို ကူးယူ၍ ထည့်ပါ)'],
