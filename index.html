@@ -216,6 +216,12 @@ button.finish{margin-top:12px;color:var(--card);border-color:transparent;backgro
 button.finish:hover:not(:disabled){filter:brightness(1.07);border-color:transparent}
 button.reopen{margin-top:12px;color:#fff;border-color:transparent;background:linear-gradient(135deg,#3b414d,#1f232a);box-shadow:0 3px 10px rgba(20,24,32,.35)}      /* "กลับไปสแกนต่อ": grey-black with white text */
 button.reopen:hover:not(:disabled){filter:brightness(1.18);border-color:transparent}
+/* the button shows a check mark while scanning ("สิ้นสุดการสแกน") and a "back" arrow once it is finished ("กลับไปสแกนต่อ") */
+#btnFinish .ic-back{display:none;width:26px;height:26px}
+#btnFinish.reopen .ic-check{display:none}
+#btnFinish.reopen .ic-back{display:block}
+#btnFinish.reopen:hover:not(:disabled) .ic-back{transform:translateX(-3px)}
+#btnFinish .ic-back{transition:transform .15s}
 .field.locked{opacity:.55}
 .field.rej input{border-color:var(--bad);background:var(--badbg);animation:shake .38s}
 .field.rej .step{background:var(--bad);color:var(--card)}
@@ -747,7 +753,8 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <div id="fb" class="fb idle"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></svg></div><div class="txt"><div class="big">พร้อมสแกน</div><div class="small">เริ่มจากกรอกหรือสแกนรหัสพนักงานก่อน</div></div></div>
         <button id="btnAssign" class="block assign" type="button" hidden></button>
         <button id="btnFinish" class="block finish" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
+          <svg class="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
+          <svg class="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
           <span id="finishLabel">สิ้นสุดการสแกน</span>
         </button>
         <p class="hint" id="scanHint"></p>
