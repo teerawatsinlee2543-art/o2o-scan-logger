@@ -507,10 +507,10 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpwrap .sheet{margin:0;position:absolute;left:0;top:0;transform-origin:top left;box-shadow:0 6px 22px rgba(0,0,0,.28)}
 .rpfoot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:12px}
 .rpclick{min-width:0;font-size:13px;color:var(--pt);opacity:.8}
-#rpPrint{flex:none;display:inline-flex;align-items:center;gap:12px;padding:14px 36px;font-size:26px;font-weight:800;line-height:1.1;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1f9d57);box-shadow:0 6px 16px rgba(31,157,87,.38);cursor:pointer}
+#rpPrint{flex:none;display:inline-flex;align-items:center;gap:12px;padding:14px 36px;font-size:26px;font-weight:800;line-height:1.1;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 6px 16px rgba(11,92,173,.38);cursor:pointer}
 #rpPrint svg{width:30px;height:30px}
 #rpPrint:hover:not(:disabled){filter:brightness(1.07)}
-#rpPrint:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.75}
+#rpPrint:disabled{background:#b3c3d9;box-shadow:none;cursor:default;opacity:.8}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
 /* the counter in the corner of the many-orders fields (3 and 4): how many orders have been scanned in this go. A rounded yellow chip with the number and the word "Order", set in from the edges so it never
@@ -736,19 +736,20 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .askdlg .row{justify-content:flex-end}
 
 /* ---- cover-sheet print view: 2 identical slips per A4 page, like the printed ones ---- */
-#printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#5b6472}
+#printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#000}      /* black around the sheets */
 #printView[hidden]{display:none}
-.pvbar{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px;background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
+.pvbar{position:sticky;top:8px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;width:fit-content;max-width:calc(100% - 200px);margin:8px 0 4px 12px;padding:4px 12px;border-radius:10px;background:var(--card);color:var(--ink);font-size:14px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.45)}      /* a small white bar: only the title (and a note); it no longer spans the page and holds no buttons */
 .pvbar .sp{flex:1}
-/* the print page: the big "พิมพ์" button sits at the bottom right of the screen (always in reach, over the sheets); "ปิด" stays at the top right, twice its old size */
-#pvPrint{position:fixed;right:28px;bottom:28px;z-index:5;padding:32px 92px;font-size:48px;line-height:1.1;border:0;border-radius:28px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1f9d57);box-shadow:0 12px 34px rgba(31,157,87,.5)}      /* green, big */
+/* the print page: the big blue "พิมพ์" button (with a printer icon) sits at the bottom right of the screen (always in reach, over the sheets); the red "ปิด" floats at the top right, on the black, outside the white bar */
+#pvPrint{position:fixed;right:28px;bottom:28px;z-index:5;display:inline-flex;align-items:center;gap:20px;padding:30px 78px 30px 66px;font-size:48px;line-height:1.1;border:0;border-radius:28px;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 12px 34px rgba(11,92,173,.55)}      /* blue, big */
+#pvPrint svg{width:56px;height:56px;flex:none}
 #pvPrint:hover:not(:disabled){filter:brightness(1.07);border:0}
-#pvPrint:disabled{background:#9db9a9;box-shadow:none}
-#pvClose{padding:16px 30px;font-size:32px;border-radius:18px;color:#fff;border:0;background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 4px 14px rgba(189,48,59,.45)}      /* red */
+#pvPrint:disabled{background:#8fa6c4;box-shadow:none}
+#pvClose{position:fixed;top:12px;right:28px;z-index:6;padding:16px 30px;font-size:32px;border-radius:18px;color:#fff;border:0;background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 4px 14px rgba(189,48,59,.45)}      /* red, floating at the top right */
 #pvClose:hover:not(:disabled){filter:brightness(1.1);border:0}
 @media screen{ #pvPages{padding-bottom:200px} }      /* (room under the last sheet for the print button) */
-@media (max-width:560px){ #pvPrint{left:16px;right:16px;bottom:16px;padding:20px;font-size:30px} #pvClose{padding:10px 18px;font-size:22px} }
-.pvnote{flex:1 1 100%;font-size:13px;color:var(--warn);empty-cells:hide}
+@media (max-width:560px){ #pvPrint{left:16px;right:16px;bottom:16px;padding:18px;font-size:30px;justify-content:center;gap:12px} #pvPrint svg{width:36px;height:36px} #pvClose{top:8px;right:14px;padding:10px 18px;font-size:22px} .pvbar{max-width:calc(100% - 140px);margin-left:8px} }
+.pvnote{flex:0 1 auto;font-size:13px;color:var(--warn);empty-cells:hide}      /* (on the same line as the title when there is room) */
 .pvnote:empty{display:none}
 @media screen{ #pvPages{zoom:var(--pvz,1)} }      /* the A4 sheets are shrunk to fit a narrow screen (--pvz is set from the window width); printing is not scaled */
 /* (the sheet / slip styles are in SHEET_CSS in the script: the same text is used by this page and by the saved print file) */
@@ -757,7 +758,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
   body.has-print .app,body.has-print .toast,body.has-print dialog,body.has-print iframe.printframe{display:none!important}      /* (a hidden print frame left over from an earlier print would add an EMPTY page to the printed page) */
   body.has-print{overflow:visible!important;background:#fff}
   body.has-print #printView{position:static;overflow:visible;background:#fff}
-  .pvbar{display:none}
+  .pvbar,#pvClose,#pvPrint{display:none!important}
 }
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90}
 .toast.show{opacity:.96}
@@ -997,11 +998,10 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
   <div class="pvbar">
     <b id="pvTitle"></b>
     <select id="pvBatch" aria-label="เลือกชุด"></select>
-    <span class="sp"></span>
-    <button id="pvPrint" class="primary" type="button">พิมพ์</button>
-    <button id="pvClose" type="button">ปิด</button>
     <span class="pvnote" id="pvNote"></span>
   </div>
+  <button id="pvClose" type="button">ปิด</button>
+  <button id="pvPrint" class="primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span id="pvPrintTxt">พิมพ์</span></button>
   <div id="pvPages" data-notr></div>
 </div>
 
@@ -3485,7 +3485,7 @@ function openPrint(mode) {
     }
   }
   sel.hidden = pvMode !== 'scan';                                            // the Assign list and the many-orders go are printed whole, not by batch
-  $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
+  $('pvPrintTxt').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
   if ((pvMode === 'rp' || pvMode === 'bulk' || pvMode === 'bulk2') && state.printGo !== false && !IN_VIEWER) pvAutoPrint();      // from a Re-Print field: the print button is pressed by itself
 }
