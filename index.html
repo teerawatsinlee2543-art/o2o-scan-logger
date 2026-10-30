@@ -646,6 +646,18 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
 .dtabs .dbadge{position:absolute;top:-10px;right:14px;padding:1px 10px;border-radius:99px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.14);font-size:12.5px;font-weight:800;line-height:1.5;font-variant-numeric:tabular-nums}
 .dtabs .dbadge.zero{color:var(--muted);font-weight:600}
 .dtabs .dbadge.live{background:#1f9d57;border-color:#1f9d57;color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(31,157,87,.45)}
+/* the line above the tabs when the data is shared between computers: when it was last synced, and a button to do it now */
+.cloudbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px 12px;margin:0 0 22px;font-size:13.5px;font-weight:700;color:var(--muted)}
+.cloudbar[hidden]{display:none}
+.cloudbar .cs{display:inline-flex;align-items:center;gap:7px;min-width:0}
+.cloudbar .cs::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:#1f9d57;box-shadow:0 0 0 3px color-mix(in srgb,#1f9d57 22%,transparent)}
+.cloudbar.busy .cs::before{background:#2f80ed;box-shadow:0 0 0 3px color-mix(in srgb,#2f80ed 22%,transparent);animation:cloudpulse 1s ease-in-out infinite}
+.cloudbar.err .cs{color:#b54708}
+.cloudbar.err .cs::before{background:#f79009;box-shadow:0 0 0 3px color-mix(in srgb,#f79009 25%,transparent)}
+.cloudbar button{flex:none;padding:4px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:none}
+.cloudbar button:disabled{opacity:.5;cursor:default}
+@keyframes cloudpulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.cloudbar.busy .cs::before{animation:none}}
 @media (max-width:560px){                                   /* phones: the three tabs stack icon over label (side by side the Thai words broke letter by letter) */
   .dlg{padding:0 14px 16px}
   .dlghead{margin:0 -14px 14px;padding:12px 14px}
@@ -980,6 +992,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <span class="dlgtitle" id="rDlgTitle">Update Data</span>
       <button id="rClose" type="button" class="closebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button>
     </div>
+    <div class="cloudbar" id="cloudBar" hidden title="ชื่อพนักงาน · Trip · Part-Time · ลิงก์ชีต ใช้ร่วมกันทุกเครื่อง"><span class="cs" id="cloudTxt"></span><button id="cloudNow" type="button">ซิงค์ตอนนี้</button></div>
     <div class="dtabs" role="tablist">
       <button id="tabEmp" role="tab" type="button" class="on" aria-selected="true">
         <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>ชื่อพนักงาน<span class="dbadge" id="tabEmpCnt"></span>
@@ -1124,19 +1137,21 @@ let lastImport = null;        // { from, orders } of the last applied import, so
 const LS_ROSTER = 'o2o-roster-v1', LS_ROSTER_BAK = 'o2o-roster-v1-backup';
 let roster = {};
 try { const r = JSON.parse(localStorage.getItem(LS_ROSTER) || 'null'); if (r && typeof r === 'object') roster = r; } catch (_) {}
-const saveRoster = () => { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch (_) {} };
+var cloudQ = null;            // the data-sharing code near the end of the script (var: the save functions below call cloudTouch before that code has run)
+function cloudTouch(name) { if (cloudQ) cloudQ.touch(name); }
+const saveRoster = () => { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch (_) {} cloudTouch('people'); };
 /* nickname + work schedule that come with an imported roster file: {id: {nick, sched}}; roster[id] itself stays the full name, so nothing else had to change */
 const LS_RINFO = 'o2o-rosterinfo-v1', LS_RINFO_BAK = 'o2o-rosterinfo-v1-backup';
 let rosterInfo = {};
 try { const r = JSON.parse(localStorage.getItem(LS_RINFO) || 'null'); if (r && typeof r === 'object') rosterInfo = r; } catch (_) {}
-const saveRInfo = () => { try { localStorage.setItem(LS_RINFO, JSON.stringify(rosterInfo)); } catch (_) {} };
+const saveRInfo = () => { try { localStorage.setItem(LS_RINFO, JSON.stringify(rosterInfo)); } catch (_) {} cloudTouch('people'); };
 const nickOf = id => (rosterInfo[id] && rosterInfo[id].nick) || '';
 /* Part-Time (temporary) staff {id: {name, ts}}: added by typing a name — the system picks a free 4-digit number and makes a barcode of it. Kept in a store of its own,
    so the regular roster (and its import / export / backup) is never touched. A regular employee's badge has 8 digits and only the last 4 are read (EMP8_RE). */
 const LS_PT = 'o2o-parttime-v1';
 let ptime = {};
 try { const p = JSON.parse(localStorage.getItem(LS_PT) || 'null'); if (p && typeof p === 'object') ptime = p; } catch (_) {}
-const savePt = () => { try { localStorage.setItem(LS_PT, JSON.stringify(ptime)); } catch (_) {} };
+const savePt = () => { try { localStorage.setItem(LS_PT, JSON.stringify(ptime)); } catch (_) {} cloudTouch('parttime'); };
 const nameOfEmp = id => roster[id] || (ptime[id] && ptime[id].name) || '';
 const isKnownEmp = id => id in roster || id in ptime;
 const EMP8_RE = /^\d{8}$/;
@@ -2338,7 +2353,7 @@ $('rExport').addEventListener('click', () => {
 const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup';
 let tripMap = {};
 try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') tripMap = r; } catch (_) {}
-const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} };
+const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} cloudTouch('trips'); };
 function tripCount() { return new Set(Object.values(tripMap).map(e => e.t)).size; }
 const normArea = s => String(s == null ? '' : s).toLowerCase().trim().replace(/^(เขต|แขวง|อำเภอ|ตำบล|จังหวัด|อ\.|ต\.|จ\.)\s*/, '').replace(/[\s._\-,()\/\\]/g, '');
 function tripFor(inf) {
@@ -2524,7 +2539,7 @@ $('dbConnect').addEventListener('click', async () => {
   $('dbConnect').disabled = true; box.innerHTML = T('กำลังเชื่อมต่อ …');
   try {
     const { cfg, missing, nCols } = await connectSheet(link);
-    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {}
+    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} cloudTouch('sheet');
     const cols = Object.entries(DB_NAMES).map(([k, n]) => cfg.cols[k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', cfg.cols[k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
     box.innerHTML = `<div class="add">${T('เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', nCols)}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>` + (missing.length ? `<div class="chg">${T('ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า')}</div>` : '');
   } catch (e) {
@@ -2535,7 +2550,7 @@ $('dbConnect').addEventListener('click', async () => {
   }
   $('dbConnect').disabled = IN_VIEWER; renderDb(); render();
 });
-$('dbOff').addEventListener('click', () => { sheetCfg = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+$('dbOff').addEventListener('click', () => { sheetCfg = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
 $('dbTestGo').addEventListener('click', async () => {
   const o = cleanScan($('dbTest').value), out = $('dbTestOut'); out.hidden = false;
   if (!ORD_RE.test(o)) { out.innerHTML = `<span class="err">${T('ใส่เลขออเดอร์ 11 ตัว')}</span>`; return; }
@@ -3561,6 +3576,14 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง', 'you can export Excel in the "Export" box below', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်ပါပြီ'],
   ['ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"', 'You can export Excel in the "Export" box below, or press "Resume scanning"', 'အောက်ပါ "ထုတ်ယူရန်" ကွက်တွင် Excel ထုတ်ယူနိုင်သည်၊ သို့မဟုတ် "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
   ['สแกนแล้ว {0} ใบ', '{0} scanned', 'စကင်န်ဖတ်ပြီး {0} ခု'],
+  ['ซิงค์แล้ว {0}', 'Synced {0}', '{0} တွင် ထပ်တူကူးပြီး'],
+  ['กำลังซิงค์ …', 'Syncing …', 'ထပ်တူကူးနေသည် …'],
+  ['ซิงค์ไม่ได้ — จะลองใหม่เอง (ข้อมูลยังอยู่ในเครื่องนี้)', 'Cannot sync — will try again by itself (the data is still on this computer)', 'ထပ်တူမကူးနိုင်ပါ — ကိုယ်တိုင် ပြန်စမ်းပါမည် (ဒေတာသည် ဤကွန်ပျူတာတွင် ရှိနေသေးသည်)'],
+  ['ซิงค์ตอนนี้', 'Sync now', 'ယခု ထပ်တူကူးမည်'],
+  ['ชื่อพนักงาน · Trip · Part-Time · ลิงก์ชีต ใช้ร่วมกันทุกเครื่อง', 'Employee names · Trips · Part-Time · sheet link are shared by every computer', 'ဝန်ထမ်းအမည် · Trip · Part-Time · စာရင်းလင့်ခ်ကို ကွန်ပျူတာအားလုံး မျှဝေသုံးသည်'],
+  ['อัปเดตข้อมูลจากเครื่องอื่นแล้ว', 'Data updated from another computer', 'အခြားကွန်ပျူတာမှ ဒေတာ အပ်ဒိတ်လုပ်ပြီး'],
+  ['ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)', 'The data was changed on another computer first — its newer copy is used (this computer\'s copy is kept as a backup)', 'ဒေတာကို အခြားကွန်ပျူတာတွင် အရင်ပြင်ထားသည် — ထိုနေရာ၏ နောက်ဆုံးဒေတာကို သုံးသည် (ဤကွန်ပျူတာ၏ ဒေတာကို အရန်သိမ်းထားသည်)'],
+  ['ข้อมูลใหญ่เกินไปที่จะแชร์ข้ามเครื่อง — ยังใช้ได้เฉพาะเครื่องนี้', 'The data is too big to share between computers — it still works on this one', 'ဒေတာသည် ကွန်ပျူတာများကြား မျှဝေရန် ကြီးလွန်းသည် — ဤကွန်ပျူတာတွင်သာ သုံးနိုင်သေးသည်'],
   ['ใบ', 'pcs', 'ခု'],
   ['ใส่พนักงาน {0} แล้ว', 'Employee {0} assigned', 'ဝန်ထမ်း {0} ကို ထည့်ပြီးပါပြီ'],
   ['ใส่พนักงาน {0} ให้ {1} ออเดอร์ที่ยังไม่ระบุพนักงาน?', 'Assign employee {0} to the {1} orders with no employee?', 'ဝန်ထမ်းမသတ်မှတ်ရသေးသော အော်ဒါ {1} ခုကို ဝန်ထမ်း {0} သို့ ထည့်မလား?'],
@@ -4096,8 +4119,110 @@ $('btnTheme').addEventListener('click', () => {
 });
 paintThemeBtn();
 
+/* ---------- the same data on every computer (Firestore over plain HTTPS, no extra script) ----------
+   Shared: the employee names with nickname + schedule ("people"), the Part-Time staff ("parttime"), the Trip route table ("trips") and the order-sheet link ("sheet"). The scan log,
+   the Assign / Re-Print lists and the settings stay on each computer. Each of the four is one document {json, by, at} of the collection "o2o" in the team's own Firebase project.
+   - an edit on a computer is sent about 1.5 s later; the others fetch it when their page is opened, when it is looked at again (after 20 s), and every 5 minutes
+   - a computer that has never synced takes the cloud copy (its own is kept in o2o-cloud-v1-bak-<name>); if nothing is in the cloud yet it sends its own — so the first computer fills it
+   - a send carries the version it was based on, so a copy somebody else changed first is never overwritten: the newer cloud copy is taken instead (the replaced one is kept the same way)
+   - offline / error: nothing is lost, the edit stays marked and is sent at the next try; scanning is never waiting for this
+   Off until CLOUD_CONFIG is filled in, and never on while the page is the Claude viewer or served from this PC (localhost) — so a test never touches the shared data. */
+const CLOUD_CONFIG = null;                      // {apiKey: '…', projectId: '…'} of the Firebase web app; null = the data stays in this browser only
+const CLOUD_BLOCKED = IN_VIEWER || (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && !/[?&]live=1(&|$)/.test(location.search));
+const LS_CLOUD = 'o2o-cloud-v1', CLOUD_LIMIT = 900000;
+const cloudLs = (k, v) => { try { if (v === undefined) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+const cloudCanon = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);      // same content = same text on every computer
+const CLOUD_SETS = {
+  people:   { get: () => ({ roster, rinfo: rosterInfo }), empty: () => !Object.keys(roster).length && !Object.keys(rosterInfo).length,
+              set: v => { roster = v && v.roster && typeof v.roster === 'object' ? v.roster : {}; rosterInfo = v && v.rinfo && typeof v.rinfo === 'object' ? v.rinfo : {}; cloudLs(LS_ROSTER, roster); cloudLs(LS_RINFO, rosterInfo); } },
+  parttime: { get: () => ptime, empty: () => !Object.keys(ptime).length, set: v => { ptime = v && typeof v === 'object' ? v : {}; cloudLs(LS_PT, ptime); } },
+  trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
+  sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
+};
+cloudQ = (() => {
+  let cfg = null, busy = false, again = false, timer = null, lastRun = 0, bigWarned = false, st = { kind: 'off', at: 0 };
+  let meta = { me: '', sets: {} };
+  try { const m = JSON.parse(localStorage.getItem(LS_CLOUD) || 'null'); if (m && m.sets && typeof m.sets === 'object') meta = m; } catch (_) {}
+  if (!meta.me) meta.me = Math.random().toString(36).slice(2, 8);
+  const names = Object.keys(CLOUD_SETS), saveMeta = () => cloudLs(LS_CLOUD, meta), setOf = n => meta.sets[n] || (meta.sets[n] = { rev: null, dirty: false });
+  const docUrl = (n, qs = '') => `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/o2o/${n}?key=${encodeURIComponent(cfg.apiKey)}${qs}`;
+  async function req(method, url, body) {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const r = await (cfg.fetch || ((u, o) => fetch(u, o)))(url, { method, signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+      let json = null; try { json = await r.json(); } catch (_) {}
+      return { ok: r.ok, status: r.status, body: json || {} };
+    } finally { clearTimeout(timer); }
+  }
+  async function get(n) {
+    const r = await req('GET', docUrl(n));
+    if (r.status === 404) return { exists: false };
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const f = (r.body.fields || {}).json, raw = f && typeof f.stringValue === 'string' ? f.stringValue : 'null';
+    let value = null; try { value = JSON.parse(raw); } catch (_) {}
+    return { exists: true, updateTime: r.body.updateTime, raw: cloudCanon(value), value };
+  }
+  async function put(n, raw, prev) {            // prev = the version this copy is based on (null: the document must not exist yet)
+    const qs = ['json', 'by', 'at'].map(f => '&updateMask.fieldPaths=' + f).join('') + (prev ? '&currentDocument.updateTime=' + encodeURIComponent(prev) : '&currentDocument.exists=false');
+    const r = await req('PATCH', docUrl(n, qs), { fields: { json: { stringValue: raw }, by: { stringValue: meta.me }, at: { integerValue: String(Date.now()) } } });
+    if (r.ok) return { ok: true, updateTime: r.body.updateTime };
+    if ([400, 404, 409, 412].includes(r.status)) return { ok: false };      // somebody else changed (or created) it first
+    throw new Error('HTTP ' + r.status);
+  }
+  async function syncOne(n, retry = 1) {         // -> 'same' | 'pushed' | 'pulled' | 'lost' (pulled over an edit that was not sent yet) | 'big'
+    const S = CLOUD_SETS[n], m = setOf(n), g = await get(n), mine = cloudCanon(S.get());
+    const send = async prev => {
+      if (new Blob([mine]).size > CLOUD_LIMIT) { if (!bigWarned) { bigWarned = true; toast('ข้อมูลใหญ่เกินไปที่จะแชร์ข้ามเครื่อง — ยังใช้ได้เฉพาะเครื่องนี้'); } return 'big'; }
+      const w = await put(n, mine, prev);
+      if (w.ok) { m.rev = w.updateTime; m.dirty = false; saveMeta(); return 'pushed'; }
+      return retry > 0 ? syncOne(n, retry - 1) : 'same';
+    };
+    if (!g.exists) return m.dirty || !S.empty() ? send(null) : 'same';
+    if (m.rev === g.updateTime) {
+      if (!m.dirty) return 'same';
+      if (mine === g.raw) { m.dirty = false; saveMeta(); return 'same'; }
+      return send(g.updateTime);
+    }
+    let out = 'same';                           // the cloud copy is one this computer has not seen: it wins
+    if (mine !== g.raw) {
+      if (!S.empty() || m.dirty) cloudLs(LS_CLOUD + '-bak-' + n, S.get() === null ? undefined : S.get());
+      S.set(g.value); out = m.dirty ? 'lost' : 'pulled';
+    }
+    m.rev = g.updateTime; m.dirty = false; saveMeta(); return out;
+  }
+  function paint() {
+    const bar = document.getElementById('cloudBar'); if (!bar) return;
+    bar.hidden = !cfg; bar.classList.toggle('busy', st.kind === 'busy'); bar.classList.toggle('err', st.kind === 'err');
+    const t = st.kind === 'busy' ? T('กำลังซิงค์ …') : st.kind === 'err' ? T('ซิงค์ไม่ได้ — จะลองใหม่เอง (ข้อมูลยังอยู่ในเครื่องนี้)') : T('ซิงค์แล้ว {0}', new Date(st.at).toTimeString().slice(0, 5));
+    document.getElementById('cloudTxt').textContent = t; document.getElementById('cloudNow').disabled = st.kind === 'busy';
+  }
+  function afterApply() { try { renderRoster(); renderTrip(); renderDb(); renderEmpBox(); render(); } catch (_) {} }
+  async function run() {
+    if (!cfg) return;
+    if (busy) { again = true; return; }
+    busy = true; st = { kind: 'busy', at: st.at }; paint();
+    let pulled = false, lost = false, failed = false;
+    try { for (const n of names) { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') pulled = true; if (r === 'lost') lost = true; } } catch (_) { failed = true; }
+    busy = false; lastRun = Date.now(); st = { kind: failed ? 'err' : 'ok', at: Date.now() }; paint();
+    if (pulled) { afterApply(); toast(lost ? 'ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)' : 'อัปเดตข้อมูลจากเครื่องอื่นแล้ว'); }
+    if (again) { again = false; schedule(300); }
+  }
+  function schedule(ms) { clearTimeout(timer); timer = setTimeout(run, ms); }
+  const api = {
+    configure(c) { cfg = c && c.apiKey && c.projectId ? c : null; st = { kind: cfg ? 'busy' : 'off', at: 0 }; paint(); if (cfg) schedule(200); },
+    touch(n) { if (!cfg) return; setOf(n).dirty = true; saveMeta(); schedule(1500); },
+    run, meta: () => meta, status: () => st.kind, sets: CLOUD_SETS,
+  };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg && Date.now() - lastRun > 20000) run(); });
+  window.addEventListener('online', () => { if (cfg) schedule(500); });
+  setInterval(() => { if (cfg && !document.hidden) run(); }, 300000);
+  document.getElementById('cloudNow').addEventListener('click', run);
+  if (CLOUD_CONFIG && !CLOUD_BLOCKED) { api.configure(CLOUD_CONFIG); schedule(1500); }
+  return api;
+})();
+
 /* test/debug hook */
-window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks };
+window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg }) };
 
 empIn.value = state.emp || '';
 if (state.finished) feedback('ok', 'สิ้นสุดการสแกนแล้ว', 'ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"');
