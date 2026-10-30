@@ -75,6 +75,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Sarabun,"Noto 
 .langbtn .caret{width:14px;height:14px;opacity:.6}
 .flag{display:block;flex:none;width:26px;height:17px;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
 .flag svg{display:block;width:100%;height:100%}
+/* the same 3-language switch as tabs, at the top left of the full-page Assign / Re-Print views (the header with the dropdown is covered there) */
+.langtabs{display:none;gap:6px;width:max-content;margin:0 0 14px;padding:5px;border-radius:14px;background:rgba(255,255,255,.72);border:1px solid var(--pbd)}
+.panel.zoomed .langtabs{display:flex}
+.langtab{display:flex;align-items:center;gap:8px;padding:8px 16px;border:0;border-radius:10px;background:transparent;color:var(--pt);font-weight:800;font-size:16px;letter-spacing:.04em;box-shadow:none}
+.langtab .flag{width:30px;height:20px}
+.langtab:hover:not(.on):not(:disabled){border:0;background:rgba(255,255,255,.75)}
+.langtab.on,.langtab.on:hover:not(:disabled){border:0;background:#fff;box-shadow:0 2px 8px rgba(80,50,160,.25),inset 0 0 0 2px var(--dot)}
 .langmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:176px;margin:0;padding:6px;list-style:none;
   background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(16,24,40,.22)}
 .langmenu[hidden]{display:none}
@@ -860,6 +867,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             </section>
           </section>
           <section class="panel orange" aria-label="Assign งาน">
+            <div class="langtabs" role="group" aria-label="ภาษา"><button class="langtab" type="button" data-lang="th"><span class="flag" data-flag="th"></span><b>TH</b></button><button class="langtab" type="button" data-lang="en"><span class="flag" data-flag="en"></span><b>EN</b></button><button class="langtab" type="button" data-lang="my"><span class="flag" data-flag="my"></span><b>MM</b></button></div>
             <div class="phead"><label for="assignIn">Assign งาน</label><span class="pright"><span class="pcount" id="assignCount">0</span><button class="pzoom" id="assignZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
             <input id="assignWho" class="aw" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่ชื่อ หรือสแกนรหัสพนักงาน" aria-label="ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)">
             <input id="assignIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ที่จะ Assign" aria-label="Assign งาน: เลขออเดอร์">
@@ -871,6 +879,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
           </div>
           <section class="panel purple" aria-label="Re-Print ใบปะหน้า">
             <div class="pleft">
+            <div class="langtabs" role="group" aria-label="ภาษา"><button class="langtab" type="button" data-lang="th"><span class="flag" data-flag="th"></span><b>TH</b></button><button class="langtab" type="button" data-lang="en"><span class="flag" data-flag="en"></span><b>EN</b></button><button class="langtab" type="button" data-lang="my"><span class="flag" data-flag="my"></span><b>MM</b></button></div>
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
             <button id="bulkBack" class="bulkback" type="button"><span class="bbico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></span><span class="bbtxt"><b>กลับไปใช้ช่องอื่น</b><small>ช่อง 1 Page / 1 Order · 1 Page / 2 Order</small></span></button>
@@ -3723,6 +3732,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไฟล์นี้ไม่ใช่ .xlsx', 'This file is not an .xlsx', 'ဤဖိုင်သည် .xlsx မဟုတ်ပါ'],
   ['ไฟล์ .xlsb อ่านไม่ได้ — Save As เป็น .xlsx หรือคัดลอกจาก Excel มาวาง', '.xlsb files cannot be read — Save As .xlsx, or copy from Excel and paste', '.xlsb ဖိုင်ကို မဖတ်နိုင်ပါ — .xlsx အဖြစ် Save As လုပ်ပါ သို့မဟုတ် Excel မှ ကူးယူ၍ ထည့်ပါ'],
   ['รูปภาพ', 'Pictures', 'ဓာတ်ပုံများ'],
+  ['ภาษา', 'Language', 'ဘာသာစကား'],
   ['แยกชื่อกับชื่อเล่นตามช่องว่างหลายช่อง', 'name and nickname separated by the wide gaps', 'အမည်နှင့် အမည်ပြောင်ကို နေရာလွတ်ကျယ်ကျယ်များဖြင့် ခွဲထားသည်'],
   ['แยกชื่อกับชื่อเล่นตามภาษา (อังกฤษ / ไทย)', 'name and nickname separated by language (English / Thai)', 'အမည်နှင့် အမည်ပြောင်ကို ဘာသာစကားအလိုက် ခွဲထားသည် (အင်္ဂလိပ် / ထိုင်း)'],
   ['แสดง 1500 จาก {0}', 'Showing 1500 of {0}', '{0} မှ 1500 ကို ပြသည်'],
@@ -4010,6 +4020,7 @@ const FLAGS = {
 function paintLangUi() {
   $('langFlag').innerHTML = FLAGS[lang]; $('langCode').textContent = lang === 'my' ? 'MM' : lang.toUpperCase();   // Myanmar's code is MM (MY = Malaysia); the stored value / <html lang> stay "my"
   document.querySelectorAll('.langitem').forEach(b => { b.classList.toggle('on', b.dataset.lang === lang); b.setAttribute('aria-checked', String(b.dataset.lang === lang)); });
+  document.querySelectorAll('.langtab').forEach(b => { b.classList.toggle('on', b.dataset.lang === lang); b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });      // the tabs of the full-page views
 }
 function closeLangMenu() { $('langMenu').hidden = true; $('btnLang').setAttribute('aria-expanded', 'false'); }
 function setLang(l) {
@@ -4030,6 +4041,7 @@ function initLang() {
   xTree(document.body); watchI18n(); paintLangUi();
   $('btnLang').addEventListener('click', e => { e.stopPropagation(); const m = $('langMenu'); m.hidden = !m.hidden; $('btnLang').setAttribute('aria-expanded', String(!m.hidden)); });
   $('langMenu').addEventListener('click', e => { const b = e.target.closest('[data-lang]'); if (b) { e.stopPropagation(); setLang(b.dataset.lang); focusNext(); } });
+  document.querySelectorAll('.langtab').forEach(b => b.addEventListener('click', () => { setLang(b.dataset.lang); focusNext(); }));
   document.addEventListener('click', e => { if (!e.target.closest('#langWrap')) closeLangMenu(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLangMenu(); });
 }
