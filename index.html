@@ -109,11 +109,13 @@ input[type=text],input[type=search],input[type=number],textarea{font:inherit;col
   border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
 input[type=text]:focus,input[type=search]:focus,input[type=number]:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 label{font-weight:600}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media (pointer:coarse){ input[type=text],input[type=search],input[type=number],textarea,select{font-size:16px} }      /* phones / tablets: 16px so iOS does not zoom the page when a field is focused (the big scan fields set their own larger size later) */
 input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px}
 
 /* ---- layout ---- */
 main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:18px;align-items:stretch}
-@media (max-width:920px){ main{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:1180px){ main{grid-template-columns:minmax(0,1fr)} }      /* tablets / small laptops: one column, so the orange and purple boxes keep room to breathe (two columns squeezed them at 1024) */
 .stack{display:flex;flex-direction:column;gap:16px;min-width:0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);min-width:0}
 /* "ส่งออก" and the buttons / settings card are slimmer (the left column is kept as short as it can be) */
@@ -233,6 +235,7 @@ details.settings summary{cursor:pointer;color:var(--muted);font-size:14px;font-w
 details.settings .row{margin-top:10px}
 details.settings label{display:flex;align-items:center;gap:8px;font-size:14px}
 details.settings input[type=number]{width:76px}
+details.settings input[type=checkbox]{flex:none}
 
 /* ---- right column ---- */
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -275,6 +278,25 @@ td.mono,.mono{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-
 tr.dup td{background:var(--badbg)!important;color:var(--bad)}
 tr.dup .empnm,tr.dup .slot{color:inherit}
 td.x{width:34px;text-align:center}
+/* phones: the scan list keeps the columns that matter (no time / batch), the export row wraps instead of cutting the batch name, and the small buttons get a finger-sized hit area */
+@media (max-width:640px){
+  .scanwrap th:nth-child(2),.scanwrap td:nth-child(2),.scanwrap th:nth-child(5),.scanwrap td:nth-child(5){display:none}
+}
+@media (max-width:480px){
+  .exp{display:grid;grid-template-columns:minmax(0,1fr) auto}
+  .exp select{grid-column:1 / -1;border-bottom:1px solid var(--line)}
+  .exp #btnCopy{border-left:0}
+  .scanwrap th:nth-child(1),.scanwrap td:nth-child(1),.scanwrap .empnm{display:none}
+  .scanwrap th,.scanwrap td{padding-left:7px;padding-right:7px}
+  .scanwrap th:last-child,.scanwrap td.x{padding-left:0;padding-right:0;width:34px}
+  .scanwrap .pill{padding:1px 7px;font-size:11px}
+}
+@media (max-width:760px),(pointer:coarse){
+  .chip{padding:7px 14px}
+  button.mini{padding:7px 12px}
+  td.x button{min-width:38px;min-height:34px}
+  input[type=checkbox],input[type=radio]{width:22px;height:22px}
+}
 
 /* ---- Assign งาน (orange) / Re-Print ใบปะหน้า (purple): two scan fields under the scan list ---- */
 .twin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -295,8 +317,9 @@ td.x{width:34px;text-align:center}
 .panel.green button.gbar:hover:not(:disabled){background:linear-gradient(135deg,#3bb972,#23975a)}
 .panel.green button.gbar:disabled{opacity:.55;cursor:default}
 .panel.green button.gbar:focus-visible{outline:3px solid #fff;outline-offset:-1px;box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 45%,transparent)}
+@media (max-width:380px){ .panel.green button.gbar{padding:0 8px;font-size:13.5px} }      /* the narrowest phones: the longer EN / MM captions still fit the bar */
 /* the two big windows — who is the picker (green print bar) and the Part-Time barcodes (Re-Print): wide, centred on the screen, a green header with an icon, big type */
-.bigdlg{width:min(760px,92vw);max-height:90vh;margin:auto;padding:0;border:0;border-radius:26px;overflow:hidden;background:var(--card);color:var(--ink);box-shadow:0 30px 90px rgba(8,16,36,.55)}
+.bigdlg{width:min(760px,92vw);max-height:90vh;max-height:90dvh;margin:auto;padding:0;border:0;border-radius:26px;overflow:hidden;background:var(--card);color:var(--ink);box-shadow:0 30px 90px rgba(8,16,36,.55)}
 .bigdlg[open]{display:flex;flex-direction:column;animation:bdpop .2s ease-out}
 .bigdlg::backdrop{background:rgba(12,18,32,.62);backdrop-filter:blur(5px)}
 @keyframes bdpop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
@@ -319,6 +342,18 @@ td.x{width:34px;text-align:center}
 .pdlg .pdmsg.ok{background:#e4f3ea;color:#1f7a45}
 .pdlg .pdmsg.bad{background:#fde3e3;color:#b42318}
 .pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:15px;font-weight:600;text-decoration:underline;padding:6px 2px}
+@media (max-width:560px){                                   /* phones: smaller header and type so the long hint / placeholder fit the 92vw pop-up */
+  .bigdlg .bdhead{gap:12px;padding:16px 18px}
+  .bigdlg .bdico{width:46px;height:46px}
+  .bigdlg .bdico svg{width:24px;height:24px}
+  .bigdlg h3{font-size:24px}
+  .bigdlg .bdsub{font-size:14px}
+  .bigdlg .bdbody{padding:18px 18px 20px}
+  .bigdlg .bdfoot button{padding:11px 22px;font-size:16px}
+  .pdlg .pdin{height:58px;padding:0 16px;font-size:22px}
+  .pdlg .pdin::placeholder{font-size:14px}
+  .pdlg .pdmsg{font-size:16px;padding:10px 14px}
+}
 .panel.green .pmsg{min-height:18px;margin-top:4px;margin-bottom:4px}
 .panel.green .pmsg:empty{display:none}      /* the line is there only while it has something to say (this keeps the two columns of the page level) */
 .panel.green .impbox.flat{margin-top:6px}
@@ -424,6 +459,7 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .panel.zoomed .pcount{font-size:18px;padding:3px 16px}
 .panel.zoomed .pzoom{width:44px;height:44px}
 .panel.zoomed .pzoom svg{width:22px;height:22px}
+@media (max-width:760px),(pointer:coarse){ .pzoom{width:38px;height:38px} .plist li button{min-width:36px;min-height:32px} }      /* finger-sized */
 .panel.zoomed input[type=text]{height:clamp(60px,9vh,84px);font-size:clamp(26px,3.4vw,40px);border-radius:16px;padding:0 18px}
 .panel.zoomed input[type=text]::placeholder{font-size:clamp(16px,1.8vw,22px)}
 .panel.zoomed .pmode{font-size:15px;padding:8px 8px 8px 14px}
@@ -470,6 +506,7 @@ input.rp2{margin-top:8px}
 .ptdlg .ewho{margin-top:14px;font-size:17px}
 .ptdlg .ewho button{padding:6px 16px;font-size:15px}.eadd{display:flex;gap:8px}
 .eadd button{flex:none;padding:0 16px;border:0;border-radius:12px;background:#1f9d57;color:#fff;font:800 15px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+@media (max-width:560px){ .ptdlg .eadd{flex-direction:column} .ptdlg .eadd button{padding:14px 0;font-size:17px} .ptdlg .ptlist{min-height:200px} .ptdlg .ptlist li{grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 12px} .ptdlg .ptlist .pta{justify-self:start} .ptdlg .ptlist .ptbar svg{max-width:100%;height:auto} }      /* phones: the name field gets its own line (its placeholder was cut off beside the button), and each Part-Time card is stacked: barcode, name, buttons */
 .ptlist{list-style:none;margin:8px 0 0;padding:0;max-height:150px;overflow:auto;border-radius:10px;background:#fff;color:var(--ink);border:1px solid #a9dcbe}
 .ptlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
 .ptlist li.sel{background:#e4f6ec}
@@ -483,7 +520,12 @@ input.rp2{margin-top:8px}
 .ptlist .pta button.go{background:#1f9d57;border-color:#1f9d57;color:#fff}
 .ewho{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:14px;font-weight:700}
 .rpempty{align-self:center;max-width:300px;text-align:center;color:var(--pt);opacity:.75;font-size:15px}
-@media (max-width:900px){ .panel.purple.zoomed{grid-template-columns:minmax(0,1fr);grid-template-rows:none} .panel.purple.zoomed .rpview{min-height:70vh} }
+@media (max-width:900px){      /* narrow screens: the list on top, the live preview under it, the whole panel scrolls (with the rows squeezed into the screen height the preview was drawn over the list) */
+  .panel.purple.zoomed{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:start}
+  .panel.purple.zoomed .pleft{min-height:auto}
+  .panel.purple.zoomed .plist{max-height:34vh}
+  .panel.purple.zoomed .rpview{min-height:70vh}
+}
 
 /* Re-Print mode: everything outside the purple box goes grey and dead (inert) until the mode is left */
 .dimmed{filter:grayscale(1);opacity:.5;pointer-events:none;user-select:none;transition:filter .2s,opacity .2s}
@@ -501,7 +543,7 @@ td.x button:hover{color:var(--bad)}
 /* ---- roster dialog ---- */
 dialog{width:min(820px,94vw);max-height:92vh;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--bg);color:var(--ink);box-shadow:0 28px 80px rgba(0,0,0,.45)}
 dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
-.dlg{padding:0 20px 20px;max-height:92vh;overflow:auto}
+.dlg{padding:0 20px 20px;max-height:92vh;max-height:92dvh;overflow:auto}
 .dlghead{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;margin:0 -20px 16px;padding:14px 20px;
   background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,var(--card)),var(--card));border-bottom:1px solid var(--line)}
 .dlgicon{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(11,92,173,.32)}
@@ -521,6 +563,12 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
 .dtabs .dbadge{position:absolute;top:-10px;right:14px;padding:1px 10px;border-radius:99px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.14);font-size:12.5px;font-weight:800;line-height:1.5;font-variant-numeric:tabular-nums}
 .dtabs .dbadge.zero{color:var(--muted);font-weight:600}
 .dtabs .dbadge.live{background:#1f9d57;border-color:#1f9d57;color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(31,157,87,.45)}
+@media (max-width:560px){                                   /* phones: the three tabs stack icon over label (side by side the Thai words broke letter by letter) */
+  .dlg{padding:0 14px 16px}
+  .dlghead{margin:0 -14px 14px;padding:12px 14px}
+  .dtabs button{flex-direction:column;gap:3px;padding:12px 3px 8px;font-size:13px;line-height:1.25;text-align:center}
+  .dtabs .dbadge{right:3px;top:-9px;padding:0 7px;font-size:11px;white-space:nowrap}
+}
 .dsec{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
 .dtitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:800}
 .dnum{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
@@ -571,6 +619,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .pvbar .sp{flex:1}
 .pvnote{flex:1 1 100%;font-size:13px;color:var(--warn);empty-cells:hide}
 .pvnote:empty{display:none}
+@media screen{ #pvPages{zoom:var(--pvz,1)} }      /* the A4 sheets are shrunk to fit a narrow screen (--pvz is set from the window width); printing is not scaled */
 /* (the sheet / slip styles are in SHEET_CSS in the script: the same text is used by this page and by the saved print file) */
 @media print{
   @page{size:A4;margin:0}
@@ -2314,9 +2363,9 @@ function renderRpView() {
   $('rpTitle').textContent = pair ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', pair.length < 2 ? pair[0] + ' + …' : pair.join(' + ')) : o ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', o) : T('ตัวอย่างใบที่จะพิมพ์');
   $('rpPrint').disabled = !o;
   if (!o) { box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; $('rpNote').textContent = ''; return; }
-  box.innerHTML = `<div class="rpwrap">${pair ? sheetHtml(reprintRow(pair[0]), pair[1] ? reprintRow(pair[1]) : null) : sheetHtml(reprintRow(o))}</div>`; fitSheets(box); fitRpView();
   const missing = (pair || [o]).some(x => !orderInfo[x]);
   $('rpNote').textContent = !missing ? '' : sheetUsable() ? 'ยังไม่พบข้อมูลออเดอร์นี้ในชีต (หรือกำลังค้นหา)' : 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';
+  box.innerHTML = `<div class="rpwrap">${pair ? sheetHtml(reprintRow(pair[0]), pair[1] ? reprintRow(pair[1]) : null) : sheetHtml(reprintRow(o))}</div>`; fitSheets(box); fitRpView();      // the note (it wraps to several lines on a phone) is set first: it takes height from the box the sheet is fitted into
 }
 window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
@@ -2967,6 +3016,8 @@ function openPrint(mode) {
   $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
 }
+const pvFit = () => $('pvPages').style.setProperty('--pvz', String(Math.min(1, (innerWidth - 16) / 800).toFixed(3)));
+window.addEventListener('resize', pvFit); pvFit();
 const closePrint = () => { $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
