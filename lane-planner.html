@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>จัดเลน Trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5fb;--card:#fff;--ink:#1b2333;--muted:#667085;--line:#dfe3ee;--accent:#0b5cad;--accent-ink:#fff;--ok:#1f9d57;--warn:#b45309;--warnbg:#fff3df;--bad:#d92d20;--soft:#eef2fb;--shadow:0 6px 20px rgba(16,24,40,.08);color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10141c;--card:#1a2030;--ink:#e7ebf4;--muted:#9aa4b8;--line:#2b3347;--accent:#5aa8f7;--accent-ink:#0b1220;--soft:#202840;--warnbg:#3a2a10;--warn:#f5b455;--shadow:0 6px 20px rgba(0,0,0,.4)}}
+:root[data-theme=dark]{--bg:#10141c;--card:#1a2030;--ink:#e7ebf4;--muted:#9aa4b8;--line:#2b3347;--accent:#5aa8f7;--accent-ink:#0b1220;--soft:#202840;--warnbg:#3a2a10;--warn:#f5b455;--shadow:0 6px 20px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Sarabun,"Leelawadee UI",Tahoma,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+h1{margin:6px 0 2px;font-size:26px}
+.sub{margin:0 0 16px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 10px;font-size:18px;display:flex;align-items:center;gap:10px}
+.num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:800}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,input,select,textarea{font:inherit;color:var(--ink)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 16px;font-weight:700}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+button:disabled{opacity:.5;cursor:default}
+input[type=number],input[type=date],input[type=text],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+input[type=number]{width:84px}
+label.f{display:flex;align-items:center;gap:8px}
+.drop{flex:1 1 280px;min-height:64px;display:grid;place-items:center;text-align:center;padding:10px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);cursor:pointer}
+.drop.on{border-color:var(--accent);background:var(--soft)}
+.muted{color:var(--muted)}
+.msg{margin-top:10px;font-weight:600}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+details summary{cursor:pointer;font-weight:700}
+textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.sum{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.chip{padding:8px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+.chip b{font-size:20px;display:block;line-height:1.2}
+.chip small{color:var(--muted)}
+.wave{margin-top:18px}
+.wave h3{margin:0 0 8px;font-size:18px}
+.wave h3 small{color:var(--muted);font-weight:600;font-size:14px}
+.lanes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.lane{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card)}
+.lane.under{border-color:var(--warn);background:var(--warnbg)}
+.lane .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.lane .tn{font-size:22px;font-weight:800}
+.lane .cnt{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.lane .cnt small{font-size:13px;font-weight:600;color:var(--muted)}
+.lane ul{margin:6px 0 0;padding:0;list-style:none}
+.lane li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.lane li:last-child{border-bottom:0}
+.lane li span:first-child{min-width:0}
+.lane li small{color:var(--muted)}
+.lane .meta{margin-top:8px;font-size:13px;color:var(--muted)}
+.tag{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);margin-right:4px}
+.tag.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.tag.ok{color:var(--ok)}
+.cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:15px}
+.cmp th,.cmp td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right}
+.cmp th:first-child,.cmp td:first-child{text-align:left}
+.note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn);font-size:14px}
+@media (max-width:560px){.wrap{padding:12px 12px 50px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>จัดเลน — แบ่งออเดอร์เข้า Trip 1-20</h1>
+  <p class="sub">เอาออเดอร์ของวันมานับตามแขวง/เขตและรอบเวลา แล้วเสนอว่าแขวงไหนควรอยู่ Trip ไหน ให้ใกล้กันและแต่ละเที่ยวมีออเดอร์ไม่น้อยเกินไป · อ่านอย่างเดียว ไม่แก้ชีตหรือไฟล์ · ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
+
+  <section class="card">
+    <h2><span class="num">1</span>ข้อมูลออเดอร์</h2>
+    <div class="row">
+      <button id="btnSheet" class="primary" type="button">ดึงจากชีตที่เชื่อมต่อไว้</button>
+      <label class="f">วันที่ส่ง <input id="dateIn" type="date"></label>
+      <span class="muted">หรือ</span>
+      <div id="drop" class="drop" tabindex="0" role="button">ลากไฟล์ออเดอร์ (.xlsx / .csv) มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</div>
+      <input id="file" type="file" accept=".xlsx,.csv,.tsv,.txt" hidden>
+    </div>
+    <div id="srcMsg" class="msg"></div>
+    <div id="dayPick" class="row" style="margin-top:8px" hidden>
+      <label class="f">วันที่จะจัด <select id="daySel"></select></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">2</span>ตั้งค่า</h2>
+    <div class="row">
+      <label class="f">ขั้นต่ำต่อเที่ยว <input id="pMin" type="number" min="1" max="200" value="15"> ใบ</label>
+      <label class="f">ขั้นสูงต่อเที่ยว <input id="pMax" type="number" min="5" max="300" value="35"> ใบ</label>
+      <label class="f">จำนวนเลน <input id="pLanes" type="number" min="1" max="60" value="20"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label class="f"><input id="pWave" type="checkbox" checked> แยกตามรอบเวลา (05-08, 08-12, 12-16, 16-20)</label>
+      <label class="f"><input id="pCancel" type="checkbox" checked> ไม่รวมออเดอร์ที่ยกเลิก/ตีกลับ</label>
+    </div>
+    <details style="margin-top:10px">
+      <summary>ใช้พิกัดจริงของแขวง (ไม่บังคับ)</summary>
+      <p class="muted" style="margin:6px 0">วาง 1 บรรทัดต่อ 1 แขวง: <code>ชื่อแขวง,ละติจูด,ลองจิจูด</code> เช่น <code>บางชัน,13.8205,100.7132</code> — ถ้ามีพิกัดครบเกือบทุกแขวง โปรแกรมจะใช้ระยะตามพิกัด (คูณ 1.35 ให้ใกล้ระยะถนน) แทนการประมาณจากเขตที่ติดกัน · จุดเริ่มต้นคือแม็คโคร รามอินทรา (13.8110547, 100.6960359) · ตารางระยะจาก Google Maps / OpenStreetMap วางที่นี่ได้ภายหลัง</p>
+      <textarea id="geoIn" spellcheck="false" placeholder="บางชัน,13.8205,100.7132"></textarea>
+      <div id="geoMsg" class="msg"></div>
+    </details>
+    <div class="row" style="margin-top:12px"><button id="btnPlan" class="primary" type="button" disabled>จัดเลน</button></div>
+  </section>
+
+  <section id="out" class="card" hidden></section>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const THAI = /[฀-๿]/;
+const STORE = { name: 'แม็คโคร รามอินทรา', lat: 13.8110547, lng: 100.6960359, sd: 'รามอินทรา', d: 'คันนายาว' };
+
+/* ---------- names: the export writes some areas in English; everything is brought to the Thai name ---------- */
+const norm = s => String(s == null ? '' : s).toLowerCase().trim().replace(/^(เขต|แขวง|อำเภอ|ตำบล|จังหวัด|อ\.|ต\.|จ\.|khet\s|khwaeng\s|amphoe\s|tambon\s)\s*/i, '').replace(/[\s._\-,()\/\\']/g, '');
+const normH = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9฀-๿]/g, '');
+const D_EN = { 'Min Buri': 'มีนบุรี', 'Khlong Sam Wa': 'คลองสามวา', 'Khan Na Yao': 'คันนายาว', 'Bueng Kum': 'บึงกุ่ม', 'Bang Khen': 'บางเขน', 'Sai Mai': 'สายไหม', 'Saphan Sung': 'สะพานสูง',
+  'Lat Krabang': 'ลาดกระบัง', 'Nong Chok': 'หนองจอก', 'Lat Phrao': 'ลาดพร้าว', 'Bang Kapi': 'บางกะปิ', 'Wang Thonglang': 'วังทองหลาง', 'Lam Luk Ka': 'ลำลูกกา', 'Lak Si': 'หลักสี่', 'Don Mueang': 'ดอนเมือง',
+  'Chatuchak': 'จตุจักร', 'Prawet': 'ประเวศ' };
+const SD_EN = { 'Min Buri': 'มีนบุรี', 'Saen Saep': 'แสนแสบ', 'Sam Wa Tawan Tok': 'สามวาตะวันตก', 'Sam Wa Tawan Ok': 'สามวาตะวันออก', 'Bang Chan': 'บางชัน', 'Sai Kong Din': 'ทรายกองดิน', 'Sai Kong Din Tai': 'ทรายกองดินใต้',
+  'Khan Na Yao': 'คันนายาว', 'Ram Inthra': 'รามอินทรา', 'Saphan Sung': 'สะพานสูง', 'Rat Phatthana': 'ราษฎร์พัฒนา', 'Thap Chang': 'ทับช้าง', 'Khlong Kum': 'คลองกุ่ม', 'Nawamin': 'นวมินทร์', 'Nuan Chan': 'นวลจันทร์',
+  'Anusawari': 'อนุสาวรีย์', 'Tha Raeng': 'ท่าแร้ง', 'Sai Mai': 'สายไหม', 'O Ngoen': 'ออเงิน', 'Khlong Thanon': 'คลองถนน', 'Lat Krabang': 'ลาดกระบัง', 'Khlong Song Ton Nun': 'คลองสองต้นนุ่น', 'Khlong Sam Prawet': 'คลองสามประเวศ',
+  'Lam Pla Thio': 'ลำปลาทิว', 'Thap Yao': 'ทับยาว', 'Khum Thong': 'ขุมทอง', 'Lam Phak Chi': 'ลำผักชี', 'Nong Chok': 'หนองจอก', 'Krathum Rai': 'กระทุ่มราย', 'Khlong Sip': 'คลองสิบ', 'Khlong Sip Song': 'คลองสิบสอง',
+  'Khok Faet': 'โคกแฝด', 'Khu Fang Nuea': 'คู้ฝั่งเหนือ', 'Lam Toiting': 'ลำต้อยติ่ง', 'Chorakhe Bua': 'จรเข้บัว', 'Lat Phrao': 'ลาดพร้าว', 'Khlong Chan': 'คลองจั่น', 'Hua Mak': 'หัวหมาก', 'Bueng Kham Phroi': 'บึงคำพร้อย',
+  'Lam Luk Ka': 'ลำลูกกา', 'Khu Khot': 'คูคต', 'Wang Thonglang': 'วังทองหลาง' };
+const mapOf = o => new Map(Object.entries(o).map(([e, t]) => [norm(e), t]));
+const D_MAP = mapOf(D_EN), SD_MAP = mapOf(SD_EN);
+const canonD = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(เขต|อำเภอ)\s*/, '') : (D_MAP.get(norm(t)) || t); };
+const canonSd = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(แขวง|ตำบล)\s*/, '') : (SD_MAP.get(norm(t)) || t); };
+
+/* districts that touch each other (Bangkok north-east and neighbours): the "how near" of two areas that have no coordinates */
+const EDGES = [['มีนบุรี', 'คลองสามวา'], ['มีนบุรี', 'หนองจอก'], ['มีนบุรี', 'ลาดกระบัง'], ['มีนบุรี', 'สะพานสูง'], ['มีนบุรี', 'คันนายาว'], ['คลองสามวา', 'สายไหม'], ['คลองสามวา', 'คันนายาว'], ['คลองสามวา', 'หนองจอก'],
+  ['คลองสามวา', 'ลำลูกกา'], ['คันนายาว', 'บึงกุ่ม'], ['คันนายาว', 'สะพานสูง'], ['คันนายาว', 'สายไหม'], ['คันนายาว', 'บางเขน'], ['บึงกุ่ม', 'บางเขน'], ['บึงกุ่ม', 'ลาดพร้าว'], ['บึงกุ่ม', 'วังทองหลาง'], ['บึงกุ่ม', 'บางกะปิ'],
+  ['บึงกุ่ม', 'สะพานสูง'], ['บางเขน', 'สายไหม'], ['บางเขน', 'หลักสี่'], ['บางเขน', 'จตุจักร'], ['บางเขน', 'ลาดพร้าว'], ['บางเขน', 'ดอนเมือง'], ['สายไหม', 'ดอนเมือง'], ['สายไหม', 'ลำลูกกา'], ['สายไหม', 'หลักสี่'],
+  ['สะพานสูง', 'บางกะปิ'], ['สะพานสูง', 'ลาดกระบัง'], ['สะพานสูง', 'ประเวศ'], ['ลาดกระบัง', 'หนองจอก'], ['ลาดกระบัง', 'ประเวศ'], ['ลาดพร้าว', 'จตุจักร'], ['ลาดพร้าว', 'วังทองหลาง'], ['บางกะปิ', 'วังทองหลาง'],
+  ['บางกะปิ', 'ประเวศ'], ['หลักสี่', 'ดอนเมือง'], ['หลักสี่', 'จตุจักร'], ['ดอนเมือง', 'ลำลูกกา']];
+const ADJ = new Map(); for (const [a, b] of EDGES) { (ADJ.get(a) || ADJ.set(a, new Set()).get(a)).add(b); (ADJ.get(b) || ADJ.set(b, new Set()).get(b)).add(a); }
+const hopMemo = new Map();
+function hops(a, b) {                                              // number of district borders to cross, 9 = unknown district
+  if (a === b) return 0; const k = a + '>' + b; if (hopMemo.has(k)) return hopMemo.get(k);
+  let r = 9; if (ADJ.has(a) && ADJ.has(b)) { const seen = new Set([a]); let fr = [a], d = 0; while (fr.length && r === 9) { d++; const nx = []; for (const x of fr) for (const y of ADJ.get(x)) if (!seen.has(y)) { if (y === b) { r = d; break; } seen.add(y); nx.push(y); } fr = nx; } }
+  hopMemo.set(k, r); return r;
+}
+const hierDist = (a, b) => (a.sd === b.sd && a.d === b.d) ? 0 : a.d === b.d ? 4 : ([4, 8, 13, 18][hops(a.d, b.d)] || 25);      // "kilometres-ish" when nothing better is known
+const rad = x => x * Math.PI / 180;
+const hav = (p, q) => { const dl = rad(q[0] - p[0]), dn = rad(q[1] - p[1]), a = Math.sin(dl / 2) ** 2 + Math.cos(rad(p[0])) * Math.cos(rad(q[0])) * Math.sin(dn / 2) ** 2; return 12742 * Math.asin(Math.sqrt(a)); };
+
+/* ---------- reading a file: .xlsx (zip + xml, read in this browser) / csv ---------- */
+async function inflateRaw(u8) { const st = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+function unzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('ไฟล์นี้ไม่ใช่ .xlsx');
+  const n = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true); const files = new Map(), dec = new TextDecoder();
+  for (let k = 0; k < n && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    files.set(dec.decode(u8.subarray(p + 46, p + 46 + nl)), { method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), lho: dv.getUint32(p + 42, true) }); p += 46 + nl + el + cl;
+  }
+  return { has: n => files.has(n), async text(name) { const f = files.get(name); if (!f) return null; const s = f.lho + 30 + dv.getUint16(f.lho + 26, true) + dv.getUint16(f.lho + 28, true); const raw = u8.subarray(s, s + f.csize); return new TextDecoder('utf-8').decode(f.method === 0 ? raw : await inflateRaw(raw)); } };
+}
+const unxml = s => s.indexOf('&') < 0 ? s : s.replace(/&(#x?[0-9a-fA-F]+|amp|lt|gt|quot|apos);/g, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[e]));
+const colIdx = L => L.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+async function readXlsx(u8) {
+  const z = unzip(u8); if (!z.has('xl/workbook.xml')) throw new Error('ไม่ใช่ไฟล์ Excel (.xlsx)');
+  const wb = await z.text('xl/workbook.xml'), rels = await z.text('xl/_rels/workbook.xml.rels');
+  const rid = (/<sheet\b[^>]*r:id="([^"]+)"/.exec(wb) || [])[1], relTag = [...rels.matchAll(/<Relationship\b[^>]*>/g)].map(m => m[0]).find(t => rid && t.includes('Id="' + rid + '"'));
+  let target = relTag && (/Target="([^"]+)"/.exec(relTag) || [])[1] || 'worksheets/sheet1.xml'; target = target.startsWith('/') ? target.slice(1) : 'xl/' + target;
+  const xml = await z.text(target); if (!xml) throw new Error('ไม่พบข้อมูลในชีตแรก');
+  const sst = []; if (z.has('xl/sharedStrings.xml')) { const sx = await z.text('xl/sharedStrings.xml'); for (const m of sx.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)) { let t = ''; for (const x of m[1].replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)) t += unxml(x[1]); sst.push(t); } }
+  const rows = [];
+  for (const rm of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+    const arr = [];
+    for (const cm of rm[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+      const at = cm[1], body = cm[2]; if (!body) continue;
+      const ref = (/\br="([A-Z]+)\d+"/.exec(at) || [])[1], t = (/\bt="([^"]+)"/.exec(at) || [])[1]; if (!ref) continue;
+      let v = ''; if (t === 'inlineStr') { v = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(x => unxml(x[1])).join(''); } else { const vm = /<v>([\s\S]*?)<\/v>/.exec(body); v = vm ? vm[1] : ''; v = t === 's' ? (sst[+v] || '') : unxml(v); }
+      arr[colIdx(ref)] = v;
+    }
+    rows.push(Array.from(arr, x => (x == null ? '' : String(x).trim())));
+  }
+  return rows;
+}
+function splitLine(line, d) { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const c = line[i]; if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === '"') q = true; else if (c === d) { out.push(cur.trim()); cur = ''; } else cur += c; } out.push(cur.trim()); return out; }
+function parseDelimited(text) { const lines = text.split(/\r?\n/).filter(l => l.trim()); const smp = lines.slice(0, 5).join('\n'); const d = ['\t', ',', ';', '|'].map(x => [x, smp.split(x).length]).sort((a, b) => b[1] - a[1])[0][0]; return lines.map(l => splitLine(l, d)); }
+async function fileToRows(file) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  if (u8[0] === 0x50 && u8[1] === 0x4B) return readXlsx(u8);
+  if (u8[0] === 0xD0 && u8[1] === 0xCF) throw new Error('ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx');
+  let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^﻿/, ''); } catch (_) { text = new TextDecoder('windows-874').decode(u8); }
+  return parseDelimited(text);
+}
+
+/* ---------- rows -> orders ---------- */
+const firstDate = s => { const p = String(s || '').split(/\s+-\s+/)[0].trim(); return p; };
+function waveOf(t) {
+  const m = /(\d{1,2}):(\d{2})(?::\d{2})?\s*-\s*(\d{1,2}):(\d{2})/.exec(String(t || '')); if (!m) return 'อื่น ๆ';
+  const h = +m[1]; return h < 8 ? '05:00-08:00' : h < 12 ? '08:00-12:00' : h < 16 ? '12:00-16:00' : h < 20 ? '16:00-20:00' : 'อื่น ๆ';
+}
+const WAVES = ['05:00-08:00', '08:00-12:00', '12:00-16:00', '16:00-20:00', 'อื่น ๆ'];
+const KEYS = { no: ['ordernumber'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'] };
+function rowsToOrders(rows) {
+  const hi = rows.findIndex(r => r.some(c => normH(c) === 'ordernumber')); if (hi < 0) throw new Error('ไม่พบหัวคอลัมน์ "Order Number" — ต้องเป็นไฟล์ออเดอร์ของ Call Center');
+  const head = rows[hi].map(normH), at = k => head.map((h, i) => KEYS[k].includes(h) ? i : -1).filter(i => i >= 0), I = {}; for (const k of Object.keys(KEYS)) I[k] = at(k);
+  if (!I.sd.length && !I.d.length) throw new Error('ไม่พบคอลัมน์ "Sub District" / "District" ในไฟล์');
+  const get = (r, k) => { for (const i of I[k]) if (r[i]) return r[i]; return ''; };
+  const out = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i], no = get(r, 'no'); if (!no) continue;
+    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype') });
+  }
+  return out;
+}
+
+/* ---------- reading the connected sheet (the same read-only query the scan program uses; nothing is written) ---------- */
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+const hooks = { fetch: (u, o) => fetch(u, o) };
+async function gviz(cfg, tq) {
+  const u = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq?gid=${cfg.gid}&tqx=out:csv&tq=${encodeURIComponent(tq)}`;
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
+  try { const r = await hooks.fetch(u, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' }); if (!r.ok) throw new Error('HTTP ' + r.status); const text = await r.text(); if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared'); return text; } finally { clearTimeout(timer); }
+}
+async function ordersFromSheet(dateText) {
+  let cfg = null; try { cfg = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); } catch (_) {}
+  if (!cfg || !cfg.id) throw new Error('ยังไม่ได้เชื่อมต่อชีตในโปรแกรมสแกน — เปิด Update Data → ฐานข้อมูลออเดอร์ ก่อน (หน้านี้ใช้ชีตที่เชื่อมต่อไว้ที่นั่น) หรือใช้ไฟล์แทน');
+  const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
+  const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
+  if (!cols.no || !cols.date || !(cols.sd || cols.d)) throw new Error('ชีตไม่มีคอลัมน์ Order Number / Original Expected Date / Sub District');
+  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype'].filter(k => cols[k]), esc1 = dateText.replace(/'/g, "''");
+  const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${cols.date} contains '${esc1}'`);
+  const rows = parseDelimited(text); if (!rows.length) return [];
+  const fake = [want.map(k => KEYS[k][0])].concat(rows.slice(1));           // (the first row of the answer is the column labels)
+  return rowsToOrders(fake.map(r => r.slice()));
+}
+
+/* ---------- areas, distances, clustering ---------- */
+let geo = new Map(), useGeo = false;
+const aKey = o => (o.sd || '(ไม่ระบุแขวง)') + '|' + (o.d || '(ไม่ระบุเขต)');
+const aLabel = k => k.split('|');
+function parseGeo(text) {
+  const m = new Map(); let bad = 0;
+  for (const line of text.split(/\r?\n/)) { const p = line.split(/[,\t;]/).map(x => x.trim()); if (p.length < 3 || !p[0]) continue; const la = +p[1], ln = +p[2]; if (!isFinite(la) || !isFinite(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) { bad++; continue; } m.set(canonSd(p[0]) || p[0], [la, ln]); }
+  return { m, bad };
+}
+function areaDist(a, b) {                                           // a, b = {sd, d}; km-ish
+  if (useGeo) { const p = geo.get(a.sd), q = geo.get(b.sd); if (p && q) return a.sd === b.sd && a.d === b.d ? 0 : hav(p, q) * 1.35; }
+  return hierDist(a, b);
+}
+const storeDist = a => useGeo && geo.get(a.sd) ? hav([STORE.lat, STORE.lng], geo.get(a.sd)) * 1.35 : hierDist(a, STORE);
+function clusterDist(A, B) {                                        // size-weighted average distance between the areas of two clusters
+  let s = 0, w = 0; for (const [ka, na] of A.areas) for (const [kb, nb] of B.areas) { const [sa, da] = aLabel(ka), [sb, db] = aLabel(kb); s += na * nb * areaDist({ sd: sa, d: da }, { sd: sb, d: db }); w += na * nb; } return w ? s / w : 0;
+}
+function planWave(counts, P) {                                      // counts: Map(areaKey -> orders)  =>  {trips, warnings}
+  const warn = []; let cl = [];
+  for (const [k, n] of counts) { const parts = Math.max(1, Math.ceil(n / P.max)), base = Math.floor(n / parts), extra = n % parts; for (let i = 0; i < parts; i++) { const s = base + (i < extra ? 1 : 0); cl.push({ areas: new Map([[k, s]]), size: s }); } }
+  const merge = (a, b) => { for (const [k, n] of b.areas) a.areas.set(k, (a.areas.get(k) || 0) + n); a.size += b.size; cl.splice(cl.indexOf(b), 1); };
+  const stuck = new Set();
+  for (;;) {                                                       // 1) every trip reaches the minimum: the smallest one takes the nearest partner that still fits under the maximum
+    const small = cl.filter(c => c.size < P.min && !stuck.has(c)).sort((a, b) => a.size - b.size)[0]; if (!small) break;
+    let best = null; for (const o of cl) { if (o === small || small.size + o.size > P.max) continue; const sc = clusterDist(small, o) + 0.04 * (small.size + o.size); if (!best || sc < best.sc) best = { o, sc }; }
+    if (!best) for (const o of cl) { if (o === small || small.size + o.size > P.max + 6) continue; const sc = clusterDist(small, o) + 0.04 * (small.size + o.size); if (!best || sc < best.sc) best = { o, sc }; }      // a few over the maximum is better than a trip that is too small
+    if (best) merge(best.o, small); else stuck.add(small);
+  }
+  while (cl.length > P.lanes) {                                    // 2) more trips than lanes: the two nearest trips that fit together become one
+    let best = null; for (let i = 0; i < cl.length; i++) for (let j = i + 1; j < cl.length; j++) { if (cl[i].size + cl[j].size > P.max + 8) continue; const sc = clusterDist(cl[i], cl[j]); if (!best || sc < best.sc) best = { i, j, sc }; }
+    if (!best) { warn.push(`ต้องใช้ ${cl.length} เที่ยว แต่มีแค่ ${P.lanes} เลน — รวมต่อไม่ได้โดยไม่เกินขั้นสูงมาก`); break; }
+    merge(cl[best.i], cl[best.j]);
+  }
+  const trips = cl.map(c => {
+    const areas = [...c.areas].map(([k, n]) => { const [sd, d] = aLabel(k); return { key: k, sd, d, n }; }).sort((a, b) => b.n - a.n);
+    let spread = 0; for (let i = 0; i < areas.length; i++) for (let j = i + 1; j < areas.length; j++) spread = Math.max(spread, areaDist(areas[i], areas[j]));
+    const route = areas.slice().sort((a, b) => storeDist(a) - storeDist(b));
+    return { size: c.size, areas, spread, route, districts: new Set(areas.map(a => a.d)), fromStore: Math.min(...areas.map(storeDist)) };
+  });
+  return { trips, warn };
+}
+
+/* lane numbers: keep the number the area usually has on the driver table (the Trip table of the scan program) when that is free; the rest take the free numbers, nearest to the shop first */
+function usualTrips() { let m = {}; try { m = JSON.parse(localStorage.getItem('o2o-tripmap-v1') || '{}') || {}; } catch (_) {} return m; }
+function usualOf(a, tm) { for (const v of [a.sd, a.d]) { const e = tm[norm(v)]; if (e && e.t) return String(e.t); } return ''; }
+function assignLanes(trips, L, tm) {
+  const taken = new Set(), pref = trips.map(t => { const v = new Map(); for (const a of t.areas) { const u = usualOf(a, tm); if (u) v.set(u, (v.get(u) || 0) + a.n); } t.usual = [...v].sort((x, y) => y[1] - x[1]); return t; });
+  const order = pref.slice().sort((a, b) => (b.usual[0] ? b.usual[0][1] : 0) - (a.usual[0] ? a.usual[0][1] : 0));
+  for (const t of order) { for (const [u] of t.usual) { const n = parseInt(u, 10); if (isFinite(n) && n >= 1 && n <= L && !taken.has(n)) { t.lane = n; taken.add(n); break; } } }
+  const free = []; for (let n = 1; n <= Math.max(L, trips.length); n++) if (!taken.has(n)) free.push(n);
+  for (const t of trips.slice().sort((a, b) => a.fromStore - b.fromStore)) if (!t.lane) t.lane = free.shift();
+  return trips.sort((a, b) => a.lane - b.lane);
+}
+
+/* ---------- the page ---------- */
+const S = { orders: [], src: '' };
+const say = (t, k) => { const e = $('srcMsg'); e.className = 'msg' + (k ? ' ' + k : ''); e.textContent = t; };
+function setOrders(orders, src) {
+  S.orders = orders; S.src = src;
+  const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
+  const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
+  $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
+  $('btnPlan').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน (${src})` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
+}
+const dateNum = s => { const m = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s); return m ? +m[3] * 10000 + (MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()) + 1) * 100 + +m[1] : 0; };
+async function loadFile(f) {
+  say('กำลังอ่านไฟล์ …'); try { setOrders(rowsToOrders(await fileToRows(f)), f.name); } catch (e) { say(String(e.message || e), 'err'); }
+}
+$('drop').addEventListener('click', () => $('file').click());
+$('drop').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') $('file').click(); });
+$('file').addEventListener('change', () => { if ($('file').files[0]) loadFile($('file').files[0]); });
+$('drop').addEventListener('dragover', e => { e.preventDefault(); $('drop').classList.add('on'); });
+$('drop').addEventListener('dragleave', () => $('drop').classList.remove('on'));
+$('drop').addEventListener('drop', e => { e.preventDefault(); $('drop').classList.remove('on'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+$('btnSheet').addEventListener('click', async () => {
+  const v = $('dateIn').value; if (!v) { say('เลือกวันที่ส่งก่อน', 'err'); return; }
+  const [y, m, d] = v.split('-'), dt = `${d}-${MON[+m - 1]}-${y}`; say('กำลังอ่านจากชีต (อ่านอย่างเดียว) …');
+  try { setOrders(await ordersFromSheet(dt), 'ชีตที่เชื่อมต่อไว้ ' + dt); }
+  catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
+});
+$('geoIn').addEventListener('input', () => { const r = parseGeo($('geoIn').value); $('geoMsg').className = 'msg ' + (r.m.size ? 'ok' : ''); $('geoMsg').textContent = r.m.size ? `อ่านพิกัดได้ ${r.m.size} แขวง${r.bad ? ` (ข้าม ${r.bad} บรรทัดที่ผิดรูปแบบ)` : ''}` : ''; });
+
+const pad = (n, w) => String(n).padStart(w, ' ');
+function render(res, P, day) {
+  const out = $('out'); out.hidden = false; const tm = usualTrips(), tmHas = Object.keys(tm).length > 0;
+  const all = res.flatMap(w => w.trips), total = res.reduce((s, w) => s + w.total, 0), under = all.filter(t => t.size < P.min).length, over = all.filter(t => t.size > P.max).length, far = all.filter(t => t.districts.size >= 3).length;
+  // what the drivers really did that day (Trip Id of the export), when the file has it
+  const real = new Map(); for (const o of S.orders) if (o.date === day && o.trip && !(P.noCancel && /cancel|return/i.test(o.status))) { (real.get(o.trip) || real.set(o.trip, []).get(o.trip)).push(o); }
+  const realTrips = [...real.values()], realUnder = realTrips.filter(t => t.length <= 5).length, realFar = realTrips.filter(t => new Set(t.map(o => o.d)).size >= 3).length;
+  let h = `<h2>ผลการจัดเลน — ${esc(day)}</h2><div class="sum"><div class="chip"><b>${total.toLocaleString()}</b><small>ออเดอร์</small></div><div class="chip"><b>${all.length}</b><small>เที่ยวที่แนะนำ (รวมทุกรอบ)</small></div>
+    <div class="chip"><b>${all.length ? Math.round(total / all.length) : 0}</b><small>เฉลี่ยใบ/เที่ยว</small></div><div class="chip"><b>${under}</b><small>เที่ยวต่ำกว่าขั้นต่ำ ${P.min}</small></div><div class="chip"><b>${far}</b><small>เที่ยวที่ข้ามตั้งแต่ 3 เขต</small></div></div>`;
+  if (realTrips.length >= 5) h += `<table class="cmp"><tr><th></th><th>จำนวนเที่ยว</th><th>เที่ยวที่ ≤ 5 ใบ</th><th>เที่ยวที่ข้ามตั้งแต่ 3 เขต</th></tr>
+    <tr><td>ที่ทำจริงในไฟล์ (Trip Id)</td><td>${realTrips.length}</td><td>${realUnder}</td><td>${realFar}</td></tr>
+    <tr><td>แผนที่แนะนำ ${P.byWave ? '(รวมทุกรอบ)' : ''}</td><td>${all.length}</td><td>${all.filter(t => t.size <= 5).length}</td><td>${far}</td></tr></table>
+    <p class="muted" style="margin:6px 0 0;font-size:14px">เที่ยวจริงนับจากรหัส Trip Id ซึ่งอาจรวมการส่งซ้ำ/รอบที่สอง และแผนที่แนะนำจัดแยกตามรอบเวลา — ใช้ดูทิศทาง ไม่ใช่ตัวเลขที่เทียบกันได้เป๊ะ</p>`;
+  if (!useGeo) h += `<p class="note">ตอนนี้ยังไม่มีพิกัดจริงของแขวง จึงประมาณความใกล้จาก "แขวงเดียวกัน / เขตเดียวกัน / เขตที่ติดกัน" เท่านั้น — เป็นคำแนะนำให้คุณตรวจและปรับตามประสบการณ์ ถ้าอยากได้ระยะตามถนนจริง วางพิกัดแขวงในช่อง "ใช้พิกัดจริงของแขวง" (ตอนนี้ยังต้องหาพิกัดจาก Google Maps / OpenStreetMap)</p>`;
+  for (const w of res) {
+    h += `<div class="wave"><h3>รอบ ${esc(w.label)} <small>— ${w.total.toLocaleString()} ออเดอร์ → ${w.trips.length} เที่ยว</small></h3>`;
+    for (const m of w.warn) h += `<p class="note">${esc(m)}</p>`;
+    h += '<div class="lanes">';
+    for (const t of w.trips) {
+      const spread = useGeo ? `ห่างสุด ~${t.spread.toFixed(0)} กม.` : t.spread <= 4 ? 'อยู่เขตเดียวกัน' : t.spread <= 8 ? 'เขตที่ติดกัน' : 'กระจายหลายเขต';
+      const usual = t.usual && t.usual.length && String(t.usual[0][0]) !== String(t.lane) ? `ปกติ Trip ${esc(t.usual[0][0])}` : '';
+      h += `<div class="lane${t.size < P.min ? ' under' : ''}"><div class="top"><span class="tn">Trip ${t.lane}</span><span class="cnt">${t.size} <small>ใบ</small></span></div><ul>`
+        + t.areas.map(a => `<li><span>${esc(a.sd)} <small>${esc(a.d)}</small></span><b>${a.n}</b></li>`).join('') + '</ul>'
+        + `<div class="meta">${t.size < P.min ? '<span class="tag warn">ต่ำกว่าขั้นต่ำ</span>' : t.size > P.max ? '<span class="tag warn">เกินขั้นสูง</span>' : '<span class="tag ok">พอดี</span>'}<span class="tag">${spread}</span>${usual ? `<span class="tag">${usual}</span>` : ''}<br>ลำดับแนะนำ: ${t.route.map(a => esc(a.sd)).join(' → ')}</div></div>`;
+    }
+    h += '</div></div>';
+  }
+  h += `<div class="row" style="margin-top:16px"><button id="btnCsv" type="button">ดาวน์โหลดตาราง (CSV)</button><button id="btnCopy" type="button">คัดลอกไปวางใน Excel</button></div>`;
+  out.innerHTML = h;
+  const tsv = ['รอบ\tTrip\tแขวง\tเขต\tออเดอร์\tรวมเที่ยว'].concat(res.flatMap(w => w.trips.flatMap(t => t.areas.map(a => [w.label, t.lane, a.sd, a.d, a.n, t.size].join('\t'))))).join('\n');
+  $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(tsv); $('btnCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('btnCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
+  $('btnCsv').onclick = () => { const csv = '﻿' + tsv.split('\n').map(l => l.split('\t').map(c => /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(',')).join('\r\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `lane-plan_${day}.csv`; document.body.appendChild(a); a.click(); a.remove(); };
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function run() {
+  const day = $('daySel').value; if (!day) return;
+  const P = { min: Math.max(1, +$('pMin').value || 15), max: Math.max(5, +$('pMax').value || 35), lanes: Math.max(1, +$('pLanes').value || 20), byWave: $('pWave').checked, noCancel: $('pCancel').checked };
+  if (P.min > P.max) { say('ขั้นต่ำต้องไม่มากกว่าขั้นสูง', 'err'); return; }
+  const g = parseGeo($('geoIn').value); geo = g.m;
+  const orders = S.orders.filter(o => o.date === day && !(P.noCancel && /cancel|return/i.test(o.status)));
+  const byW = new Map(); for (const o of orders) { const w = P.byWave ? o.wave : 'ทั้งวัน'; (byW.get(w) || byW.set(w, new Map()).get(w)).set(aKey(o), ((byW.get(w).get(aKey(o))) || 0) + 1); }
+  const areaKeys = new Set(orders.map(aKey)); let withGeo = 0, tot = 0; for (const k of areaKeys) { tot++; if (geo.has(aLabel(k)[0])) withGeo++; } useGeo = geo.size > 0 && tot > 0 && withGeo / tot >= 0.9;
+  const tm = usualTrips(), res = [];
+  for (const w of (P.byWave ? WAVES : ['ทั้งวัน'])) {
+    const counts = byW.get(w); if (!counts) continue;
+    const total = [...counts.values()].reduce((a, b) => a + b, 0), plan = planWave(counts, P); assignLanes(plan.trips, P.lanes, tm);
+    res.push({ label: w, total, trips: plan.trips, warn: plan.warn });
+  }
+  render(res, P, day);
+}
+$('btnPlan').addEventListener('click', run);
+window.LANE = { rowsToOrders, parseDelimited, readXlsx, fileToRows, setOrders, planWave, assignLanes, run, hooks, canonSd, canonD, hops, state: S };
+</script>
+</body>
+</html>
