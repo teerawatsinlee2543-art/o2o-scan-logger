@@ -549,6 +549,35 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .panel.zoomed button.bulkgo{padding:14px 18px;font-size:20px;border-radius:14px}
 .panel.zoomed button.bulkdel{padding:12px 20px;font-size:18px;border-radius:14px}
 @media (max-width:560px){ .panel.zoomed button.bulkgo{padding:12px 10px;font-size:17px} .panel.zoomed button.bulkdel{padding:10px 14px;font-size:16px} }
+/* FIT THE WINDOW: the full-page view of Re-Print (4 fields, mode bar, list, buttons) is taller than the window of a laptop / a PC at 125-150 % scaling (often only 560-700 px of page height), and the whole box then scrolled
+   with its top cut off. Everything that takes height now follows the window height (vh) down to a floor, the list takes what is left (it scrolls inside itself), so the page fits a window from ~520 px up with nothing to scroll */
+.panel.purple.zoomed{padding-top:clamp(8px,2vh,36px);padding-bottom:clamp(8px,2vh,36px)}
+.panel.zoomed .langtabs{margin-bottom:clamp(5px,1.3vh,14px);padding:clamp(2px,.5vh,5px)}
+.panel.zoomed .langtab{padding-block:clamp(3px,.9vh,8px);font-size:clamp(13px,2.3vh,16px)}
+.panel.zoomed .langtab .flag{width:clamp(22px,3.2vh,30px);height:clamp(15px,2.2vh,20px)}
+.panel.zoomed .phead{margin-bottom:clamp(5px,1.4vh,16px)}
+.panel.zoomed .phead label{font-size:clamp(18px,min(2.6vw,4.2vh),34px)}
+.panel.zoomed .pright{gap:clamp(4px,.9vh,8px)}
+.panel.zoomed .pzoom{padding-block:clamp(4px,.9vh,9px);font-size:clamp(14px,2.2vh,17px)}
+.panel.zoomed .pcount{padding-block:clamp(1px,.4vh,3px);font-size:clamp(14px,2.2vh,18px)}
+.panel.zoomed .pmode{margin-bottom:clamp(5px,1vh,10px);padding-block:clamp(3px,.7vh,8px)}
+.panel.zoomed input[type=text]{height:clamp(46px,calc(9vh - 12px),84px);font-size:clamp(20px,min(3.4vw,4.4vh),40px)}
+.panel.zoomed input.rp2,.panel.zoomed .infield{margin-top:clamp(4px,.9vh,8px)}
+.panel.zoomed .pmsg{min-height:clamp(26px,4.8vh,44px);font-size:clamp(14px,2.4vh,18px);padding-block:clamp(2px,.6vh,6px)}
+.panel.zoomed .phint{font-size:clamp(13px,2.2vh,16px);margin-block:clamp(2px,.5vh,4px) clamp(4px,.9vh,8px)}
+.panel.zoomed .plist{min-height:clamp(72px,14vh,140px)}
+.panel.zoomed .plist li{padding-block:clamp(6px,1.1vh,11px);font-size:clamp(15px,2.3vh,18px)}
+.panel.zoomed .prow{margin-top:clamp(4px,.8vh,8px)}
+.panel.zoomed .prow button{padding-block:clamp(5px,.9vh,9px)}
+.panel.zoomed .bulkrow{margin-top:clamp(5px,.9vh,10px)}
+.panel.zoomed button.bulkgo{padding-block:clamp(7px,1.3vh,14px);font-size:clamp(16px,2.6vh,20px)}
+.panel.zoomed button.bulkdel{padding-block:clamp(6px,1.1vh,12px);font-size:clamp(15px,2.3vh,18px)}
+@media (max-width:560px){ .panel.zoomed button.bulkgo{font-size:17px} .panel.zoomed button.bulkdel{font-size:16px} }
+@media (min-width:901px){      /* a PC window: the list is what gives way (it scrolls inside, and may get as small as one row when the rest needs the height) */
+  .panel.zoomed .plist{min-height:clamp(44px,8vh,72px)}
+  html[lang="my"] .panel.zoomed .pmsg,html[lang="my"] .panel.zoomed .pmode,html[lang="my"] .panel.zoomed .plist li,html[lang="my"] .panel.zoomed button.bulkgo,html[lang="my"] .panel.zoomed button.bulkdel,html[lang="my"] .panel.zoomed .phint{line-height:1.4}      /* (Burmese lines are taller: line-height 1.75) */
+}
+@media (min-width:901px) and (max-height:700px){ .panel.purple.zoomed .phint{display:none} }      /* under ~700 px the grey note under the fields goes too */
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
 .panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
 .ptdlg{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c}
