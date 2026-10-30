@@ -2593,7 +2593,7 @@ function reprintOrder(raw) {
   if (auto) openRpDlg([v]);                                                // "who is the picker?" pops up: scan the employee badge -> the print page opens by itself with the picker's name
 }
 /* Re-Print, 1 page / 2 orders (the second field): a page carries two DIFFERENT orders, one on each slip. The first scan waits for its pair (the sheet on the right shows it alone on the top slip),
-   the second completes the page; like the first field it then prints by itself when the order ends in A / B (with the automatic print switched off every order is paired and the button prints). */
+   the second completes the page — any two valid orders (with the automatic flow on, the picker window and the print page then follow; with it off the button prints). */
 let pairWait = null;                                  // the first order of a page that still waits for its second
 let previewPair = null;                               // the orders of the page shown on the right (1 or 2), or null while one order is shown on both slips
 function reprintOrder2(raw) {
@@ -2601,14 +2601,11 @@ function reprintOrder2(raw) {
   if (rpEmpScan.isBadge(v)) return rpEmpScan(v, true);
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
-  const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false, pairable = !autoOn || AUTO_PRINT_RE.test(v);
+  const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false;
   state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp), pair: true });
   save(); sfx.ok();
   const refresh = list => ensureInfo(list).then(ch => { if (ch) renderRpView(); });
-  if (!pairable) {                                    // an order that does not end in A / B is listed and shown, but is not put on a page by itself
-    previewOrder = v; previewPair = null;
-    sideMsg('reprint', 'ok', `✓ Re-Print ${v} · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)`); render(); refresh([v]); return;
-  }
+  // (every order is paired, whatever it ends in — an order that did not end in A / B used to be shown alone on both slips, which did not match the "1 Page / 2 Order" field)
   if (!pairWait) {
     pairWait = v; previewOrder = v; previewPair = [v];
     sideMsg('reprint', 'ok', `✓ Re-Print ${v} · รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)`); render(); refresh([v]); return;
