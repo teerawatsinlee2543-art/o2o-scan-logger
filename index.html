@@ -515,54 +515,30 @@ input.rp2{margin-top:8px}
 .cnt small{font-size:11px;font-weight:700}
 .cnt.zero{opacity:.55;filter:saturate(.55)}
 .panel.zoomed .infield input[type=text]{padding-right:clamp(112px,9vw,132px)}
+@media (max-width:560px){ .panel.zoomed .infield input[type=text]::placeholder{font-size:14px} }      /* the long hint of the many-orders fields shows a bit more on a phone */
 .panel.zoomed .cnt{right:10px;padding:4px 14px;border-radius:13px}
 .panel.zoomed .cnt b{font-size:clamp(22px,2.6vw,30px);line-height:1.1}
 .panel.zoomed .cnt small{font-size:15px}
 @keyframes cntpop{0%{transform:translateY(-50%) scale(1)}40%{transform:translateY(-50%) scale(1.2)}100%{transform:translateY(-50%) scale(1)}}
 .cnt.pop{animation:cntpop .32s ease-out}
 @media (prefers-reduced-motion:reduce){.cnt.pop{animation:none}}
-/* all three Re-Print fields (1 Page / 1 Order, 1 Page / 2 Order, many orders): the border turns RED while the field is the one that is clicked.
-   Clicking the third one (many orders, printed in one go) in the full-page view puts the Re-Print box into "bulkmode": the left side shows only this job — a back bar, a 3-step guide,
-   the field with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button right under it, the orders of this go, and at the very bottom the "ลบทั้งหมด" button (the other two fields are tucked away behind the back bar) */
-#reprintIn:focus,#reprintIn2:focus,#reprintIn3:focus{border-color:#d92d20;box-shadow:0 0 0 4px rgba(217,45,32,.28)}
-.bulkbar{display:flex;gap:8px}
-button.bulkgo{flex:none;width:100%;display:block;margin-top:8px;padding:9px 12px;border:0;border-radius:10px;color:#fff;font:800 15px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);cursor:pointer}
-button.bulkgo[hidden]{display:none}
+/* the four Re-Print fields (1 Page / 1 Order, 1 Page / 2 Order, many orders, many orders 1 Page / 2 Order): the border turns RED while the field is the one that is clicked, and nothing moves —
+   the box stays as it is (an earlier "bulkmode" that swapped the left side for a screen of its own when the many-orders field was clicked is gone). Under a many-orders field, once orders wait,
+   comes a row with the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button and a red-outline "ลบทั้งหมด" */
+#reprintIn:focus,#reprintIn2:focus,#reprintIn3:focus,#reprintIn4:focus{border-color:#d92d20;box-shadow:0 0 0 4px rgba(217,45,32,.28)}
+.bulkrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.bulkrow[hidden]{display:none}
+button.bulkgo{flex:3 1 200px;display:block;margin:0;padding:9px 12px;border:0;border-radius:10px;color:#fff;font:800 15px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;background:linear-gradient(135deg,#34ad6b,#1f8a4f);box-shadow:0 3px 10px rgba(31,138,79,.35);cursor:pointer}
 button.bulkgo:hover:not(:disabled){filter:brightness(1.08)}
 button.bulkgo:disabled{background:#b9c8bf;box-shadow:none;cursor:default;opacity:.8}
 button.bulkgo:focus-visible{outline:3px solid #fff;outline-offset:-1px;box-shadow:0 0 0 4px rgba(31,157,87,.45)}
-button.bulkdel{display:none;flex:none;margin-top:8px;padding:9px 18px;border:2px solid #f0b8b4;border-radius:10px;background:#fff;color:#b42318;font:800 15px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+button.bulkdel{flex:1 0 auto;display:block;margin:0;padding:9px 16px;border:2px solid #f0b8b4;border-radius:10px;background:#fff;color:#b42318;font:800 15px/1.2 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
 button.bulkdel:hover:not(:disabled){background:#fde3e3}
 button.bulkdel:disabled{opacity:.45;cursor:default}
-.bulkguide,.bulkback,.bulkhead,.bulklist{display:none}
-.bulkguide li{display:flex;align-items:center;gap:14px;font-size:18px;font-weight:700;color:var(--pt);opacity:.55}
-.bulkguide li b{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#d8cff7;color:#43288f;font-size:18px}
-.bulkguide li.on{opacity:1}
-.bulkguide li.on b{background:#1f9d57;color:#fff}
-.panel.purple.zoomed.bulkmode .bulkguide{display:grid;gap:10px;margin:0 0 14px;padding:16px 18px;list-style:none;border-radius:16px;background:rgba(255,255,255,.78);border:2px solid #a9dcbe}
-/* the way back to the other two fields: a clear purple bar with a round arrow, so it is seen at once */
-.panel.purple.zoomed.bulkmode .bulkback{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 14px;padding:10px 18px 10px 10px;border:0;border-radius:18px;color:#fff;text-align:left;cursor:pointer;
-  background:linear-gradient(135deg,#8b6ce2,#6d3fd0);box-shadow:0 5px 14px rgba(109,63,208,.35);transition:transform .12s,box-shadow .12s,filter .12s}
-.panel.purple.zoomed.bulkmode .bulkback:hover{filter:brightness(1.08);box-shadow:0 7px 18px rgba(109,63,208,.45)}
-.panel.purple.zoomed.bulkmode .bulkback:hover .bbico{transform:translateX(-3px)}
-.panel.purple.zoomed.bulkmode .bulkback:active{transform:translateY(1px)}
-.panel.purple.zoomed.bulkmode .bulkback:focus-visible{outline:3px solid #fff;outline-offset:-3px;box-shadow:0 0 0 4px rgba(109,63,208,.5)}
-.bulkback .bbico{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#fff;color:#6d3fd0;box-shadow:0 2px 6px rgba(43,20,98,.25);transition:transform .15s}
-.bulkback .bbico svg{width:26px;height:26px}
-.bulkback .bbtxt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.bulkback .bbtxt b{font-size:22px;font-weight:800}
-.bulkback .bbtxt small{font-size:15px;font-weight:600;opacity:.92}
-@media (max-width:560px){ .bulkback .bbico{width:40px;height:40px} .bulkback .bbico svg{width:22px;height:22px} .bulkback .bbtxt b{font-size:18px} .bulkback .bbtxt small{font-size:13px} }
-.panel.purple.zoomed.bulkmode #reprintIn,.panel.purple.zoomed.bulkmode #reprintIn2,.panel.purple.zoomed.bulkmode #reprintHint,.panel.purple.zoomed.bulkmode #reprintList,.panel.purple.zoomed.bulkmode .pleft > .prow{display:none}
-.panel.purple.zoomed.bulkmode .bulkhead{display:block;margin:10px 2px 6px;font-size:18px;font-weight:800;color:var(--pt)}
-.panel.purple.zoomed.bulkmode .pmsg{min-height:0;margin-top:10px}
-.panel.purple.zoomed.bulkmode .pmsg:empty{display:none}      /* no empty gap between the green button and the list while there is nothing to say */
-.panel.purple.zoomed.bulkmode .bulklist{display:block}
-.panel.purple.zoomed.bulkmode .bulkbar{order:50;margin-top:12px}
-.panel.purple.zoomed.bulkmode button.bulkdel{display:block;flex:1;width:100%;margin-top:0;padding:16px 22px;font-size:22px;border-radius:16px}
-.panel.purple.zoomed.bulkmode button.bulkgo{margin-top:12px;padding:16px 20px;font-size:22px;border-radius:16px}
+.panel.zoomed .bulkrow{gap:10px;margin-top:10px}
 .panel.zoomed button.bulkgo{padding:14px 18px;font-size:20px;border-radius:14px}
-@media (max-width:560px){ .panel.purple.zoomed.bulkmode button.bulkgo{padding:12px 10px;font-size:17px} .panel.purple.zoomed.bulkmode button.bulkdel{padding:12px 14px;font-size:16px} .bulkguide li{font-size:15px;gap:10px} .bulkguide li b{width:28px;height:28px;font-size:15px} }
+.panel.zoomed button.bulkdel{padding:12px 20px;font-size:18px;border-radius:14px}
+@media (max-width:560px){ .panel.zoomed button.bulkgo{padding:12px 10px;font-size:17px} .panel.zoomed button.bulkdel{padding:10px 14px;font-size:16px} }
 /* the green box at the bottom of the full-page Re-Print view: who the picker is (the name printed on the sheet) — regular staff by badge, Part-Time staff by a barcode made from a typed name */
 .panel.purple:not(.zoomed) #ptOpen{display:none}      /* the Part-Time barcode button sits after "ล้างรายการ" in the full-page Re-Print view only */
 .ptdlg{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c}
@@ -917,21 +893,14 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
             <div class="langtabs" role="group" aria-label="ภาษา"><button class="langtab" type="button" data-lang="th"><span class="flag" data-flag="th"></span><b>TH</b></button><button class="langtab" type="button" data-lang="en"><span class="flag" data-flag="en"></span><b>EN</b></button><button class="langtab" type="button" data-lang="my"><span class="flag" data-flag="my"></span><b>MM</b></button></div>
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg></button></span></div>
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
-            <button id="bulkBack" class="bulkback" type="button"><span class="bbico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></span><span class="bbtxt"><b>กลับไปใช้ช่องอื่น</b><small>ช่อง 1 Page / 1 Order · 1 Page / 2 Order</small></span></button>
-            <ol class="bulkguide" id="bulkGuide" aria-label="วิธีพิมพ์หลายออเดอร์ทีเดียว">
-              <li data-step="1"><b>1</b><span>สแกนเลขออเดอร์ทีละใบ (ช่องนี้ยังไม่พิมพ์ทันที)</span></li>
-              <li data-step="2"><b>2</b><span>สแกนครบแล้ว กด "เสร็จสิ้น / ใส่ชื่อผู้จัด"</span></li>
-              <li data-step="3"><b>3</b><span>สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น — ระบบเปิดหน้าพิมพ์ให้เอง</span></li>
-            </ol>
             <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
             <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
             <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (หลายออเดอร์ / พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>ใบ</small></span></div>
-            <button id="bulkGo" class="bulkgo" type="button" hidden></button>
-            <div class="bulkbar"><button id="bulkDel" class="bulkdel" type="button" disabled>ลบทั้งหมด</button></div>
+            <div class="bulkrow" id="bulkRow" hidden><button id="bulkGo" class="bulkgo" type="button"></button><button id="bulkDel" class="bulkdel" type="button">ลบทั้งหมด</button></div>
+            <div class="infield"><input id="reprintIn4" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (หลายออเดอร์ · 1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)"><span class="cnt zero" id="bulk2Cnt" role="img"><b id="bulk2CntN">0</b><small>ใบ</small></span></div>
+            <div class="bulkrow" id="bulk2Row" hidden><button id="bulk2Go" class="bulkgo" type="button"></button><button id="bulk2Del" class="bulkdel" type="button">ลบทั้งหมด</button></div>
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
             <p class="phint" id="reprintHint"></p>
-            <p class="bulkhead" id="bulkHead"></p>
-            <ul class="plist bulklist" id="bulkList"></ul>
             <ul class="plist" id="reprintList"></ul>
             <div class="prow"><button id="reprintCopy" class="mini" type="button">คัดลอกเลขออเดอร์</button><button id="reprintClear" class="mini danger" type="button">ล้างรายการ</button><button id="ptOpen" class="mini go" type="button" title="พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14" stroke-dasharray="14 0"/></svg>บาร์โค้ดพนักงาน</button></div>
             <dialog id="ptDlg" class="bigdlg ptdlg" aria-labelledby="ptTitle">
@@ -2564,7 +2533,7 @@ $('dbTest').addEventListener('keydown', e => { if (e.key === 'Enter') $('dbTestG
 
 /* ---------- Assign งาน (orange) + Re-Print ใบปะหน้า (purple): two scan fields, each with its own list ---------- */
 const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
-const assignIn = $('assignIn'), reprintIn = $('reprintIn'), reprintIn2 = $('reprintIn2'), reprintIn3 = $('reprintIn3');
+const assignIn = $('assignIn'), reprintIn = $('reprintIn'), reprintIn2 = $('reprintIn2'), reprintIn3 = $('reprintIn3'), reprintIn4 = $('reprintIn4');
 const cleanScan = raw => { const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase(); return ORD_RE.test(v) ? v : (extractOrder(v) || v); };
 function sideMsg(which, kind, text) { const m = $(which + 'Msg'); m.className = 'pmsg ' + kind; m.textContent = text; }
 const empLabel = (e, n) => e + (n ? ' ' + n : '');
@@ -2647,61 +2616,51 @@ function reprintOrder2(raw) {
   refresh([a, v]);
   if (autoOn) openRpDlg([a, v]);                                           // the page is complete: the picker window, then the print page with this one page of two orders
 }
-/* Re-Print, MANY orders in one go (the third field, red border): the orders are only collected here (no print on each scan). Once at least one waits, the red "ไปต่อ" button asks who the picker is
-   (a pop-up with the one field that takes a scanned badge or a typed nickname), and then the print page comes up by itself with every waiting order, the picker's name on each sheet.
-   A badge scanned straight into this field while orders wait does the same without the button. The orders are marked `batched` once the print page's print button was pressed. */
-const bulkPending = () => state.reprints.filter(x => x.bulk && !x.batched);
+/* Re-Print, MANY orders in one go (the third and fourth fields, red border): the orders are only collected here (no print on each scan). Once at least one waits, the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button
+   under the field asks who the picker is (a pop-up with the one field that takes a scanned badge or a typed nickname), and then the print page comes up by itself with every waiting order, the picker's name on
+   each sheet. A badge scanned straight into the field while orders wait does the same without the button. The orders are marked `batched` once the print page's print button was pressed.
+   Third field = one order per page (the same order on both slips, "1 Page / 1 Order"); fourth field (entries carry `two`) = two different orders on one page ("1 Page / 2 Order"), a last odd one alone on its page.
+   The two goes are kept apart: each field has its own counter, its own green / delete row and its own waiting orders. The field stays where it is when it is clicked (nothing opens over the others). */
+const bulkPending = two => state.reprints.filter(x => x.bulk && !x.batched && !!x.two === !!two);
 let pvBulk = [];                                      // the orders the print page of this go carries (kept apart, so printing them does not empty the page)
-function reprintBulk(raw) {
+function reprintBulk(raw, two) {
   const v = cleanScan(raw); if (!v) return;
-  if (rpEmpScan.isBadge(v)) return bulkPending().length ? bulkFinish(v) : rpEmpScan(v, true);
+  if (rpEmpScan.isBadge(v)) return bulkPending(two).length ? bulkFinish(v, two) : rpEmpScan(v, true);
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   const old = state.reprints.find(x => x.order === v);
   if (old && !(old.bulk && old.batched)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
   if (old) state.reprints.splice(state.reprints.indexOf(old), 1);          // printed in an earlier go: scanning it again puts it into this one
-  state.reprints.push({ ts: Date.now(), order: v, emp: '', name: '', bulk: true });
-  previewOrder = v; previewPair = null; save(); sfx.ok();
-  sideMsg('reprint', 'ok', T('✓ {0} · รอพิมพ์ {1} ออเดอร์ — สแกนต่อได้ หรือกดปุ่มเขียว', v, bulkPending().length));
+  state.reprints.push(two ? { ts: Date.now(), order: v, emp: '', name: '', bulk: true, two: true } : { ts: Date.now(), order: v, emp: '', name: '', bulk: true });
+  const list = bulkPending(two), n = list.length;
+  previewOrder = v; previewPair = two ? (n % 2 ? [v] : [list[n - 2].order, v]) : null; save(); sfx.ok();
+  sideMsg('reprint', 'ok', two ? T('✓ {0} · รอพิมพ์ {1} ออเดอร์ ({2} หน้า) — สแกนต่อได้ หรือกดปุ่มเขียว', v, n, Math.ceil(n / 2)) : T('✓ {0} · รอพิมพ์ {1} ออเดอร์ — สแกนต่อได้ หรือกดปุ่มเขียว', v, n));
   render(); ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
 }
-function bulkApply() {                                // the picker who is signed in goes on every waiting order, then the print page
-  const emp = state.emp, name = nameOfEmp(emp), list = bulkPending();
+function bulkApply(two) {                             // the picker who is signed in goes on every waiting order, then the print page
+  const emp = state.emp, name = nameOfEmp(emp), list = bulkPending(two);
   if (!list.length) return;
   list.forEach(x => { x.emp = emp; x.name = name; });
-  pvBulk = list.map(x => x.order); save(); render(); openPrint('bulk');
+  pvBulk = list.map(x => x.order); save(); render(); openPrint(two ? 'bulk2' : 'bulk');
 }
-function bulkFinish(raw) { if (pickEmp(raw, (kind, text) => sideMsg('reprint', kind, text))) bulkApply(); }
-/* the full-page view of the third field ("bulkmode"): the left side shows only this job. The class follows which Re-Print field was used last. */
-function renderBulk() {
-  const list = bulkPending(), nb = list.length, bm = document.querySelector('.panel.purple').classList.contains('bulkmode');
-  const cnt = $('bulkCnt'), cntN = $('bulkCntN');                          // the orange-yellow counter in the corner of the field: orders scanned in this go
+function bulkFinish(raw, two) { if (pickEmp(raw, (kind, text) => sideMsg('reprint', kind, text))) bulkApply(two); }
+function renderBulkOne(two) {                         // the counter in the corner of the field (orders scanned in this go) and the green / delete row under it (only while orders wait)
+  const [cntId, nId, rowId, goId] = two ? ['bulk2Cnt', 'bulk2CntN', 'bulk2Row', 'bulk2Go'] : ['bulkCnt', 'bulkCntN', 'bulkRow', 'bulkGo'];
+  const nb = bulkPending(two).length, cnt = $(cntId), cntN = $(nId);
   if (cntN.textContent !== String(nb)) {
     const up = nb > +cntN.textContent; cntN.textContent = nb;
     if (up) { cnt.classList.remove('pop'); void cnt.offsetWidth; cnt.classList.add('pop'); }
   }
   cnt.classList.toggle('zero', !nb); cnt.setAttribute('aria-label', T('สแกนแล้ว {0} ใบ', nb)); cnt.title = cnt.getAttribute('aria-label');
-  $('bulkGo').hidden = !nb && !bm; $('bulkGo').disabled = !nb;
-  $('bulkGo').textContent = nb ? T('เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', nb) : T('เสร็จสิ้น / ใส่ชื่อผู้จัด');
-  $('bulkDel').disabled = !nb;
-  document.querySelectorAll('#bulkGuide li').forEach(li => li.classList.toggle('on', +li.dataset.step === (nb ? 2 : 1)));      // the step the person is on: 1 scanning, 2 press the green button
-  if (!bm) return;
-  $('bulkHead').textContent = T('ออเดอร์ที่สแกนไว้ในรอบนี้: {0} ใบ', nb);
-  const ul = $('bulkList'); ul.innerHTML = '';
-  if (!nb) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่ได้สแกนออเดอร์ — สแกนได้เลย'; ul.appendChild(li); return; }
-  list.slice().reverse().forEach(a => {
-    const li = sideItem(a, () => { const i = state.reprints.indexOf(a); if (i >= 0) state.reprints.splice(i, 1); save(); sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจากรอบนี้`); }, 'เอาออกจากรอบนี้');
-    li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
-    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = null; renderRpView(); renderBulk(); });
-    ul.appendChild(li);
-  });
+  $(rowId).hidden = !nb; $(goId).textContent = T('เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', nb);
 }
-function syncBulkMode() {
-  const p = document.querySelector('.panel.purple');
-  p.classList.toggle('bulkmode', p.classList.contains('zoomed') && lastRp === reprintIn3);
-  renderBulk();
+const renderBulk = () => { renderBulkOne(false); renderBulkOne(true); };
+function previewPairOf(a) {                           // a waiting order of the fourth field is shown with the one it will share its page with
+  if (!a.bulk || !a.two || a.batched) return null;
+  const l = bulkPending(true), i = l.indexOf(a); if (i < 0) return null;
+  return i % 2 ? [l[i - 1].order, a.order] : l[i + 1] ? [a.order, l[i + 1].order] : [a.order];
 }
 function bulkDone() {                                 // the print button of the print page was pressed: these orders are done, the next scan starts a new go
-  if (pvMode !== 'bulk') return;
+  if (pvMode !== 'bulk' && pvMode !== 'bulk2') return;
   let ch = false; state.reprints.forEach(x => { if (x.bulk && !x.batched && pvBulk.includes(x.order)) { x.batched = true; ch = true; } });
   if (ch) { save(); sideMsg('reprint', '', ''); render(); }                // (the "N waiting" line is not true any more)
 }
@@ -2800,13 +2759,13 @@ function renderSide() {
   $('printLbl').textContent = nAll ? T('พิมพ์ใบปะหน้า ({0} ใบ)', nAll) : T('ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
   renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
-  renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.batched ? 'หลายออเดอร์ · พิมพ์แล้ว' : 'หลายออเดอร์') : '' });
+  renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); if (a.bulk && !a.batched) sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.two ? 'หลายออเดอร์ · 1 Page / 2 Order' : 'หลายออเดอร์') + (a.batched ? ' · พิมพ์แล้ว' : '') : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
-    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = null; renderRpView(); renderSide(); }); return li; });
+    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); }); return li; });
   renderRpView(); renderEmpBox();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
-  renderBulk();                                                              // the third field: its green button (only while orders wait, or in its full-page view) and its own list
+  renderBulk();                                                              // the third and fourth fields: the counter in their corner, and the green / delete row under them while orders wait
 }
 /* Re-Print mode: clicking into the purple field greys out and disables everything else, so a scan can only land here.
    Leave with Esc, the "เสร็จสิ้น" button, or a click anywhere outside the purple box. */
@@ -2821,17 +2780,16 @@ function exitReprint() {
   if (!reprintMode) return; reprintMode = false;
   lockTargets().forEach(el => { el.inert = false; el.classList.remove('dimmed'); });
   document.querySelector('.panel.purple').classList.remove('active'); $('reprintMode').hidden = true;
-  if ([reprintIn, reprintIn2, reprintIn3].includes(document.activeElement)) document.activeElement.blur();
+  if ([reprintIn, reprintIn2, reprintIn3, reprintIn4].includes(document.activeElement)) document.activeElement.blur();
   focusNext();
 }
-[reprintIn, reprintIn2, reprintIn3].forEach(i => i.addEventListener('focus', () => { lastRp = i; enterReprint(); syncBulkMode(); }));
+[reprintIn, reprintIn2, reprintIn3, reprintIn4].forEach(i => i.addEventListener('focus', () => { lastRp = i; enterReprint(); }));
 /* Zoom: the button in a box's corner makes that box fill the whole page (bigger type, long list, scanning keeps working); press it again or Esc to go back */
 function setZoom(panel, on) {
   if (on && zoomedEl && zoomedEl !== panel) setZoom(zoomedEl, false);
   zoomedEl = on ? panel : (zoomedEl === panel ? null : zoomedEl);
   panel.classList.toggle('zoomed', on);
   document.body.classList.toggle('has-zoom', !!zoomedEl);
-  if (panel.classList.contains('purple')) syncBulkMode();                    // full page + the third field = its own working view
   const b = panel.querySelector('.pzoom'), label = on ? 'ย่อกลับ' : 'ขยายเต็มหน้า';
   b.setAttribute('title', label); b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
   if (on) { const i = panelInput(panel); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(() => { renderRpView(); renderEmpBox(); }); }
@@ -2840,7 +2798,7 @@ function setZoom(panel, on) {
 const collapseZoom = () => { if (zoomedEl) setZoom(zoomedEl, false); };
 document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () => { const p = b.closest('.panel'); setZoom(p, !p.classList.contains('zoomed')); }));
 // auto zoom: clicking (or tabbing) into one of the two scan fields opens its box full page — no need to press the zoom button (Settings can switch this off)
-[assignIn, $('assignWho'), reprintIn, reprintIn2, reprintIn3].forEach(i => i.addEventListener('focus', () => {
+[assignIn, $('assignWho'), reprintIn, reprintIn2, reprintIn3, reprintIn4].forEach(i => i.addEventListener('focus', () => {
   const p = i.closest('.panel'); if (p.classList.contains('orange')) lastAs = i; else lastRp = i;
   if (state.autoZoom && !p.classList.contains('zoomed')) setZoom(p, true);
 }));
@@ -2853,15 +2811,16 @@ document.addEventListener('click', e => {          // capture phase: the first c
   if (reprintMode && !e.target.closest('.panel.purple') && !e.target.closest('dialog, #printView')) { e.preventDefault(); e.stopPropagation(); exitReprint(); }      // (the picker pop-up and the print page that the third field opens are part of the mode)
 }, true);
 
-wire(assignIn, ORD_RE); wire(reprintIn, ORD_RE); wire(reprintIn2, ORD_RE); wire(reprintIn3, ORD_RE);
-sideHandlers.set(assignIn, assignOrder); sideHandlers.set(reprintIn, reprintOrder); sideHandlers.set(reprintIn2, reprintOrder2); sideHandlers.set(reprintIn3, reprintBulk);
-$('bulkGo').addEventListener('click', () => openBulkDlg());
-$('bulkBack').addEventListener('click', () => { lastRp = reprintIn; syncBulkMode(); reprintIn.focus(); });      // back to the other two fields
-$('bulkDel').addEventListener('click', async () => {
-  const n = bulkPending().length; if (!n) return;
+wire(assignIn, ORD_RE); wire(reprintIn, ORD_RE); wire(reprintIn2, ORD_RE); wire(reprintIn3, ORD_RE); wire(reprintIn4, ORD_RE);
+sideHandlers.set(assignIn, assignOrder); sideHandlers.set(reprintIn, reprintOrder); sideHandlers.set(reprintIn2, reprintOrder2);
+sideHandlers.set(reprintIn3, raw => reprintBulk(raw, false)); sideHandlers.set(reprintIn4, raw => reprintBulk(raw, true));
+$('bulkGo').addEventListener('click', () => openBulkDlg(false)); $('bulk2Go').addEventListener('click', () => openBulkDlg(true));
+async function bulkDelete(two) {                      // "ลบทั้งหมด" under a many-orders field: only the orders waiting in that field's go
+  const n = bulkPending(two).length; if (!n) return;
   if (!await ask(`ลบออเดอร์ที่สแกนไว้ ${n} ใบ ออกจากรอบนี้?`)) return;
-  state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); reprintIn3.focus();
-});
+  state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched && !!x.two === !!two)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); (two ? reprintIn4 : reprintIn3).focus();
+}
+$('bulkDel').addEventListener('click', () => bulkDelete(false)); $('bulk2Del').addEventListener('click', () => bulkDelete(true));
 async function copyList(items, label) {
   const ok = await copyText(items.map(x => x.order).join('\r\n'));
   toast(ok ? T('คัดลอก {0} ({1} ใบ) แล้ว', T(label), items.length) : T('คัดลอกไม่สำเร็จ'));
@@ -2872,7 +2831,7 @@ $('assignClear').addEventListener('click', async () => {
   if (state.assigns.length && await ask(`ล้างรายการ Assign ${state.assigns.length} รายการ?\n(ไม่ย้อนการ Assign ที่ทำไปแล้วในรายการสแกน — ถ้าจะย้อนให้กด × ทีละรายการ)`)) { state.assigns = []; save(); render(); toast('ล้างรายการ Assign แล้ว'); }
 });
 $('reprintClear').addEventListener('click', async () => {
-  if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { state.reprints = []; save(); render(); toast('ล้างรายการ Re-Print แล้ว'); }
+  if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { state.reprints = []; save(); sideMsg('reprint', '', ''); render(); toast('ล้างรายการ Re-Print แล้ว'); }
 });
 
 /* ---------- ผู้จัด in the full-page Re-Print view (green box): who the picker is, i.e. the name printed on the sheet ----------
@@ -2914,7 +2873,7 @@ const last4 = raw => { const d = String(raw).replace(/\D/g, ''); return d.length
    has nobody yet (they are listed in the orange Assign box too, where each can be undone) and the print page comes up by itself. */
 const pendingOrders = () => { const seen = new Set(); derive().rows.forEach(r => { if (!r.dup && !r.emp) seen.add(r.order); }); return [...seen]; };
 const pdIn = $('pdIn');
-let pdMode = 'scan';                                                       // 'scan' = the green bar (the scan list is handed out); 'bulk' = the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button of the third Re-Print field; 'rp' = Re-Print field 1 / 2 (see openRpDlg)
+let pdMode = 'scan';                                                       // 'scan' = the green bar (the scan list is handed out); 'bulk' / 'bulk2' = the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button of the third / fourth Re-Print field; 'rp' = Re-Print field 1 / 2 (see openRpDlg)
 const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG); m.appendChild(document.createTextNode(text)); }
 const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits); anything else = a nickname
@@ -2926,9 +2885,9 @@ function pdSync() {                                                        // th
   else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
   else pdSay('ok', /^\d+$/.test(v) ? 'พร้อมแล้ว — ไปหน้าพิมพ์เอง' : 'พร้อมแล้ว — กด Enter เพื่อไปหน้าพิมพ์');
 }
-function openBulkDlg() {                                                   // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
-  const n = bulkPending().length; if (!n) return;
-  pdMode = 'bulk'; pdNameFor = null; pdNewName = null;
+function openBulkDlg(two) {                                                // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
+  const n = bulkPending(two).length; if (!n) return;
+  pdMode = two ? 'bulk2' : 'bulk'; pdNameFor = null; pdNewName = null;
   $('pdInfo').textContent = T('{0} ออเดอร์ที่สแกนไว้ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', n);
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
@@ -2984,7 +2943,7 @@ function pdSubmit(raw) {
 }
 function pdDone() {
   if (pdMode === 'rp') { $('printDlg').close(); rpApply(); return; }        // Re-Print field 1 / 2: the picker goes on the scanned order(s), then the print page
-  if (pdMode === 'bulk') { $('printDlg').close(); bulkApply(); return; }    // the third Re-Print field: the picker goes on the waiting orders, then the print page
+  if (pdMode === 'bulk' || pdMode === 'bulk2') { $('printDlg').close(); bulkApply(pdMode === 'bulk2'); return; }    // the third / fourth Re-Print field: the picker goes on the waiting orders, then the print page
   const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
   orders.forEach((o, i) => {
     state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
@@ -3438,15 +3397,16 @@ ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(
 let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green box); 'assign' = the orders of the orange Assign list
 const pvRows = () => {
   if (pvMode === 'rp') return pvRp.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);      // Re-Print field 1 (one order, same on both slips) or field 2 (one page, two orders)
-  if (pvMode === 'bulk') return pvBulk.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);
+  if (pvMode === 'bulk' || pvMode === 'bulk2') return pvBulk.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);
   if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
   const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => r.order && !r.dup && (b === 'all' || r.batch === +b));
 };
 function pvDraw() {
   const rows = pvRows(), miss = rows.filter(r => !orderInfo[r.order]).length;
   const two = pvMode === 'rp' && rows.length > 1;                                                       // one page carrying two different orders
-  $('pvPages').innerHTML = two ? sheetHtml(rows[0], rows[1]) : rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
-  $('pvTitle').textContent = two ? T('ตัวอย่างใบปะหน้า — 1 หน้า (2 ออเดอร์ ใบละออเดอร์)') : T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
+  const pairs = pvMode === 'bulk2';                                                                     // the fourth field: every page carries two different orders (the last one alone when the count is odd)
+  $('pvPages').innerHTML = two ? sheetHtml(rows[0], rows[1]) : pairs ? rows.filter((r, i) => i % 2 === 0).map((r, k) => sheetHtml(r, rows[2 * k + 1] || null)).join('') : rows.map(r => sheetHtml(r)).join(''); fitSheets($('pvPages'));
+  $('pvTitle').textContent = two ? T('ตัวอย่างใบปะหน้า — 1 หน้า (2 ออเดอร์ ใบละออเดอร์)') : pairs ? T('ตัวอย่างใบปะหน้า — {0} ออเดอร์ · {1} หน้า (หน้าละ 2 ออเดอร์)', rows.length, Math.ceil(rows.length / 2)) : T('ตัวอย่างใบปะหน้า — {0} ใบ (หน้าละ 2 ใบเหมือนกัน)', rows.length);
   const noWho = rows.filter(r => !(nickOf(r.emp) || nameOfEmp(r.emp) || r.name) || /^\d+$/.test(nickOf(r.emp) || nameOfEmp(r.emp) || r.name)).length;      // the sheet prints the picker's name: these have none to print
   $('pvNote').textContent = [miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '',
     noWho ? T('{0} ใบยังไม่มีชื่อผู้จัด — นำเข้ารายชื่อพนักงานใน Update Data หรือ Assign ใหม่ด้วยชื่อเล่น', noWho) : ''].filter(Boolean).join(' · ');
@@ -3461,10 +3421,10 @@ function pvRender() {
   ensureInfo(need).then(() => { if (!$('printView').hidden) pvDraw(); });
 }
 function openPrint(mode) {
-  pvMode = mode === 'assign' ? 'assign' : mode === 'bulk' ? 'bulk' : mode === 'rp' ? 'rp' : 'scan';
+  pvMode = mode === 'assign' ? 'assign' : mode === 'bulk' ? 'bulk' : mode === 'bulk2' ? 'bulk2' : mode === 'rp' ? 'rp' : 'scan';
   const d = derive(), sel = $('pvBatch'); sel.innerHTML = '';
   if (pvMode === 'assign') { if (!state.assigns.length) return; }
-  else if (pvMode === 'bulk') { if (!pvBulk.length) return; }
+  else if (pvMode === 'bulk' || pvMode === 'bulk2') { if (!pvBulk.length) return; }
   else if (pvMode === 'rp') { if (!pvRp.length) return; }
   else {
     if (!d.unique) return;
@@ -3476,7 +3436,7 @@ function openPrint(mode) {
   sel.hidden = pvMode !== 'scan';                                            // the Assign list and the many-orders go are printed whole, not by batch
   $('pvPrint').textContent = IN_VIEWER ? 'บันทึกเป็นไฟล์พิมพ์' : 'พิมพ์';
   $('printView').hidden = false; document.body.classList.add('has-print'); pvRender(); $('printView').scrollTop = 0;
-  if ((pvMode === 'rp' || pvMode === 'bulk') && state.printGo !== false && !IN_VIEWER) pvAutoPrint();      // from a Re-Print field: the print button is pressed by itself
+  if ((pvMode === 'rp' || pvMode === 'bulk' || pvMode === 'bulk2') && state.printGo !== false && !IN_VIEWER) pvAutoPrint();      // from a Re-Print field: the print button is pressed by itself
 }
 let pvAutoT = null;
 function pvAutoPrint() {                                                   // shortly (0.7 s) after the print page opened, the print button is pressed by itself; while the order data is still being fetched (the button is disabled) it waits, at most 7 s in all
@@ -3655,6 +3615,10 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['สแกนเลขออเดอร์ (หลายออเดอร์ / พิมพ์ทีเดียว)', 'Scan order number (many orders / print at once)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (အော်ဒါများစွာ / တစ်ခါတည်း ပုံနှိပ်ရန်)'],
+  ['สแกนเลขออเดอร์ (หลายออเดอร์ · 1 Page / 2 Order)', 'Scan order number (many orders · 1 Page / 2 Order)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (အော်ဒါများစွာ · 1 Page / 2 Order)'],
+  ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)', 'Re-Print cover sheet: order number (many orders, 1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ၊ 1 Page / 2 Order)'],
+  ['✓ {0} · รอพิมพ์ {1} ออเดอร์ ({2} หน้า) — สแกนต่อได้ หรือกดปุ่มเขียว', '✓ {0} · {1} orders waiting ({2} pages) — keep scanning or press the green button', '✓ {0} · ပုံနှိပ်ရန် အော်ဒါ {1} ခု ({2} မျက်နှာ) စောင့်နေသည် — ဆက်စကင်န်ဖတ်ပါ သို့မဟုတ် အစိမ်းရောင်ခလုတ်ကို နှိပ်ပါ'],
+  ['ตัวอย่างใบปะหน้า — {0} ออเดอร์ · {1} หน้า (หน้าละ 2 ออเดอร์)', 'Cover sheet preview — {0} orders · {1} pages (2 orders per page)', 'အဖုံးစာရွက် နမူနာ — အော်ဒါ {0} ခု · {1} မျက်နှာ (တစ်မျက်နှာလျှင် အော်ဒါ ၂ ခု)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)', 'Re-Print cover sheet: order number (many orders, print at once)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ တစ်ခါတည်း ပုံနှိပ်ရန်)'],
   ['✓ {0} · รอพิมพ์ {1} ออเดอร์ — สแกนต่อได้ หรือกดปุ่มเขียว', '✓ {0} · {1} orders waiting — keep scanning or press the green button', '✓ {0} · ပုံနှိပ်ရန် အော်ဒါ {1} ခု စောင့်နေသည် — ဆက်စကင်န်ဖတ်ပါ သို့မဟုတ် အစိမ်းရောင်ခလုတ်ကို နှိပ်ပါ'],
   ['เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', 'Finish / enter the picker ({0} sheets)', 'ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန် ({0} ရွက်)'],
