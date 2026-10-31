@@ -1327,7 +1327,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
       </div>
       <div class="row" style="margin-top:4px">
-        <label class="f"><input id="zAutoApply" type="checkbox"> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
+        <label class="f"><input id="zAutoApply" type="checkbox" checked> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
       </div>
       <label class="drop" id="zDrop" for="zFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
@@ -3072,7 +3072,7 @@ zDropBox.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTrans
    - when the Trip tab is opened (if the last sync is older than 2 minutes) and every 10 minutes while it stays open,
    - optionally the result goes into the route table by itself ("ใส่ผลลงตารางเส้นทางให้เอง": only when something changes, backup + undo as always). */
 const LS_ZAUTO = 'o2o-zone-auto-v1';
-let zCfg = { auto: true, apply: false }; try { Object.assign(zCfg, JSON.parse(localStorage.getItem(LS_ZAUTO) || '{}')); } catch (_) {}
+let zCfg = { auto: true, apply: true }; try { Object.assign(zCfg, JSON.parse(localStorage.getItem(LS_ZAUTO) || '{}')); } catch (_) {}
 $('zAuto').checked = !!zCfg.auto; $('zAutoApply').checked = !!zCfg.apply;
 const zSave = () => { zCfg = { auto: $('zAuto').checked, apply: $('zAutoApply').checked }; try { localStorage.setItem(LS_ZAUTO, JSON.stringify(zCfg)); } catch (_) {} };
 $('zAuto').addEventListener('change', () => { zSave(); if (zCfg.auto) syncSheet(false); });
@@ -3089,12 +3089,21 @@ async function syncSheet(manual) {
     const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);
     if (orders.length) { $('zAll').checked = true; runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
+    return true;
   } catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
   finally { zSyncing = false; }
 }
 $('btnSheet').addEventListener('click', () => syncSheet(true));
 $('tabTrip').addEventListener('click', () => { if ($('zAuto').checked && Date.now() - zLastSync > 120000) syncSheet(false); });
 setInterval(() => { if ($('zAuto').checked && $('paneTrip').offsetParent !== null && Date.now() - zLastSync > 600000) syncSheet(false); }, 60000);
+/* without opening any tab: a few seconds after the program starts, if the automatic fill is on and a sheet is connected, the sync + fill run once every 6 hours (the route table then reaches the other computers with the usual sync) */
+const LS_ZAT = 'o2o-zone-auto-at-v1';
+setTimeout(async () => {
+  if (!zCfg.auto || !zCfg.apply || !sheetReady()) return;
+  let at = 0; try { at = +localStorage.getItem(LS_ZAT) || 0; } catch (_) {}
+  if (Date.now() - at < 6 * 3600 * 1000) return;
+  if (await syncSheet(false)) { try { localStorage.setItem(LS_ZAT, String(Date.now())); } catch (_) {} }
+}, 6000);
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
 $('btnZone').addEventListener('click', runZones);
@@ -3108,12 +3117,12 @@ async function applyRoutes(silent) {
   if (!bySd.size) { toast('ยังไม่มีแขวงที่จัด Trip ได้'); return; }
   const en = {}; for (const [e, th] of Object.entries(SD_EN)) (en[th] = en[th] || []).push(e);
   const entries = new Map();
-  for (const [sd, m] of bySd) { const best = [...m].sort((a, b) => b[1] - a[1])[0][0]; entries.set(normArea(sd), { a: sd, t: String(best) }); for (const e of (en[sd] || [])) entries.set(normArea(e), { a: e, t: String(best) }); }
+  for (const [sd, m] of bySd) { const best = [...m].sort((a, b) => b[1] - a[1])[0][0]; entries.set(normArea(sd), { a: sd, t: String(best), z: 1 }); for (const e of (en[sd] || [])) entries.set(normArea(e), { a: e, t: String(best), z: 1 }); }
   const old = Object.keys(tripMap).length, tripsN = new Set([...entries.values()].map(e => e.t)).size;
-  const changed = [...entries].filter(([k, e]) => !tripMap[k] || tripMap[k].t !== e.t).length; if (silent && !changed) return;      // (auto mode: nothing to do when the table already says the same)
+  const hand = k => silent && tripMap[k] && !tripMap[k].z, changed = [...entries].filter(([k, e]) => !hand(k) && (!tripMap[k] || tripMap[k].t !== e.t)).length;      // (a route typed / imported by hand is never replaced by the automatic fill) if (silent && !changed) return;      // (auto mode: nothing to do when the table already says the same)
   if (!silent && !await ask(`ใช้ผลนี้เป็นเส้นทาง Trip?\n${bySd.size} แขวง (รวมชื่อภาษาอังกฤษ ${entries.size} พื้นที่) ใน ${tripsN} Trip — เพิ่มหรือแก้ ${changed} พื้นที่\nแขวงที่ซ้ำกับเส้นทางเดิมจะถูกแทนที่ ที่ไม่ซ้ำยังอยู่ (เส้นทางเดิม ${old} พื้นที่)\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
   try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
-  for (const [k, e] of entries) tripMap[k] = e;
+  for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
 window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, Z, S };
