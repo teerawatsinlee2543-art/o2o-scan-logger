@@ -759,7 +759,6 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .twodlg .tdcol.pt .ptlist .pta button{padding:7px 12px;font-size:15px;border-color:#a8c8f0;color:#0b4f96}
 .twodlg .tdcol.pt .ptlist .pta button.go{background:linear-gradient(135deg,#34ad6b,#1b7f48);border-color:#1b7f48;color:#fff;box-shadow:0 2px 6px rgba(27,127,72,.35)}      /* "เลือก" = pick this person as the picker: green */
 .twodlg .tdcol.pt .ptlist .pta button.go:hover{filter:brightness(1.08)}
-.ptlist small i.b13{display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-style:normal;margin:3px 0 0;padding:0 8px;border-radius:99px;background:#e4f6ec;color:#17683d;font-weight:700;font-size:12px;line-height:1.5;white-space:nowrap}      /* "13 หลัก": this person's card has the 13-digit barcode */
 .twodlg .tdcol.pt .ptlist .pta button.xbox{display:grid;place-items:center;width:38px;height:36px;padding:0;border:0;border-radius:10px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;box-shadow:0 2px 6px rgba(201,42,47,.35)}      /* the Part-Time delete box is red too, the cross in the middle */
 .twodlg .tdcol.pt .ptlist .pta button.xbox:hover{filter:brightness(1.12);border:0}
 .twodlg .tdcol.pt .ptlist .pta button.xbox svg{display:block;width:16px;height:16px}
@@ -3818,12 +3817,10 @@ function renderEmpBox() {
   if (!ids.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีพนักงานชั่วคราว'; ul.appendChild(li); return; }
   ids.forEach(id => {
     const li = document.createElement('li'); if (state.emp === id) li.classList.add('sel');
-    const code = ptCode(id), bar = document.createElement('span'); bar.className = 'ptbar'; bar.innerHTML = barcodeSvg(code, code.length > 6 ? 1.3 : 1.8, 44, 'px'); bar.title = id;      // (the picture is the barcode that gets printed: the 13 digits when they are known)
+    const bar = document.createElement('span'); bar.className = 'ptbar'; bar.innerHTML = barcodeSvg(id, 1.8, 44, 'px'); bar.title = id;      // (the picture on screen is always the 4-digit barcode — it scans to the same person, and the 13-digit ID number cannot be read off the screen; only the printed card holds it)
     const n = document.createElement('span'); n.className = 'ptn'; n.textContent = ptime[id].name;
     const s = document.createElement('small'); s.textContent = 'เลข ' + id; n.appendChild(s);
-    if (id in roster) { s.className = 'cf'; s.textContent = `เลข ${id} ซ้ำกับพนักงานประจำ — กด "เลขใหม่"`; }
-    else if (code.length === 13) { const t = document.createElement('i'); t.className = 'b13'; t.textContent = T('13 หลัก'); t.title = T('บาร์โค้ด 13 หลัก'); s.appendChild(t); }
-    const act = document.createElement('span'); act.className = 'pta';
+    if (id in roster) { s.className = 'cf'; s.textContent = `เลข ${id} ซ้ำกับพนักงานประจำ — กด "เลขใหม่"`; }    const act = document.createElement('span'); act.className = 'pta';
     const mk = (label, cls, fn, title) => { const b = document.createElement('button'); b.type = 'button'; if (label === '×') { b.innerHTML = X_SVG; b.setAttribute('aria-label', title || label); } else b.textContent = label; if (cls) b.className = cls; if (title) b.title = title; b.addEventListener('click', fn); act.appendChild(b); };
     mk('เลือก', 'go', () => { state.emp = id; state.mode = 'with'; save(); sfx.emp(); render(); }, 'ให้คนนี้เป็นผู้จัด');
     if (id in roster) mk('เลขใหม่', '', () => { const nid = newPtId(); if (!nid) return; const moved = ptime[id]; delete moved.id13; ptime[nid] = moved; delete ptime[id]; if (state.emp === id) state.emp = nid; savePt(); save(); render(); renderEmpBox(); });
@@ -4619,8 +4616,6 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เลขบัตรประชาชน 13 หลัก', 'ID-card number (13 digits)', 'မှတ်ပုံတင်နံပါတ် ၁၃ လုံး'],
   ['เลขบัตรประชาชน 13 หลักของพนักงานชั่วคราว', 'The temporary employee\'s 13-digit ID-card number', 'ယာယီဝန်ထမ်း၏ မှတ်ပုံတင်နံပါတ် ၁၃ လုံး'],
   ['เลือก', 'Select', 'ရွေးရန်'],
-  ['บาร์โค้ด 13 หลัก', 'Barcode: 13 digits', 'ဘားကုဒ် ၁၃ လုံး'],
-  ['13 หลัก', '13-digit', '၁၃ လုံး'],
   ['ลบข้อมูลทั้งหมด', 'Delete all data', 'ဒေတာအားလုံး ဖျက်ရန်'],
   ['ใส่เลขบัตรประชาชน 13 หลักของคนนี้ (หรือ 4 ตัวท้าย)', 'Enter this person\'s 13-digit ID-card number (or its last 4 digits)', 'ဤသူ၏ မှတ်ပုံတင်နံပါတ် ၁၃ လုံး ထည့်ပါ (သို့မဟုတ် နောက်ဆုံး ၄ လုံး)'],
   ['ใส่เลขบัตรประชาชน 13 หลัก (หรือ 4 ตัวท้าย)', 'Enter the 13-digit ID-card number (or its last 4 digits)', 'မှတ်ပုံတင်နံပါတ် ၁၃ လုံး ထည့်ပါ (သို့မဟုတ် နောက်ဆုံး ၄ လုံး)'],
