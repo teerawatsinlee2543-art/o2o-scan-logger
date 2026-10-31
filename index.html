@@ -20,19 +20,19 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#11141a; --card:#1a1f28; --ink:#e6e9ef; --muted:#98a2b3; --line:#2c333f; --soft:#222833;
-    --accent:#6aa8ff; --accent2:#4f94f0; --accent-ink:#0b1220; --red:#ff5a64;
-    --ok:#6fd49a; --okbg:#16301f; --amber:#f5c060; --warn:#f5c060; --warnbg:#372a10;
-    --bad:#ffb4ae; --badbg:#3b1c1c; --purple:#bba6ff; --orange:#ffb066; --cell:#2a303b;
+    --bg:#0c0f15; --card:#161b25; --ink:#eef1f6; --muted:#9aa5b8; --line:#2b3344; --soft:#1e2531;
+    --accent:#55a6ff; --accent2:#3b8df0; --accent-ink:#06101f; --red:#ff4d58;
+    --ok:#3de08c; --okbg:#10321f; --amber:#ffc83d; --warn:#ffc83d; --warnbg:#3a2c08;
+    --bad:#ff7b72; --badbg:#3d1a1a; --purple:#b49cff; --orange:#ffa24d; --cell:#252d3b;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#11141a; --card:#1a1f28; --ink:#e6e9ef; --muted:#98a2b3; --line:#2c333f; --soft:#222833;
-  --accent:#6aa8ff; --accent2:#4f94f0; --accent-ink:#0b1220; --red:#ff5a64;
-  --ok:#6fd49a; --okbg:#16301f; --amber:#f5c060; --warn:#f5c060; --warnbg:#372a10;
-  --bad:#ffb4ae; --badbg:#3b1c1c; --purple:#bba6ff; --orange:#ffb066; --cell:#2a303b;
+  --bg:#0c0f15; --card:#161b25; --ink:#eef1f6; --muted:#9aa5b8; --line:#2b3344; --soft:#1e2531;
+  --accent:#55a6ff; --accent2:#3b8df0; --accent-ink:#06101f; --red:#ff4d58;
+  --ok:#3de08c; --okbg:#10321f; --amber:#ffc83d; --warn:#ffc83d; --warnbg:#3a2c08;
+  --bad:#ff7b72; --badbg:#3d1a1a; --purple:#b49cff; --orange:#ffa24d; --cell:#252d3b;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
 }
 
@@ -380,35 +380,79 @@ td.x{width:34px;text-align:center}
 .panel.green .phead{margin-bottom:4px}
 .impbox.flat{margin:0;padding:0;border:0;border-radius:0;background:none}
 .panel.purple{--g1:#f3edff;--g2:#e0d5ff;--pt:#43288f;--pbd:#cfc1f6;--dot:#8b6ce2;--glow:rgba(139,108,226,.24);--k:var(--purple)}
-/* dark theme: the three boxes (peach / green / lavender) are deep tones of their own colour instead of pastels, and what sits in them (fields, lists, chips) follows the dark palette; the big pop-up windows inside them keep the light palette */
-:root[data-theme="dark"] .panel{--g1:#3a2412;--g2:#2b190b;--pt:#ffcfa3;--pbd:#6b4322;--glow:rgba(0,0,0,.4);--card:#1a1f28;--ink:#e6e9ef;--muted:#98a2b3;--line:#2c333f;--soft:#222833;--bad:#ffb4ae;--ok:#6fd49a;--warn:#f5c060}
-:root[data-theme="dark"] .panel.green{--g1:#173826;--g2:#0f2a1c;--pt:#a6e8c0;--pbd:#2f6d4b}
-:root[data-theme="dark"] .panel.purple{--g1:#2c2347;--g2:#201939;--pt:#d2c6ff;--pbd:#51428a}
+/* dark theme: livelier. Deep boxes (peach / green / lavender) with a glowing edge in their own colour, vivid titles, recessed dark fields with bright borders, glowing scan fields and results, a soft colour wash on the page; the pop-up windows inside the boxes keep the light palette */
+:root[data-theme="dark"] body{background:radial-gradient(900px 520px at 8% -8%,rgba(85,166,255,.13),transparent 62%),radial-gradient(800px 480px at 100% 4%,rgba(180,156,255,.11),transparent 62%),var(--bg);background-attachment:fixed}
+:root[data-theme="dark"] .tile{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 17%,var(--card)),var(--card));box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 26%,transparent),0 8px 20px rgba(0,0,0,.35)}
+:root[data-theme="dark"] .tile b{text-shadow:0 0 14px color-mix(in srgb,var(--c) 55%,transparent)}
+:root[data-theme="dark"] .field input{background:#0e121a;border-color:#3a4560}
+:root[data-theme="dark"] .field.set input{background:color-mix(in srgb,var(--ok) 13%,#0e121a);box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 55%,transparent),0 0 22px color-mix(in srgb,var(--ok) 30%,transparent)}
+:root[data-theme="dark"] .field.need input{box-shadow:0 0 0 1px color-mix(in srgb,var(--amber) 55%,transparent),0 0 22px color-mix(in srgb,var(--amber) 30%,transparent)}
+:root[data-theme="dark"] .field input:focus{background:#0e121a;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 55%,transparent),0 0 30px color-mix(in srgb,var(--accent) 50%,transparent)}
+:root[data-theme="dark"] .fb.ok{background:linear-gradient(135deg,#0f4a2c,#0b3120);border-color:var(--ok);box-shadow:0 0 26px color-mix(in srgb,var(--ok) 25%,transparent)}
+:root[data-theme="dark"] .fb.ok .big{color:#8dffbf}
+:root[data-theme="dark"] .fb.bad,:root[data-theme="dark"] .fb.dup{border-color:var(--bad);box-shadow:0 0 22px color-mix(in srgb,var(--bad) 25%,transparent)}
+:root[data-theme="dark"] .fb.warn{border-color:var(--amber);box-shadow:0 0 22px color-mix(in srgb,var(--amber) 22%,transparent)}
+:root[data-theme="dark"] button.finish:not(:disabled){color:#04200f;box-shadow:0 0 24px color-mix(in srgb,var(--ok) 50%,transparent)}
+:root[data-theme="dark"] button.primary:not(:disabled){box-shadow:0 0 22px color-mix(in srgb,var(--accent) 45%,transparent)}
+:root[data-theme="dark"] .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 12px 34px var(--glow)}
+:root[data-theme="dark"] .panel.green{--g1:#123e28;--g2:#0b2b1b;--pt:#86ffbc;--pbd:#2fb472;--glow:rgba(54,200,120,.28)}
+:root[data-theme="dark"] .panel.purple{--g1:#2d2250;--g2:#1c1538;--pt:#d2c3ff;--pbd:#8466f5;--glow:rgba(139,108,226,.34)}
+:root[data-theme="dark"] .panel .phead label{text-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent)}
+:root[data-theme="dark"] .panel .phead label::before{box-shadow:0 0 12px var(--dot)}
 :root[data-theme="dark"] .panel .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.1)}
-:root[data-theme="dark"] .panel .pcount,:root[data-theme="dark"] .panel .pzoom{background:rgba(255,255,255,.1)}
-:root[data-theme="dark"] .panel .pzoom:hover:not(:disabled){background:rgba(255,255,255,.2)}
-:root[data-theme="dark"] .panel .idrop{background:rgba(255,255,255,.06)}
-:root[data-theme="dark"] .panel .idrop:hover,:root[data-theme="dark"] .panel .idrop.over{background:rgba(255,255,255,.14)}
-:root[data-theme="dark"] .panel .impbox{background:linear-gradient(135deg,#1c3f2c,#132f20);color:#a6e8c0;--pt:#a6e8c0;--pbd:#2f6d4b;--ok:#6fd49a;--warn:#f5c060}
-:root[data-theme="dark"] .panel .impprev{background:rgba(255,255,255,.08);color:#e6e9ef}
+:root[data-theme="dark"] .panel .pcount,:root[data-theme="dark"] .panel:not(.zoomed) .pzoom{background:rgba(255,255,255,.12)}
+:root[data-theme="dark"] .panel:not(.zoomed) .pzoom:hover:not(:disabled){background:rgba(255,255,255,.24)}
+:root[data-theme="dark"] .langtabs{background:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .langtab:hover:not(.on):not(:disabled){background:rgba(255,255,255,.18)}
+:root[data-theme="dark"] .langtab.on,:root[data-theme="dark"] .langtab.on:hover:not(:disabled){background:rgba(255,255,255,.94);color:#241a4a;box-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent),inset 0 0 0 2px var(--dot)}
+:root[data-theme="dark"] .panel .idrop{background:rgba(255,255,255,.07)}
+:root[data-theme="dark"] .panel .idrop:hover,:root[data-theme="dark"] .panel .idrop.over{background:rgba(255,255,255,.16)}
+:root[data-theme="dark"] .panel .impbox{background:linear-gradient(135deg,#1c4a32,#123422);color:#a6f0c6;--pt:#a6f0c6;--pbd:#2fb472;--ok:#3de08c;--warn:#ffc83d}
+:root[data-theme="dark"] .panel .impprev{background:rgba(255,255,255,.08);color:#eef1f6}
+:root[data-theme="dark"] .panel button.mini:disabled{opacity:.75}
+:root[data-theme="dark"] .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
+:root[data-theme="dark"] #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
+:root[data-theme="dark"] #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
 :root[data-theme="dark"] .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
 :root[data-theme="dark"] .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
-:root[data-theme="dark"] #assignCount,:root[data-theme="dark"] #reprintCount{color:#f5e06a;background:#37320f}
+:root[data-theme="dark"] #assignCount,:root[data-theme="dark"] #reprintCount{color:#f5e06a;background:#37320f;box-shadow:0 0 14px rgba(245,224,106,.25)}
 :root[data-theme="dark"] #assignCount b,:root[data-theme="dark"] #reprintCount b{color:#ff7a70}
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .panel{--g1:#3a2412;--g2:#2b190b;--pt:#ffcfa3;--pbd:#6b4322;--glow:rgba(0,0,0,.4);--card:#1a1f28;--ink:#e6e9ef;--muted:#98a2b3;--line:#2c333f;--soft:#222833;--bad:#ffb4ae;--ok:#6fd49a;--warn:#f5c060}
-  :root:not([data-theme="light"]) .panel.green{--g1:#173826;--g2:#0f2a1c;--pt:#a6e8c0;--pbd:#2f6d4b}
-  :root:not([data-theme="light"]) .panel.purple{--g1:#2c2347;--g2:#201939;--pt:#d2c6ff;--pbd:#51428a}
+  :root:not([data-theme="light"]) body{background:radial-gradient(900px 520px at 8% -8%,rgba(85,166,255,.13),transparent 62%),radial-gradient(800px 480px at 100% 4%,rgba(180,156,255,.11),transparent 62%),var(--bg);background-attachment:fixed}
+  :root:not([data-theme="light"]) .tile{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 17%,var(--card)),var(--card));box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 26%,transparent),0 8px 20px rgba(0,0,0,.35)}
+  :root:not([data-theme="light"]) .tile b{text-shadow:0 0 14px color-mix(in srgb,var(--c) 55%,transparent)}
+  :root:not([data-theme="light"]) .field input{background:#0e121a;border-color:#3a4560}
+  :root:not([data-theme="light"]) .field.set input{background:color-mix(in srgb,var(--ok) 13%,#0e121a);box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 55%,transparent),0 0 22px color-mix(in srgb,var(--ok) 30%,transparent)}
+  :root:not([data-theme="light"]) .field.need input{box-shadow:0 0 0 1px color-mix(in srgb,var(--amber) 55%,transparent),0 0 22px color-mix(in srgb,var(--amber) 30%,transparent)}
+  :root:not([data-theme="light"]) .field input:focus{background:#0e121a;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 55%,transparent),0 0 30px color-mix(in srgb,var(--accent) 50%,transparent)}
+  :root:not([data-theme="light"]) .fb.ok{background:linear-gradient(135deg,#0f4a2c,#0b3120);border-color:var(--ok);box-shadow:0 0 26px color-mix(in srgb,var(--ok) 25%,transparent)}
+  :root:not([data-theme="light"]) .fb.ok .big{color:#8dffbf}
+  :root:not([data-theme="light"]) .fb.bad,:root:not([data-theme="light"]) .fb.dup{border-color:var(--bad);box-shadow:0 0 22px color-mix(in srgb,var(--bad) 25%,transparent)}
+  :root:not([data-theme="light"]) .fb.warn{border-color:var(--amber);box-shadow:0 0 22px color-mix(in srgb,var(--amber) 22%,transparent)}
+  :root:not([data-theme="light"]) button.finish:not(:disabled){color:#04200f;box-shadow:0 0 24px color-mix(in srgb,var(--ok) 50%,transparent)}
+  :root:not([data-theme="light"]) button.primary:not(:disabled){box-shadow:0 0 22px color-mix(in srgb,var(--accent) 45%,transparent)}
+  :root:not([data-theme="light"]) .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 12px 34px var(--glow)}
+  :root:not([data-theme="light"]) .panel.green{--g1:#123e28;--g2:#0b2b1b;--pt:#86ffbc;--pbd:#2fb472;--glow:rgba(54,200,120,.28)}
+  :root:not([data-theme="light"]) .panel.purple{--g1:#2d2250;--g2:#1c1538;--pt:#d2c3ff;--pbd:#8466f5;--glow:rgba(139,108,226,.34)}
+  :root:not([data-theme="light"]) .panel .phead label{text-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent)}
+  :root:not([data-theme="light"]) .panel .phead label::before{box-shadow:0 0 12px var(--dot)}
   :root:not([data-theme="light"]) .panel .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.1)}
-  :root:not([data-theme="light"]) .panel .pcount,:root:not([data-theme="light"]) .panel .pzoom{background:rgba(255,255,255,.1)}
-  :root:not([data-theme="light"]) .panel .pzoom:hover:not(:disabled){background:rgba(255,255,255,.2)}
-  :root:not([data-theme="light"]) .panel .idrop{background:rgba(255,255,255,.06)}
-  :root:not([data-theme="light"]) .panel .idrop:hover,:root:not([data-theme="light"]) .panel .idrop.over{background:rgba(255,255,255,.14)}
-  :root:not([data-theme="light"]) .panel .impbox{background:linear-gradient(135deg,#1c3f2c,#132f20);color:#a6e8c0;--pt:#a6e8c0;--pbd:#2f6d4b;--ok:#6fd49a;--warn:#f5c060}
-  :root:not([data-theme="light"]) .panel .impprev{background:rgba(255,255,255,.08);color:#e6e9ef}
+  :root:not([data-theme="light"]) .panel .pcount,:root:not([data-theme="light"]) .panel:not(.zoomed) .pzoom{background:rgba(255,255,255,.12)}
+  :root:not([data-theme="light"]) .panel:not(.zoomed) .pzoom:hover:not(:disabled){background:rgba(255,255,255,.24)}
+  :root:not([data-theme="light"]) .langtabs{background:rgba(255,255,255,.1)}
+  :root:not([data-theme="light"]) .langtab:hover:not(.on):not(:disabled){background:rgba(255,255,255,.18)}
+  :root:not([data-theme="light"]) .langtab.on,  :root:not([data-theme="light"]) .langtab.on:hover:not(:disabled){background:rgba(255,255,255,.94);color:#241a4a;box-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent),inset 0 0 0 2px var(--dot)}
+  :root:not([data-theme="light"]) .panel .idrop{background:rgba(255,255,255,.07)}
+  :root:not([data-theme="light"]) .panel .idrop:hover,:root:not([data-theme="light"]) .panel .idrop.over{background:rgba(255,255,255,.16)}
+  :root:not([data-theme="light"]) .panel .impbox{background:linear-gradient(135deg,#1c4a32,#123422);color:#a6f0c6;--pt:#a6f0c6;--pbd:#2fb472;--ok:#3de08c;--warn:#ffc83d}
+  :root:not([data-theme="light"]) .panel .impprev{background:rgba(255,255,255,.08);color:#eef1f6}
+  :root:not([data-theme="light"]) .panel button.mini:disabled{opacity:.75}
+  :root:not([data-theme="light"]) .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
+  :root:not([data-theme="light"]) #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
+  :root:not([data-theme="light"]) #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
   :root:not([data-theme="light"]) .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
   :root:not([data-theme="light"]) .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
-  :root:not([data-theme="light"]) #assignCount,:root:not([data-theme="light"]) #reprintCount{color:#f5e06a;background:#37320f}
+  :root:not([data-theme="light"]) #assignCount,:root:not([data-theme="light"]) #reprintCount{color:#f5e06a;background:#37320f;box-shadow:0 0 14px rgba(245,224,106,.25)}
   :root:not([data-theme="light"]) #assignCount b,:root:not([data-theme="light"]) #reprintCount b{color:#ff7a70}
 }
 /* green pastel "นำไฟล์เข้า" box nested inside the orange Assign box, under its scan field (it inherits the pinned light tokens of .panel) */
@@ -2986,12 +3030,19 @@ function exitReprint() {
   focusNext();
 }
 [reprintIn, reprintIn2, reprintIn3, reprintIn4].forEach(i => i.addEventListener('focus', () => { lastRp = i; enterReprint(); }));
-/* Zoom: the button in a box's corner makes that box fill the whole page (bigger type, long list, scanning keeps working); press it again or Esc to go back */
+/* Zoom: the button in a box's corner makes that box fill the whole page (bigger type, long list, scanning keeps working). It is LOCKED: Esc and a click outside do not leave it, the page behind is inert (no Tab, no click, no scan reaches it),
+   and the only way back is the red "ย่อ" button (or "เสร็จสิ้น" on a narrow screen) */
+let zoomInert = [];
+function lockOutsideZoom() {                                               // everything behind the full-page box is inert while it is open (what the Re-Print mode already did for its own box)
+  zoomInert.forEach(el => { el.inert = false; el.classList.remove('dimmed'); }); zoomInert = [];
+  if (!zoomedEl) return;
+  [...lockTargets(), document.querySelector('.panel.purple')].forEach(el => { if (!el || el === zoomedEl || el.contains(zoomedEl) || el.inert) return; el.inert = true; zoomInert.push(el); });
+}
 function setZoom(panel, on) {
   if (on && zoomedEl && zoomedEl !== panel) setZoom(zoomedEl, false);
   zoomedEl = on ? panel : (zoomedEl === panel ? null : zoomedEl);
   panel.classList.toggle('zoomed', on);
-  document.body.classList.toggle('has-zoom', !!zoomedEl);
+  document.body.classList.toggle('has-zoom', !!zoomedEl); lockOutsideZoom();
   const b = panel.querySelector('.pzoom'), label = on ? 'ย่อกลับ' : 'ขยายเต็มหน้า';
   b.setAttribute('title', label); b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
   if (on) { const i = panelInput(panel); if (!i.disabled) i.focus(); if (panel.classList.contains('purple')) requestAnimationFrame(() => { renderRpView(); renderEmpBox(); }); }
@@ -3007,9 +3058,11 @@ document.querySelectorAll('.pzoom').forEach(b => b.addEventListener('click', () 
 $('reprintDone').addEventListener('click', () => { collapseZoom(); exitReprint(); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
-  if (zoomedEl) collapseZoom(); else if (reprintMode) exitReprint();
+  if (zoomedEl) return;                                                    // locked: only the "ย่อ" button goes back
+  if (reprintMode) exitReprint();
 });
 document.addEventListener('click', e => {          // capture phase: the first click outside only leaves the mode, it never reaches the control underneath
+  if (zoomedEl) return;                                                    // (the full-page box is locked: a click is never "outside" it)
   if (reprintMode && !e.target.closest('.panel.purple') && !e.target.closest('dialog, #printView')) { e.preventDefault(); e.stopPropagation(); exitReprint(); }      // (the picker pop-up and the print page that the third field opens are part of the mode)
 }, true);
 
