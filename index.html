@@ -384,6 +384,37 @@ td.x{width:34px;text-align:center}
 .panel.green .phead{margin-bottom:4px}
 .impbox.flat{margin:0;padding:0;border:0;border-radius:0;background:none}
 .panel.purple{--g1:#f3edff;--g2:#e0d5ff;--pt:#43288f;--pbd:#cfc1f6;--dot:#8b6ce2;--glow:rgba(139,108,226,.24);--k:var(--purple)}
+/* dark theme: the three boxes (peach / green / lavender) are deep tones of their own colour instead of pastels, and what sits in them (fields, lists, chips) follows the dark palette; the big pop-up windows inside them keep the light palette */
+:root[data-theme="dark"] .panel{--g1:#3a2412;--g2:#2b190b;--pt:#ffcfa3;--pbd:#6b4322;--glow:rgba(0,0,0,.4);--card:#1a1f28;--ink:#e6e9ef;--muted:#98a2b3;--line:#2c333f;--soft:#222833;--bad:#ffb4ae;--ok:#6fd49a;--warn:#f5c060}
+:root[data-theme="dark"] .panel.green{--g1:#173826;--g2:#0f2a1c;--pt:#a6e8c0;--pbd:#2f6d4b}
+:root[data-theme="dark"] .panel.purple{--g1:#2c2347;--g2:#201939;--pt:#d2c6ff;--pbd:#51428a}
+:root[data-theme="dark"] .panel .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .panel .pcount,:root[data-theme="dark"] .panel .pzoom{background:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .panel .pzoom:hover:not(:disabled){background:rgba(255,255,255,.2)}
+:root[data-theme="dark"] .panel .idrop{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .panel .idrop:hover,:root[data-theme="dark"] .panel .idrop.over{background:rgba(255,255,255,.14)}
+:root[data-theme="dark"] .panel .impbox{background:linear-gradient(135deg,#1c3f2c,#132f20);color:#a6e8c0;--pt:#a6e8c0;--pbd:#2f6d4b;--ok:#6fd49a;--warn:#f5c060}
+:root[data-theme="dark"] .panel .impprev{background:rgba(255,255,255,.08);color:#e6e9ef}
+:root[data-theme="dark"] .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
+:root[data-theme="dark"] .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
+:root[data-theme="dark"] #assignCount,:root[data-theme="dark"] #reprintCount{color:#f5e06a;background:#37320f}
+:root[data-theme="dark"] #assignCount b,:root[data-theme="dark"] #reprintCount b{color:#ff7a70}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .panel{--g1:#3a2412;--g2:#2b190b;--pt:#ffcfa3;--pbd:#6b4322;--glow:rgba(0,0,0,.4);--card:#1a1f28;--ink:#e6e9ef;--muted:#98a2b3;--line:#2c333f;--soft:#222833;--bad:#ffb4ae;--ok:#6fd49a;--warn:#f5c060}
+  :root:not([data-theme="light"]) .panel.green{--g1:#173826;--g2:#0f2a1c;--pt:#a6e8c0;--pbd:#2f6d4b}
+  :root:not([data-theme="light"]) .panel.purple{--g1:#2c2347;--g2:#201939;--pt:#d2c6ff;--pbd:#51428a}
+  :root:not([data-theme="light"]) .panel .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.1)}
+  :root:not([data-theme="light"]) .panel .pcount,:root:not([data-theme="light"]) .panel .pzoom{background:rgba(255,255,255,.1)}
+  :root:not([data-theme="light"]) .panel .pzoom:hover:not(:disabled){background:rgba(255,255,255,.2)}
+  :root:not([data-theme="light"]) .panel .idrop{background:rgba(255,255,255,.06)}
+  :root:not([data-theme="light"]) .panel .idrop:hover,:root:not([data-theme="light"]) .panel .idrop.over{background:rgba(255,255,255,.14)}
+  :root:not([data-theme="light"]) .panel .impbox{background:linear-gradient(135deg,#1c3f2c,#132f20);color:#a6e8c0;--pt:#a6e8c0;--pbd:#2f6d4b;--ok:#6fd49a;--warn:#f5c060}
+  :root:not([data-theme="light"]) .panel .impprev{background:rgba(255,255,255,.08);color:#e6e9ef}
+  :root:not([data-theme="light"]) .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
+  :root:not([data-theme="light"]) .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
+  :root:not([data-theme="light"]) #assignCount,:root:not([data-theme="light"]) #reprintCount{color:#f5e06a;background:#37320f}
+  :root:not([data-theme="light"]) #assignCount b,:root:not([data-theme="light"]) #reprintCount b{color:#ff7a70}
+}
 /* green pastel "นำไฟล์เข้า" box nested inside the orange Assign box, under its scan field (it inherits the pinned light tokens of .panel) */
 .impbox{--pt:#175c37;--pbd:#a9dcbe;--dot:#36b36c;--ok:#1f7a45;--warn:#8a5a00;margin:0 0 8px;padding:8px 10px;border-radius:12px;color:var(--pt);
   border:1px solid var(--pbd);background:linear-gradient(135deg,#ecfaf1,#d3f1df)}
@@ -459,8 +490,10 @@ input.aw{margin-bottom:6px}
 .plist .k{font-size:12px;font-weight:700;color:var(--k);grid-column:2 / 4}
 .plist li button{display:grid;place-items:center;min-width:26px;height:22px;padding:0 6px;border:0;border-radius:7px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;font-size:16px;font-weight:800;line-height:1;box-shadow:0 2px 5px rgba(201,42,47,.35)}      /* the × of a row is a red box, easy to see */
 .plist li button:hover:not(:disabled){border:0;color:#fff;filter:brightness(1.12)}
+.plist li button svg{display:block;width:12px;height:12px}
 .plist li button:disabled{opacity:.35;box-shadow:none;cursor:default}
 .panel.zoomed .plist li button{min-width:36px;height:30px;font-size:20px;border-radius:9px}
+.panel.zoomed .plist li button svg{width:15px;height:15px}
 .plist .none{display:block;text-align:center;color:var(--muted);padding:10px}
 .prow{display:flex;gap:8px;margin-top:8px}
 .prow button{color:var(--pt);background:rgba(255,255,255,.7);border:1px solid var(--pbd);box-shadow:none}
@@ -535,7 +568,7 @@ input.rp2{margin-top:8px}
 .panel.zoomed .infield input[type=text]{padding-right:clamp(128px,11vw,176px)}
 .panel.zoomed .infield .cnt{right:clamp(12px,1.2vw,18px);top:clamp(8px,1.5vh,14px);bottom:clamp(8px,1.5vh,14px);padding:0 clamp(12px,1.3vw,20px);border-radius:14px;gap:6px}
 .panel.zoomed .infield .cnt b{font-size:clamp(20px,2.2vw,30px)}
-.panel.zoomed .infield .cnt small{display:inline;font-size:clamp(13px,1.35vw,18px)}
+.panel.zoomed .infield .cnt small{display:inline;font-size:clamp(11px,.95vw,14px)}      /* ("Order" is well under half the size of the number) */
 .panel.zoomed .infield .cnt.big small{display:none}
 @media (max-width:420px){ .panel.zoomed .infield .cnt small{display:none} .infield input[type=text]{padding-right:62px} .panel.zoomed .infield input[type=text]{padding-right:84px} }      /* a phone: the counter is just the number, so the hint has more room */
 .infield{container-type:inline-size}      /* (the hint of the many-orders fields shrinks with the width of its field, down to 11px, so on a phone it is cut off later) */
@@ -572,7 +605,12 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .panel.zoomed .pright{gap:clamp(4px,.9vh,8px)}
 .panel.zoomed .pzoom{padding-block:clamp(4px,.9vh,9px);font-size:clamp(14px,2.2vh,17px)}
 .panel.zoomed .pcount{padding-block:clamp(1px,.4vh,3px);font-size:clamp(14px,2.2vh,18px)}
-#assignCount,#reprintCount{border:0;color:#5a3b00;background:linear-gradient(160deg,#ffe98a,#ffc83d);box-shadow:0 1px 0 rgba(255,255,255,.65) inset,0 2px 6px rgba(214,150,0,.34)}      /* the "รวม N Order" pill is yellow */
+#assignCount,#reprintCount{display:inline-flex;align-items:baseline;gap:5px;padding:3px 12px 4px;border:0;border-radius:12px;color:#6b5800;background:#fff3a6;box-shadow:none;text-shadow:none}      /* the "รวม N Order" box: the pale-yellow card of the Alert tile (same yellow, same dark-olive words), the number big and red */
+#assignCount small,#reprintCount small{font-size:11px;font-weight:800;line-height:1}
+#assignCount b,#reprintCount b{font-size:20px;line-height:1;font-weight:900;color:#c62828;font-variant-numeric:tabular-nums}
+.panel.zoomed #assignCount,.panel.zoomed #reprintCount{gap:7px;padding:4px 18px 5px;border-radius:14px}
+.panel.zoomed #assignCount small,.panel.zoomed #reprintCount small{font-size:clamp(13px,1.3vw,17px)}
+.panel.zoomed #assignCount b,.panel.zoomed #reprintCount b{font-size:clamp(22px,2.4vw,32px)}
 .panel.zoomed .pmode{margin-bottom:clamp(5px,1vh,10px);padding-block:clamp(3px,.7vh,8px)}
 .panel.zoomed input[type=text]{height:clamp(52px,calc(10.5vh - 12px),100px);font-size:clamp(22px,min(3.6vw,5vh),46px)}
 .panel.zoomed input.rp2,.panel.zoomed .infield{margin-top:clamp(4px,.9vh,8px)}
@@ -666,6 +704,7 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .emlist li.pt .et{color:#8a5a00}
 .emlist li button{flex:none;display:grid;place-items:center;min-width:26px;height:22px;padding:0 6px;border:0;border-radius:7px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;font-size:16px;font-weight:800;line-height:1;box-shadow:0 2px 5px rgba(201,42,47,.35);cursor:pointer}
 .emlist li button:hover{filter:brightness(1.12)}
+.emlist li button svg{display:block;width:12px;height:12px}
 .emlist li.none{justify-content:center;padding:14px 12px;color:#8a93a3;font-weight:600;font-size:14px;text-align:center}
 .emlist li.note{display:block;padding:8px 12px;font-size:14px;line-height:1.4;font-weight:700;white-space:normal}      /* the answer to "print" is the first line of the list (it costs no extra height) */
 .emlist li.note.ok{background:#e4f3ea;color:#1f7a45}
@@ -687,6 +726,9 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .twodlg .tdcol.pt .ptlist li.sel{background:#e3effd}
 .twodlg .tdcol.pt .ptlist .pta button{padding:7px 12px;font-size:15px;border-color:#a8c8f0;color:#0b4f96}
 .twodlg .tdcol.pt .ptlist .pta button.go{background:#2f7fd8;border-color:#2f7fd8;color:#fff}
+.twodlg .tdcol.pt .ptlist .pta button.xbox{display:grid;place-items:center;width:38px;height:36px;padding:0;border:0;border-radius:10px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;box-shadow:0 2px 6px rgba(201,42,47,.35)}      /* the Part-Time delete box is red too, the cross in the middle */
+.twodlg .tdcol.pt .ptlist .pta button.xbox:hover{filter:brightness(1.12);border:0}
+.twodlg .tdcol.pt .ptlist .pta button.xbox svg{display:block;width:16px;height:16px}
 @media (max-width:900px){                                   /* narrower windows: the halves are stacked, the whole window scrolls */
   .ptdlg.twodlg{width:min(640px,96vw)}
   .twodlg .tdcols{display:block;overflow:auto;padding:0 16px 16px}
@@ -1305,6 +1347,7 @@ function saveInfo() {
   try { localStorage.setItem(LS_INFO, JSON.stringify(orderInfo)); } catch (_) {}
 }
 const rosterCount = () => Object.keys(roster).length;
+const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';      // the red delete boxes hold this drawn cross: it is centred in the box, a "×" character sits low in most fonts
 
 const $ = id => document.getElementById(id);
 const inp = $('scan');
@@ -2906,12 +2949,16 @@ function renderList(ul, items, build) {
   if (!items.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'ยังไม่มีรายการ'; ul.appendChild(li); return; }
   items.map((x, i) => [x, i]).reverse().slice(0, 150).forEach(([x, i]) => ul.appendChild(build(x, i)));
 }
+function setTotalBox(el, n) {                                              // "รวม N Order": the number big and red, the words small around it (the words come from the language, in its own order)
+  const [pre, post] = T('รวม {0} Order', '\u0000').split('\u0000'), w = s => s.trim() ? `<small>${xesc(s.trim())}</small>` : '';
+  el.innerHTML = `${w(pre)}<b>${n}</b>${w(post)}`;
+}
 function sideItem(x, onDelete, delTitle, extra) {
   const li = document.createElement('li');
   const t = document.createElement('span'); t.className = 't'; t.textContent = fmtTime(x.ts);
   const o = document.createElement('span'); o.className = 'o'; o.textContent = x.order;
   const e = document.createElement('span'); e.className = 'e'; e.textContent = x.emp ? empLabel(x.emp, x.name) : ''; e.title = e.textContent;
-  const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.title = delTitle; b.disabled = !!(extra && extra.locked);
+  const b = document.createElement('button'); b.type = 'button'; b.innerHTML = X_SVG; b.title = delTitle; b.setAttribute('aria-label', delTitle); b.disabled = !!(extra && extra.locked);
   b.addEventListener('click', onDelete);
   li.append(t, o, e, b);
   if (extra && extra.kind) { const k = document.createElement('span'); k.className = 'k'; k.textContent = extra.kind; li.appendChild(k); }
@@ -2920,7 +2967,7 @@ function sideItem(x, onDelete, delTitle, extra) {
 function renderSide() {
   const fin = !!state.finished;
   assignIn.disabled = fin;
-  $('assignCount').textContent = T('รวม {0} Order', state.assigns.length); $('reprintCount').textContent = T('รวม {0} Order', state.reprints.length);
+  setTotalBox($('assignCount'), state.assigns.length); setTotalBox($('reprintCount'), state.reprints.length);
   $('assignHint').textContent = fin ? 'สิ้นสุดการสแกนแล้ว — กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม'
     : (state.emp ? `Assign ให้ ${empLabel(state.emp, nameOfEmp(state.emp))}` + (state.assignAutoPrint !== false ? ' · พิมพ์ทันที' : ' · เก็บแล้วพิมพ์ทีเดียว') : 'ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน');
   const na = new Set(state.assigns.map(a => a.order)).size;                  // the orders of the orange list that the "พิมพ์ใบปะหน้า" button prints in one go
@@ -3183,11 +3230,11 @@ function renderEmpBox() {
     const s = document.createElement('small'); s.textContent = 'เลข ' + id; n.appendChild(s);
     if (id in roster) { s.className = 'cf'; s.textContent = `เลข ${id} ซ้ำกับพนักงานประจำ — กด "เลขใหม่"`; }
     const act = document.createElement('span'); act.className = 'pta';
-    const mk = (label, cls, fn, title) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls; if (title) b.title = title; b.addEventListener('click', fn); act.appendChild(b); };
+    const mk = (label, cls, fn, title) => { const b = document.createElement('button'); b.type = 'button'; if (label === '×') { b.innerHTML = X_SVG; b.setAttribute('aria-label', title || label); } else b.textContent = label; if (cls) b.className = cls; if (title) b.title = title; b.addEventListener('click', fn); act.appendChild(b); };
     mk('ใช้', 'go', () => { state.emp = id; state.mode = 'with'; save(); sfx.emp(); render(); }, 'ให้คนนี้เป็นผู้จัด');
     if (id in roster) mk('เลขใหม่', '', () => { const nid = newPtId(); if (!nid) return; ptime[nid] = ptime[id]; delete ptime[id]; if (state.emp === id) state.emp = nid; savePt(); save(); render(); renderEmpBox(); });
     mk('พิมพ์บัตร', '', () => printPtCards([id]));
-    mk('×', '', async () => { if (await ask(`ลบพนักงานชั่วคราว ${ptime[id].name} (เลข ${id}) ?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม)`)) { delete ptime[id]; savePt(); render(); renderEmpBox(); toast('ลบแล้ว'); } }, 'ลบ');
+    mk('×', 'xbox', async () => { if (await ask(`ลบพนักงานชั่วคราว ${ptime[id].name} (เลข ${id}) ?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม)`)) { delete ptime[id]; savePt(); render(); renderEmpBox(); toast('ลบแล้ว'); } }, 'ลบ');
     li.append(bar, n, act); ul.appendChild(li);
   });
 }
@@ -3273,7 +3320,7 @@ function renderEmpMulti() {
     else if (x.kind === 'pt') t.textContent = T('{0} · พนักงานชั่วคราว ({1}) — พิมพ์จากฝั่งขวา', x.id, ptime[x.id].name);
     else if (x.kind === 'none') t.textContent = T('{0} · ไม่พบในรายชื่อ', x.id);
     else t.textContent = T('{0} · สั้นเกินไป (ต้องมี 4 ตัว)', x.tok);
-    t.title = t.textContent; b.type = 'button'; b.textContent = '×'; b.setAttribute('aria-label', T('ลบ {0} ออกจากรายการ', x.id || x.tok));
+    t.title = t.textContent; b.type = 'button'; b.innerHTML = X_SVG; b.setAttribute('aria-label', T('ลบ {0} ออกจากรายการ', x.id || x.tok));
     b.addEventListener('click', () => { empMIn.value = asciiDigits(empMIn.value).replace(/\d+/g, m => (m.length >= 4 ? m.slice(-4) : 'x' + m) === x.key ? '' : m).replace(/[ \t]+\n/g, '\n').replace(/\n{2,}/g, '\n').replace(/^\s+/, ''); empMNote = null; renderEmpMulti(); empMIn.focus(); });
     li.append(t, b); empMList.appendChild(li);
   });
