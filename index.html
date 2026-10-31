@@ -1412,6 +1412,8 @@ let rosterInfo = {};
 try { const r = JSON.parse(localStorage.getItem(LS_RINFO) || 'null'); if (r && typeof r === 'object') rosterInfo = r; } catch (_) {}
 const saveRInfo = () => { try { localStorage.setItem(LS_RINFO, JSON.stringify(rosterInfo)); } catch (_) {} cloudTouch('people'); };
 const nickOf = id => (rosterInfo[id] && rosterInfo[id].nick) || '';
+const fullOf = id => (rosterInfo[id] && rosterInfo[id].full) || id;      // the number printed on a card: the whole 8 digits when they are known, else the last 4
+function learnFull(v8) { const id = String(v8).slice(-4); if (!(id in roster)) return; const old = rosterInfo[id] || {}; if (old.full) return; rosterInfo[id] = Object.assign({}, old, { full: String(v8) }); saveRInfo(); }      // (a scanned badge tells the whole number of that person, once)
 /* Part-Time (temporary) staff {id: {name, ts}}: added by typing a name — the system picks a free 4-digit number and makes a barcode of it. Kept in a store of its own,
    so the regular roster (and its import / export / backup) is never touched. A regular employee's badge has 8 digits and only the last 4 are read (EMP8_RE). */
 const LS_PT = 'o2o-parttime-v1';
@@ -1578,7 +1580,7 @@ function rejectFlash() {
 /* ---------- scan handling ---------- */
 function handleScan(raw) {
   let v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase();
-  if (EMP8_RE.test(v)) v = v.slice(-4);                                      // a regular employee's badge has 8 digits: only the last 4 are read
+  if (EMP8_RE.test(v)) { learnFull(v); v = v.slice(-4); }                                      // a regular employee's badge has 8 digits: only the last 4 are read
   if (!EMP_RE.test(v) && !ORD_RE.test(v)) v = extractOrder(v) || v;          // a QR / long barcode: take the order number out of it
   if (!v) return;
   if (state.finished) {
@@ -2423,8 +2425,8 @@ function extractEntries(rows, L) {
     if (map.has(id)) { dups++; if (full.get(id) !== fullId) { clash++; clashes.push({ id, oldFull: full.get(id), newFull: fullId, oldName: map.get(id), newName: name }); } }       // same last 4 digits but a different full number = two people mixed up
     full.set(id, fullId);
     map.set(id, name);
-    const nick = cell(row, L.nickCol), sched = cell(row, L.schedCol);
-    if (nick || sched) extra.set(id, { nick, sched }); else extra.delete(id);
+    const nick = cell(row, L.nickCol), sched = cell(row, L.schedCol), full8 = /^\d{8}$/.test(fullId) ? fullId : '';      // (the whole 8-digit number is kept: the barcode cards print it)
+    if (nick || sched || full8) extra.set(id, { nick, sched, full: full8 }); else extra.delete(id);
   }
   return { map, extra, bad, dups, clash, clashes, shortened };
 }
@@ -2465,13 +2467,13 @@ let pending = null;
 const rMode = () => (document.querySelector('input[name=rMode]:checked') || {}).value || 'merge';
 const nameFor = (id, nm) => nm || roster[id] || '';                              // an empty name in the file never blanks a known one
 /* nickname + work schedule after the file is applied: what the file says, else what is already known (an empty cell never blanks it) */
-const infoFor = (id, ex) => { const old = rosterInfo[id] || {}; return { nick: (ex && ex.nick) || old.nick || '', sched: (ex && ex.sched) || old.sched || '' }; };
+const infoFor = (id, ex) => { const old = rosterInfo[id] || {}; return { nick: (ex && ex.nick) || old.nick || '', sched: (ex && ex.sched) || old.sched || '', full: (ex && ex.full) || old.full || '' }; };
 function diffRoster(entries, mode, extra) {
   const add = [], chg = [], same = [], del = [];
   for (const [id, nm] of entries) {
     if (!(id in roster)) { add.push(id); continue; }
     const a = infoFor(id, extra && extra.get(id)), b = infoFor(id, null);
-    if (nameFor(id, nm) !== (roster[id] || '') || a.nick !== b.nick || a.sched !== b.sched) chg.push(id); else same.push(id);
+    if (nameFor(id, nm) !== (roster[id] || '') || a.nick !== b.nick || a.sched !== b.sched || a.full !== b.full) chg.push(id); else same.push(id);
   }
   if (mode === 'replace') for (const id of Object.keys(roster)) if (!entries.has(id)) del.push(id);
   return { add, chg, same, del };
@@ -2575,7 +2577,7 @@ $('rApply').addEventListener('click', () => {
   const next = mode === 'replace' ? {} : Object.assign({}, roster), nextInfo = mode === 'replace' ? {} : Object.assign({}, rosterInfo);
   for (const [id, nm] of pending.entries) {
     const inf = infoFor(id, pending.extra && pending.extra.get(id));       // (read before rosterInfo is replaced)
-    next[id] = nameFor(id, nm); if (inf.nick || inf.sched) nextInfo[id] = inf; else delete nextInfo[id];
+    next[id] = nameFor(id, nm); if (inf.nick || inf.sched || inf.full) nextInfo[id] = inf; else delete nextInfo[id];
   }
   roster = next; rosterInfo = nextInfo; saveRoster(); saveRInfo();
   toast(`อัปเดตแล้ว: เพิ่ม ${df.add.length} · แก้ชื่อ ${df.chg.length}` + (mode === 'replace' ? ` · ลบ ${df.del.length}` : ''));
@@ -3768,7 +3770,7 @@ $('ptClose').addEventListener('click', () => $('ptDlg').close());
 const ptCardsHtml = (ids, interactive) => cardsHtml(ids.filter(id => ptime[id]).map(id => ({ id, name: ptime[id].name, tag: 'PART-TIME' })), interactive, 'บัตรพนักงานชั่วคราว');
 const THAI_RE = /[\u0E00-\u0E7F]/;
 function cardsHtml(items, interactive, title) {                           // items = [{id, name, tag}]: the name big, the barcode of the 4-digit number, the number, and a small line (PART-TIME / the full name)
-  const cards = items.map(({ id, name: n, tag }) => `<div class="ptc"><div class="ptn" style="font-size:${n.length > 12 ? 18 : n.length > 8 ? 24 : 30}pt">${xesc(n)}</div>${barcodeSvg(id, 0.6, 20, 'mm')}<div class="pti">${id}</div><div class="ptt"${THAI_RE.test(tag) ? ' style="letter-spacing:.04em;font-size:11pt"' : ''}>${xesc(tag)}</div></div>`).join('');
+  const cards = items.map(({ id, name: n, tag }) => `<div class="ptc"><div class="ptn" style="font-size:${n.length > 12 ? 18 : n.length > 8 ? 24 : 30}pt">${xesc(n)}</div>${barcodeSvg(id, String(id).length > 6 ? 0.5 : 0.6, 20, 'mm')}<div class="pti">${id}</div><div class="ptt"${THAI_RE.test(tag) ? ' style="letter-spacing:.04em;font-size:11pt"' : ''}>${xesc(tag)}</div></div>`).join('');
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${xesc(title)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;800;900&display=swap">
 <style>@page{size:A4;margin:10mm} body{margin:0;font-family:Prompt,Sarabun,"Leelawadee UI",Tahoma,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -3793,7 +3795,7 @@ const empNoIn = $('empNoIn'), empNoMsg = $('empNoMsg'), empQList = $('empQList')
 let empQueue = [], empAddedAt = 0, empNoT = null;
 const empSay = (kind, text) => { empNoMsg.className = ('pdmsg ' + kind).trim(); empNoMsg.textContent = text; };
 async function printEmpCards(ids) {                                        // one card for each number (2 across an A4 page)
-  const items = ids.map(id => { const full = roster[id] || '', nick = nickOf(id); return { id, name: nick || full, tag: nick && full && nick !== full ? full : 'EMPLOYEE' }; });
+  const items = ids.map(id => { const full = roster[id] || '', nick = nickOf(id); return { id: fullOf(id), name: nick || full, tag: nick && full && nick !== full ? full : 'EMPLOYEE' }; });
   if (IN_VIEWER) { if (await download(new Blob([cardsHtml(items, true, 'บัตรพนักงาน')], { type: 'text/html' }), ids.length === 1 ? `employee-card_${ids[0]}.html` : 'employee-cards.html')) toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง'); return; }
   printDoc(cardsHtml(items, false, 'บัตรพนักงาน'));
 }
@@ -3803,11 +3805,11 @@ function parseEmpList(raw) {                                               // ev
   toks.forEach(tok => {
     const id = tok.length >= 4 ? tok.slice(-4) : '', key = id || 'x' + tok;
     if (seen.has(key)) { dup++; return; } seen.add(key);
-    items.push({ id, tok, kind: !id ? 'short' : id in roster ? 'ok' : id in ptime ? 'pt' : 'none' });
+    items.push({ id, tok, full: tok.length === 8 ? tok : '', kind: !id ? 'short' : id in roster ? 'ok' : id in ptime ? 'pt' : 'none' });
   });
   return { items, dup };
 }
-const empNameLine = id => { const full = roster[id], nick = nickOf(id); return `${id} · ${nick && nick !== full ? `${nick} (${full})` : full}`; };
+const empNameLine = id => { const full = roster[id], nick = nickOf(id); return `${fullOf(id)} · ${nick && nick !== full ? `${nick} (${full})` : full}`; };
 const empSyncGo = () => { empQGo.disabled = !(empQueue.length || empNoIn.value.replace(/\D/g, '').length >= 4); };      // the green button is live when the list has someone, or 4 digits wait in the field
 function renderEmpQueue(newIds) {
   empQList.innerHTML = '';
@@ -3820,7 +3822,7 @@ function renderEmpQueue(newIds) {
     li.append(t, b); empQList.appendChild(li);
   });
   const n = empQueue.length;
-  empQCnt.textContent = n ? T('{0} คน', n) : ''; empQClr.hidden = !n; empSyncGo();
+  const miss = empQueue.filter(id => !(rosterInfo[id] && rosterInfo[id].full)).length; empQCnt.textContent = n ? T('{0} คน', n) + (miss ? ' · ' + T('ยังไม่มีเลข 8 หลัก {0}', miss) : '') : ''; empQCnt.title = miss ? T('คนที่ยังไม่มีเลข 8 หลักจะพิมพ์เป็นเลข 4 หลัก — นำเข้ารายชื่อพนักงานใหม่ 1 ครั้ง หรือสแกนบัตรคนนั้น 1 ครั้ง') : ''; empQClr.hidden = !n; empSyncGo();
   $('empQGoTxt').textContent = n ? T('พิมพ์บัตร {0} ใบ', n) : T('พิมพ์บัตร');
   empNoIn.placeholder = n ? T('Enter = พิมพ์ {0} ใบ', n) : T('ใส่เลข 4 ตัวท้าย หรือสแกนบัตร');
   if (newIds && newIds.length) empQList.scrollTop = empQList.scrollHeight;
@@ -3828,7 +3830,7 @@ function renderEmpQueue(newIds) {
 function empAddText(raw) {                                                 // the numbers of a typed / scanned / pasted text go into the list; what cannot is told under the field
   const p = parseEmpList(raw); if (!p.items.length) return false;
   const added = [], dups = [], none = [], pts = [], shorts = [];
-  p.items.forEach(x => {
+  p.items.forEach(x => { if (x.kind === 'ok' && x.full) learnFull(x.full);
     if (x.kind === 'ok') { if (empQueue.includes(x.id)) dups.push(x.id); else { empQueue.push(x.id); added.push(x.id); } }
     else if (x.kind === 'pt') pts.push(x); else if (x.kind === 'none') none.push(x.id); else shorts.push(x.tok);
   });
@@ -4471,6 +4473,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['{0} · พนักงานชั่วคราว ({1}) — พิมพ์จากฝั่งขวา', '{0} · Part-Time ({1}) — print it from the right side', '{0} · ယာယီဝန်ထမ်း ({1}) — ညာဘက်မှ ပုံနှိပ်ပါ'],
   ['{0} · สั้นเกินไป (ต้องมี 4 ตัว)', '{0} · too short (needs 4 digits)', '{0} · တိုလွန်းသည် (၄ လုံးလိုသည်)'],
   ['พิมพ์บัตร {0} ใบ', 'Print {0} cards', 'ကတ် {0} ခု ပုံနှိပ်ရန်'],
+  ['ยังไม่มีเลข 8 หลัก {0}', 'No 8-digit number yet {0}', 'ဂဏန်း ၈ လုံး မရှိသေးပါ {0}'],
+  ['คนที่ยังไม่มีเลข 8 หลักจะพิมพ์เป็นเลข 4 หลัก — นำเข้ารายชื่อพนักงานใหม่ 1 ครั้ง หรือสแกนบัตรคนนั้น 1 ครั้ง', 'People without the 8-digit number are printed with 4 digits — import the staff list again once, or scan that person\'s badge once', 'ဂဏန်း ၈ လုံး မရှိသူများကို ၄ လုံးဖြင့် ပုံနှိပ်မည် — ဝန်ထမ်းစာရင်းကို တစ်ကြိမ် ပြန်သွင်းပါ သို့မဟုတ် ထိုသူ၏ကတ်ကို တစ်ကြိမ် စကင်ဖတ်ပါ'],
   ['ลบ {0} ออกจากรายการ', 'Remove {0} from the list', '{0} ကို စာရင်းမှ ဖယ်ရန်'],
   ['ยังไม่มีเลขที่พบในรายชื่อ — ใส่เลขพนักงานประจำก่อน', 'No number found in the list yet — enter regular-employee numbers first', 'စာရင်းတွင် တွေ့သောနံပါတ် မရှိသေးပါ — ပုံမှန်ဝန်ထမ်းနံပါတ်များ အရင်ထည့်ပါ'],
   ['✓ พิมพ์บัตร {0} ใบแล้ว — ใส่ชุดต่อไปได้เลย', '✓ {0} cards sent to print — you can enter the next batch', '✓ ကတ် {0} ခု ပုံနှိပ်ပြီး — နောက်အစုကို ထည့်နိုင်ပြီ'],
