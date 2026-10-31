@@ -860,6 +860,9 @@ dialog::backdrop{background:rgba(16,24,40,.6);backdrop-filter:blur(3px)}
 .cloudbar .cs{display:inline-flex;align-items:center;gap:7px;min-width:0}
 .cloudbar .cs::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:#1f9d57;box-shadow:0 0 0 3px color-mix(in srgb,#1f9d57 22%,transparent)}
 .cloudbar.busy .cs::before{background:#2f80ed;box-shadow:0 0 0 3px color-mix(in srgb,#2f80ed 22%,transparent);animation:cloudpulse 1s ease-in-out infinite}
+.cloudbar .cs[hidden]{display:none}
+.cloudbar .cs.bad{color:#b54708}
+.cloudbar .cs.bad::before{background:#f79009;box-shadow:0 0 0 3px color-mix(in srgb,#f79009 25%,transparent)}
 .cloudbar.err .cs{color:#b54708}
 .cloudbar.err .cs::before{background:#f79009;box-shadow:0 0 0 3px color-mix(in srgb,#f79009 25%,transparent)}
 .cloudbar button{flex:none;padding:4px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:none}
@@ -1110,6 +1113,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
             </div>
             <div class="row">
               <label><input id="optPrintGo" type="checkbox"> พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที</label>
+              <label><input id="optShare" type="checkbox"> ซิงก์สด: รายการสแกน / Assign / Re-Print สแกนที่เครื่องไหน ทุกจอเห็นเหมือนกัน (ล้างที่เครื่องหนึ่ง = หายทุกเครื่อง)</label>
             </div>
             <div class="row">
               <label><input id="optAssignPrint" type="checkbox"> พิมพ์ใบปะหน้าทันทีเมื่อสแกนใน Assign (เลขลงท้าย A / B)</label>
@@ -1263,7 +1267,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <span class="dlgtitle" id="rDlgTitle">Update Data</span>
       <button id="rClose" type="button" class="closebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>ปิด</button>
     </div>
-    <div class="cloudbar" id="cloudBar" hidden title="ชื่อพนักงาน · Trip · Part-Time · ลิงก์ชีต ใช้ร่วมกันทุกเครื่อง"><span class="cs" id="cloudTxt"></span><button id="cloudNow" type="button">ซิงค์ตอนนี้</button></div>
+    <div class="cloudbar" id="cloudBar" hidden title="ชื่อพนักงาน · Trip · Part-Time · ลิงก์ชีต ใช้ร่วมกันทุกเครื่อง"><span class="cs" id="cloudTxt"></span><span class="cs" id="cloudLive" hidden></span><button id="cloudNow" type="button">ซิงค์ตอนนี้</button></div>
     <div class="dtabs" role="tablist">
       <button id="tabEmp" role="tab" type="button" class="on" aria-selected="true">
         <svg class="dico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.3c1.8.8 3 2.6 3 5.7"/></svg>ชื่อพนักงาน<span class="dbadge" id="tabEmpCnt"></span>
@@ -1440,7 +1444,8 @@ const DATA_FIRST_ROW = 3;                     // ใบปะหน้า: DATA!
 
 /* ---------- state ---------- */
 let state = { rows: [], emp: null, batchSize: 20, sound: true, beep: 'p1', vol: 'mid', autoPrint: true, assignAutoPrint: true, margin: 2, requireRoster: true, autoZoom: true, finished: false, mode: 'with', assigns: [], reprints: [] };   // mode: 'with' = employee first, 'none' = scan orders before knowing who picks
-try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (s && Array.isArray(s.rows)) state = Object.assign(state, s); } catch (_) {}
+let stateLoaded = false;      // false = nothing (or nothing readable) was saved: the live sharing then starts from the cloud copy instead of reading an empty list as "everything was deleted"
+try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (s && Array.isArray(s.rows)) { state = Object.assign(state, s); stateLoaded = true; } } catch (_) {}
 let selBatch = null;          // null = ตามชุดล่าสุด
 let importPending = null;     // order file read but not applied yet (green box "นำไฟล์เข้า")
 let lastImport = null;        // { from, orders } of the last applied import, so it can be undone while nothing else was scanned
@@ -1490,7 +1495,8 @@ const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const $ = id => document.getElementById(id);
 const inp = $('scan');
 
-function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {} }
+let shareCfg = null, shareT = null;      // the live sharing of the scan lists (see "the scan lists live on every computer"): its settings, and the timer that sends what changed
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {} if (shareCfg && state.share !== false) { clearTimeout(shareT); shareT = setTimeout(shareRun, 600); } }
 const pad = n => String(n).padStart(2, '0');
 const fmtTime = ts => { const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
 const fmtDate = ts => { const d = new Date(ts); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; };
@@ -1919,7 +1925,7 @@ function render() {
   $('empty').hidden = d.rows.length > 0;
 
   $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
-  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optShare').checked = state.share !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
   $('btnRestore').hidden = !hasBackup();
   // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
   const fin = !!state.finished;
@@ -1953,6 +1959,7 @@ $('optStrict').addEventListener('change', e => { state.requireRoster = e.target.
 $('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
 $('optAutoPrint').addEventListener('change', e => { state.autoPrint = e.target.checked; save(); });
 $('optPrintGo').addEventListener('change', e => { state.printGo = e.target.checked; save(); });
+$('optShare').addEventListener('change', e => { state.share = e.target.checked; save(); if (shareCfg) { shareLive(true); if (state.share) shareRun(); } });      // (switched off = this computer neither sends nor receives; switched on again = it catches up)
 $('optAssignPrint').addEventListener('change', e => { state.assignAutoPrint = e.target.checked; save(); render(); });
 $('optMargin').addEventListener('change', e => { state.margin = +e.target.value; save(); render(); });      // the white margin round the cover sheets (render() redraws an open preview)
 function sheetMargin() { return [2, 3, 4, 5].includes(+state.margin) ? +state.margin : 2; }
@@ -4675,6 +4682,9 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไม่มีเลขออเดอร์ อยู่ในระบบ', 'This order number is not in the system', 'ဤအော်ဒါနံပါတ်သည် စနစ်ထဲတွင် မရှိပါ'],
   ['รบกวนติดต่อที่ Admin Counter', 'Please contact the Admin Counter', 'Admin Counter သို့ ဆက်သွယ်ပါ'],
   ['รับทราบ', 'OK, understood', 'သိပါပြီ'],
+  ['สด ✓', 'Live ✓', 'တိုက်ရိုက် ✓'],
+  ['ซิงก์สดไม่ได้ — ลองใหม่เอง', 'Live sync is not working — retrying', 'တိုက်ရိုက်ထပ်တူပြု၍မရ — ပြန်ကြိုးစားမည်'],
+  ['ซิงก์สด: รายการสแกน / Assign / Re-Print สแกนที่เครื่องไหน ทุกจอเห็นเหมือนกัน (ล้างที่เครื่องหนึ่ง = หายทุกเครื่อง)', 'Live sync: scan list / Assign / Re-Print — scan on any computer and every screen shows the same (clear on one = cleared everywhere)', 'တိုက်ရိုက်ထပ်တူပြု — စကင်စာရင်း / Assign / Re-Print — ဘယ်ကွန်ပျူတာတွင်စကင်ဖတ်ဖတ် မျက်နှာပြင်အားလုံး တူညီစွာမြင်ရမည် (တစ်လုံးတွင်ရှင်းလျှင် အားလုံးပျောက်)'],
   ['ช่อง {0} · 1 Page / {1} Order', 'Field {0} · 1 Page / {1} Order', 'ကွက် {0} · 1 Page / {1} Order'],
   ['{0} หน้า', '{0} pages', '{0} မျက်နှာ'],
   ['กำลังค้นหาข้อมูลออเดอร์ …', 'Looking up the order data …', 'အော်ဒါဒေတာ ရှာနေသည် …'],
@@ -5195,6 +5205,95 @@ const CLOUD_SETS = {
   trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
   sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; sheetIdx = null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
 };
+/* ---------- the scan lists live on every computer ----------
+   Whatever is scanned on one computer shows on every screen: the scan list, the Assign list and the Re-Print list (what is typed in a field, the signed-in picker, the print page and the settings stay on each computer).
+   Every entry of the three lists is ONE small document in the team database (collection of CLOUD_CONFIG, id o2os_<sid>: fields k = which list, d = the entry as JSON, x = deleted, by = which computer, sk = the SERVER time of the last change).
+   - sending: save() starts a timer (0.6 s); what is new or different since the last send is written with one :commit (the server stamps `sk`), what is gone from the lists is written as "deleted" (so clearing on one computer clears all)
+   - receiving: every 6 s (and when the page is looked at again) a :runQuery asks only for the documents with sk newer than the last one seen (3 s overlap), so a quiet poll costs one small read; a document that is newer than ours replaces / adds / removes that entry
+   - several computers write different documents, so scanning on two computers at the same moment never overwrites each other; the same entry changed on two computers at once: the later change wins; an entry edited here but not sent yet is not overwritten by a pull
+   - a computer whose saved lists could not be read starts from the cloud copy (it never reads an empty list as "delete everything")
+   Off on the claude.ai copy and on localhost (like the rest of the sync), and the Settings box "ซิงก์สด" switches it off per computer. */
+const SHARE_PREFIX = 'o2os_', LS_SHARE = 'o2o-share-v1';
+let share = { cursor: 0, pub: {} };            // cursor: server time (ms) of the newest change seen · pub: sid -> { sk (ms of the document last seen), h (hash of the entry as last sent / received, null = deleted), k }
+try { const s = JSON.parse(localStorage.getItem(LS_SHARE) || 'null'); if (s && s.pub && typeof s.pub === 'object') share = s; } catch (_) {}
+const saveShare = () => cloudLs(LS_SHARE, share);
+const SHARE_LISTS = { r: () => state.rows, a: () => state.assigns, p: () => state.reprints };
+const hash32 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length.toString(36); };
+let shareBusy = false, shareAgain = false, sharePollT = null, shareOkAt = 0;
+const shareMe = () => (cloudQ && cloudQ.meta && cloudQ.meta().me) || 'x';
+const shareColl = () => shareCfg.collection || 'o2o';
+function shareLive(ok) {                       // the small "live" mark in the sync bar
+  const el = document.getElementById('cloudLive'); if (!el) return;
+  el.hidden = !shareCfg || state.share === false; el.className = 'cs ' + (ok ? 'ok' : 'bad'); el.textContent = ok ? T('สด ✓') : T('ซิงก์สดไม่ได้ — ลองใหม่เอง');
+  if (ok) shareOkAt = Date.now();
+}
+async function shareReq(path, body) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(shareCfg.projectId)}/databases/(default)/documents${path}?key=${encodeURIComponent(shareCfg.apiKey)}`;
+    const r = await (shareCfg.fetch || ((u, o) => fetch(u, o)))(url, { method: 'POST', signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+const shareWrite = (sid, k, json, gone) => ({ update: { name: `projects/${shareCfg.projectId}/databases/(default)/documents/${shareColl()}/${SHARE_PREFIX}${sid}`, fields: { k: { stringValue: k }, d: { stringValue: json }, x: { booleanValue: !!gone }, by: { stringValue: shareMe() } } }, updateTransforms: [{ fieldPath: 'sk', setToServerValue: 'REQUEST_TIME' }] });
+async function sharePush() {
+  const cur = new Map(); let minted = false;
+  for (const k of Object.keys(SHARE_LISTS)) for (const e of SHARE_LISTS[k]()) { if (!e.sid) { e.sid = shareMe() + '-' + (+e.ts || Date.now()).toString(36) + '-' + Math.random().toString(36).slice(2, 6); minted = true; } cur.set(e.sid, { k, e }); }
+  if (minted) { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {} }      // (the ids are saved with the lists; not through save(), which would start another send)
+  const writes = [], marks = [];
+  for (const [sid, { k, e }] of cur) { const json = cloudCanon(e), h = hash32(json), p = share.pub[sid]; if (!p || p.h !== h) { writes.push(shareWrite(sid, k, json, false)); marks.push([sid, h, k]); } }
+  for (const [sid, p] of Object.entries(share.pub)) if (!cur.has(sid) && p.h !== null) { writes.push(shareWrite(sid, p.k || 'r', '{}', true)); marks.push([sid, null, p.k || 'r']); }
+  for (let i = 0; i < writes.length; i += 200) await shareReq(':commit', { writes: writes.slice(i, i + 200) });
+  for (const [sid, h, k] of marks) { const p = share.pub[sid] || (share.pub[sid] = { sk: 0 }); p.h = h; p.k = k; }
+  if (marks.length) saveShare();
+}
+function shareApply(doc, touched) {            // one document from the cloud -> the lists; true when something changed
+  const id = String(doc.name || '').split('/').pop(); if (!id.startsWith(SHARE_PREFIX)) return false;
+  const sid = id.slice(SHARE_PREFIX.length), f = doc.fields || {}, sk = Date.parse((f.sk || {}).timestampValue || '') || 0, p = share.pub[sid], k = (f.k || {}).stringValue;
+  if (!SHARE_LISTS[k] || (p && p.sk >= sk)) return false;
+  const arr = SHARE_LISTS[k](), i = arr.findIndex(e => e.sid === sid);
+  if (f.x && f.x.booleanValue === true) { if (i >= 0) arr.splice(i, 1); share.pub[sid] = { sk, h: null, k }; return i >= 0; }
+  let e; try { e = JSON.parse((f.d || {}).stringValue); } catch (_) { return false; }
+  if (!e || typeof e !== 'object' || Array.isArray(e)) return false; e.sid = sid;
+  if (i >= 0) { if (p && hash32(cloudCanon(arr[i])) !== p.h) { p.sk = sk; return false; } arr[i] = e; }      // (an edit made here and not sent yet wins)
+  else { if (p && p.h !== null) return false; arr.push(e); touched.add(k); }                              // (an entry deleted here whose "deleted" is not sent yet stays deleted)
+  share.pub[sid] = { sk, h: hash32(cloudCanon(e)), k }; return true;
+}
+async function sharePull() {
+  const touched = new Set(); let changed = false, maxSk = share.cursor || 0, cursor = share.cursor || Date.now() - 48 * 3600e3;
+  for (let page = 0; page < 20; page++) {
+    const res = await shareReq(':runQuery', { structuredQuery: { from: [{ collectionId: shareColl() }], where: { fieldFilter: { field: { fieldPath: 'sk' }, op: 'GREATER_THAN', value: { timestampValue: new Date(cursor).toISOString() } } }, orderBy: [{ field: { fieldPath: 'sk' }, direction: 'ASCENDING' }], limit: 1000 } });
+    const docs = (Array.isArray(res) ? res : []).filter(x => x && x.document).map(x => x.document);
+    for (const d of docs) { if (shareApply(d, touched)) changed = true; const sk = Date.parse(((d.fields || {}).sk || {}).timestampValue || '') || 0; if (sk > maxSk) maxSk = sk; }
+    if (docs.length < 1000) break; cursor = maxSk - 1;      // (a page is full: the next one starts at its newest time — the documents of one send share a time but a send has at most 200, so a page always gets past the first one)
+  }
+  if (maxSk) share.cursor = Math.max(share.cursor || 0, maxSk - 3000);
+  for (const [sid, p] of Object.entries(share.pub)) if (p.h === null && p.sk && p.sk < Date.now() - 72 * 3600e3) delete share.pub[sid];      // (old "deleted" marks are forgotten)
+  saveShare();
+  if (changed) {
+    for (const k of touched) SHARE_LISTS[k]().sort((a, b) => (a.ts - b.ts) || (a.sid < b.sid ? -1 : 1));
+    if (touched.has('r')) lastImport = null;                       // (the rows moved: the "undo import" positions are not true any more)
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+    try { render(); renderRpView(); } catch (_) {}
+  }
+}
+async function shareRun() {
+  if (!shareCfg || state.share === false) return;
+  if (shareBusy) { shareAgain = true; return; }
+  shareBusy = true;
+  try { await sharePush(); await sharePull(); shareLive(true); } catch (_) { shareLive(false); }
+  shareBusy = false; if (shareAgain) { shareAgain = false; setTimeout(shareRun, 300); }
+}
+function shareStart(cfg) {                     // called by the sync when it is configured (or switched off)
+  clearInterval(sharePollT); clearTimeout(shareT); shareCfg = cfg || null;
+  const el = document.getElementById('cloudLive'); if (el) el.hidden = !shareCfg || state.share === false;
+  if (!shareCfg) return;
+  if (!stateLoaded && Object.keys(share.pub).length) share = { cursor: 0, pub: {} };      // our lists could not be read: start from the cloud copy, never delete it
+  setTimeout(shareRun, 1200);
+  sharePollT = setInterval(() => { if (!document.hidden) shareRun(); }, 6000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && shareCfg && Date.now() - shareOkAt > 4000) shareRun(); });
 cloudQ = (() => {
   let cfg = null, busy = false, again = false, timer = null, lastRun = 0, bigWarned = false, st = { kind: 'off', at: 0 };
   let meta = { me: '', sets: {} };
@@ -5265,7 +5364,7 @@ cloudQ = (() => {
   }
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(run, ms); }
   const api = {
-    configure(c) { cfg = c && c.apiKey && c.projectId ? c : null; st = { kind: cfg ? 'busy' : 'off', at: 0 }; paint(); if (cfg) schedule(200); },
+    configure(c) { cfg = c && c.apiKey && c.projectId ? c : null; st = { kind: cfg ? 'busy' : 'off', at: 0 }; paint(); if (cfg) schedule(200); shareStart(cfg); },
     touch(n) { if (!cfg) return; setOf(n).dirty = true; saveMeta(); schedule(1500); },
     run, meta: () => meta, status: () => st.kind, sets: CLOUD_SETS,
   };
@@ -5287,7 +5386,7 @@ cloudQ = (() => {
 })();
 
 /* test/debug hook */
-window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg }) };
+window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, share: { run: () => shareRun(), info: () => share }, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg }) };
 
 empIn.value = state.emp || '';
 if (state.finished) feedback('ok', 'สิ้นสุดการสแกนแล้ว', 'ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"');
