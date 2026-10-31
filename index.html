@@ -920,6 +920,18 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .askdlg::backdrop{background:rgba(16,24,40,.55)}
 .askdlg p{margin:0 0 16px;font-size:15px;line-height:1.55;white-space:pre-line}
 .askdlg .row{justify-content:flex-end}
+.keydlg{width:min(480px,94vw)}
+.keydlg .keyhint{margin:0 0 12px;font-size:13px;color:var(--muted)}
+.keydlg input{width:100%;box-sizing:border-box;font-size:17px;padding:10px 12px}
+.keydlg .keymsg{min-height:20px;margin:6px 0 10px;font-size:13px;font-weight:700;color:var(--bad)}
+.keydlg #keyReset{margin-right:auto}
+.ptkey{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;padding:6px 10px;border-radius:10px;background:#eef5fd;border:1px solid #cfe1f7;font-size:13px;font-weight:600;line-height:1.4;color:#0b4f96}
+.ptkey[hidden]{display:none}
+.ptkey svg{width:16px;height:16px;flex:none}
+.ptkey span{flex:1 1 170px;min-width:0}
+.ptkey button{flex:none;margin-left:auto;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700}
+.ptkey[data-state=on]{background:#e4f6ec;border-color:#a9dcbe;color:#175c37}
+.ptkey[data-state=locked],.ptkey[data-state=wrong]{background:#fff3d6;border-color:#f0cf7a;color:#7a4b00}
 
 /* ---- cover-sheet print view: 2 identical slips per A4 page, like the printed ones ---- */
 #printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#000}      /* black around the sheets */
@@ -1182,6 +1194,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
                   <div class="bdbody">
                     <div class="eadd"><input id="ptName" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อ เช่น วา" aria-label="ชื่อพนักงานชั่วคราว"><input id="ptNum" class="ptnum" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="20" placeholder="เลขบัตรประชาชน 13 หลัก" aria-label="เลขบัตรประชาชน 13 หลักของพนักงานชั่วคราว"><button id="ptAdd" type="button">สร้างบาร์โค้ด</button></div>
                     <div class="pmsg" id="ptMsg" aria-live="polite"></div>
+                    <div class="ptkey" id="ptKeyRow" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="ptKeyTxt"></span><button id="ptKeyBtn" type="button"></button></div>
                     <ul class="ptlist" id="ptList"></ul>
                     <div class="ewho"><span id="rpWho"></span><button id="rpWhoClr" class="mini" type="button" hidden>ล้าง</button></div>
                     <div class="bdfoot"><button id="ptPrintAll" type="button">พิมพ์บัตรทั้งหมด</button><span class="sp"></span><button id="ptDelAll" class="ptdelall" type="button" disabled>ลบข้อมูลทั้งหมด</button></div>
@@ -1206,6 +1219,13 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 <dialog id="askDlg" class="askdlg" aria-labelledby="askMsg">
   <p id="askMsg"></p>
   <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
+</dialog>
+<dialog id="keyDlg" class="askdlg keydlg" aria-labelledby="keyTitle">
+  <p><b id="keyTitle"></b></p>
+  <p class="keyhint">เลขบัตรประชาชนจะถูกเข้ารหัสด้วยรหัสผ่านนี้ในเครื่อง ก่อนส่งขึ้นฐานข้อมูลทีม — ทุกเครื่องที่ใส่รหัสผ่านเดียวกันจะอ่านเลขได้เหมือนกัน คนอื่นอ่านไม่ได้ (ฐานข้อมูลทีมเปิดให้อ่านได้กว้าง จึงไม่ส่งเลขบัตรแบบไม่เข้ารหัส) · ลืมรหัสผ่านแล้วกู้ไม่ได้ ต้องตั้งใหม่</p>
+  <input id="keyIn" type="password" autocomplete="off" spellcheck="false" placeholder="รหัสผ่านทีม (อย่างน้อย 6 ตัว)" aria-label="รหัสผ่านทีม">
+  <div id="keyMsg" class="keymsg" aria-live="polite"></div>
+  <div class="row"><button id="keyReset" class="danger" type="button" hidden>ตั้งรหัสผ่านใหม่ (ทิ้งเลขเดิมที่ซิงก์ไว้)</button><button id="keyOk" class="primary" type="button">ตกลง</button><button id="keyNo" type="button">ยกเลิก</button></div>
 </dialog>
 
 
@@ -1440,15 +1460,64 @@ const LS_PT = 'o2o-parttime-v1';
 let ptime = {};
 try { const p = JSON.parse(localStorage.getItem(LS_PT) || 'null'); if (p && typeof p === 'object') ptime = p; } catch (_) {}
 const savePt = () => { try { localStorage.setItem(LS_PT, JSON.stringify(ptime)); } catch (_) {} cloudTouch('parttime'); };
-/* the whole 13-digit ID card number of a Part-Time person (it is the barcode of their card; the card and every list show only the last 4). It is personal data, so it stays on THIS computer:
-   it is deliberately not part of `ptime` and never goes to the team database (no cloudTouch). id4 -> 13 digits. */
-const LS_PTID = 'o2o-ptid13-v1';
-let ptid13 = {};
+/* the whole 13-digit ID card number of a Part-Time person (it is the barcode of their card; the card and every list show only the last 4). id4 -> 13 digits.
+   It is personal data and the team database can be read by anybody who has the page's key, so it is never in `ptime` and never synced as it is:
+   - without a team passphrase it stays on THIS computer only (LS_PTID);
+   - with one it is ENCRYPTED in this browser (AES-GCM, key = PBKDF2 of the passphrase) and only the ciphertext goes to the team database as the set "ptid" (see CLOUD_SETS) —
+     every computer that types the same passphrase reads the same numbers, nobody else can. The passphrase itself stays on each computer (LS_PTKEY) and is never sent. */
+const LS_PTID = 'o2o-ptid13-v1', LS_PTENV = 'o2o-ptid-env-v1', LS_PTKEY = 'o2o-ptkey-v1';
+let ptid13 = {}, ptidEnv = null, ptKeyOk = null;      // ptidEnv = the encrypted copy {v, salt, iv, ct} (the one in the cloud) · ptKeyOk: null = not tried yet, true = the passphrase opens it, false = it does not
 try { const p = JSON.parse(localStorage.getItem(LS_PTID) || 'null'); if (p && typeof p === 'object') ptid13 = p; } catch (_) {}
-const savePtId = () => { try { localStorage.setItem(LS_PTID, JSON.stringify(ptid13)); } catch (_) {} };
-const ptCode = id => { const c = ptid13[id]; return typeof c === 'string' && /^\d{13}$/.test(c) && c.slice(-4) === id ? c : id; };      // what the barcode holds: the 13 digits when this computer has them, else the 4
+try { const e = JSON.parse(localStorage.getItem(LS_PTENV) || 'null'); if (e && e.ct && e.iv && e.salt) ptidEnv = e; } catch (_) {}
+const PT_CRYPTO = !!(window.crypto && crypto.subtle && crypto.getRandomValues);
+const ptPass = () => { try { return localStorage.getItem(LS_PTKEY) || ''; } catch (_) { return ''; } };
+const savePtId = quiet => { try { localStorage.setItem(LS_PTID, JSON.stringify(ptid13)); } catch (_) {} if (!quiet) ptidChanged(); };
+const ptCodeOk = (id, c) => typeof c === 'string' && /^\d{13}$/.test(c) && c.slice(-4) === id;
+const ptCode = id => { const c = ptid13[id]; return ptCodeOk(id, c) ? c : id; };      // what the barcode holds: the 13 digits when this computer has them, else the 4
 function ptForget(id) { if (id in ptid13) { delete ptid13[id]; savePtId(); } }
-function ptPrune() { let ch = false; for (const k of Object.keys(ptid13)) if (!(k in ptime)) { delete ptid13[k]; ch = true; } if (ch) savePtId(); }      // (a person who is gone takes the number with them)
+function ptPrune() { let ch = false; for (const k of Object.keys(ptid13)) if (!(k in ptime)) { delete ptid13[k]; ch = true; } if (ch) savePtId(true); }      // (a person who is gone takes the number with them)
+const b64 = u => btoa(String.fromCharCode(...u)), unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function ptKey(pass, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function ptEncrypt(obj, pass) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), key = await ptKey(pass, salt);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+  return { v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
+}
+async function ptDecrypt(env, pass) {                                  // throws when the passphrase is wrong (AES-GCM checks it)
+  const key = await ptKey(pass, unb64(env.salt));
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.ct))));
+}
+let ptSealT = null;
+function ptidChanged() { if (!PT_CRYPTO || !ptPass()) return; clearTimeout(ptSealT); ptSealT = setTimeout(ptidSeal, 400); }      // (the numbers changed: seal them again and send)
+async function ptidSeal() {
+  const pass = ptPass(); if (!pass || !PT_CRYPTO) return;
+  const ids = {}; for (const k of Object.keys(ptid13)) if (k in ptime && ptCodeOk(k, ptid13[k])) ids[k] = ptid13[k];      // (only people who still exist)
+  try { ptidEnv = await ptEncrypt({ ids }, pass); cloudLs(LS_PTENV, ptidEnv); ptKeyOk = true; cloudTouch('ptid'); } catch (_) {}
+  ptKeyPaint();
+}
+async function ptidOpen() {                                            // the cloud copy arrived: read it with the passphrase, add what this computer did not have
+  const pass = ptPass(); if (!pass || !ptidEnv || !PT_CRYPTO) { ptKeyPaint(); return; }
+  try {
+    const d = await ptDecrypt(ptidEnv, pass), ids = d && d.ids && typeof d.ids === 'object' ? d.ids : {}; let changed = false, extra = false;
+    for (const [k, v] of Object.entries(ids)) if (ptCodeOk(k, v) && ptid13[k] !== v) { ptid13[k] = v; changed = true; }
+    for (const k of Object.keys(ptid13)) if (k in ptime && ptCodeOk(k, ptid13[k]) && ids[k] !== ptid13[k]) extra = true;      // this computer knows numbers the cloud copy does not
+    ptKeyOk = true; if (changed) savePtId(true);
+    if (extra) ptidChanged();
+    if (changed) { try { renderEmpBox(); render(); } catch (_) {} }
+  } catch (_) { ptKeyOk = false; }
+  ptKeyPaint();
+}
+async function ptSetPass(pass, change) {                               // -> 'ok' | 'short' | 'wrong' | 'nocrypto'; change = a new passphrase replaces the old one (this computer's numbers are sealed again)
+  if (!PT_CRYPTO) return 'nocrypto';
+  if (pass.length < 6) return 'short';
+  if (ptidEnv && !change) { try { await ptDecrypt(ptidEnv, pass); } catch (_) { return 'wrong'; } }
+  try { localStorage.setItem(LS_PTKEY, pass); } catch (_) {}
+  if (ptidEnv && !change) await ptidOpen(); else await ptidSeal();
+  ptKeyPaint(); return 'ok';
+}
 const nameOfEmp = id => roster[id] || (ptime[id] && ptime[id].name) || '';
 const isKnownEmp = id => id in roster || id in ptime;
 const EMP8_RE = /^\d{8}$/;
@@ -3815,7 +3884,7 @@ $('ptDelAll').addEventListener('click', async () => {                      // th
 });
 function renderEmpBox() {
   if (!$('ptDlg').open) return;                                            // only drawn while the Part-Time window is open
-  ptPrune();
+  ptPrune(); ptKeyPaint();
   const nm = state.emp ? nameOfEmp(state.emp) : '';
   $('rpWho').textContent = state.emp ? T('ผู้จัดตอนนี้: ') + state.emp + (nm ? ' · ' + nm : '') : T('ยังไม่มีผู้จัด');
   $('rpWhoClr').hidden = !state.emp;
@@ -3840,6 +3909,47 @@ function renderEmpBox() {
   });
 }
 $('rpWhoClr').addEventListener('click', () => { state.emp = null; save(); render(); });
+/* the team passphrase of the Part-Time ID card numbers (see ptid13): a row under the add form says where things stand, its button opens a small window */
+function ptKeyState() {
+  if (!cloudQ || cloudQ.status() === 'off') return 'hidden';              // no team database for this page: nothing is shared, so nothing to protect with a passphrase
+  if (!PT_CRYPTO) return 'nocrypto';
+  if (!ptPass()) return ptidEnv ? 'locked' : 'off';
+  return ptKeyOk === false ? 'wrong' : 'on';
+}
+const PT_KEY_TXT = {
+  off: 'เลขบัตร 13 หลักอยู่ในเครื่องนี้เท่านั้น — ตั้งรหัสผ่านทีมเพื่อซิงก์ข้ามเครื่อง (เข้ารหัส)',
+  locked: 'มีเลขบัตร 13 หลักจากเครื่องอื่น (เข้ารหัสไว้) — ใส่รหัสผ่านทีมเพื่ออ่าน',
+  wrong: 'รหัสผ่านทีมไม่ตรงกับที่ซิงก์ไว้ — ใส่ใหม่',
+  on: 'เลขบัตร 13 หลักซิงก์ข้ามเครื่องแล้ว (เข้ารหัส)',
+  nocrypto: 'เบราว์เซอร์นี้เข้ารหัสไม่ได้ — เลขบัตร 13 หลักอยู่ในเครื่องนี้เท่านั้น' };
+const PT_KEY_BTN = { off: 'ตั้งรหัสผ่านทีม', locked: 'ใส่รหัสผ่านทีม', wrong: 'ใส่รหัสผ่านทีม', on: 'เปลี่ยนรหัสผ่านทีม' };
+function ptKeyPaint() {
+  const row = $('ptKeyRow'); if (!row) return;
+  const s = ptKeyState(); row.hidden = s === 'hidden'; if (s === 'hidden') return;
+  row.dataset.state = s; $('ptKeyTxt').textContent = T(PT_KEY_TXT[s]);
+  const b = $('ptKeyBtn'); b.hidden = s === 'nocrypto'; if (!b.hidden) b.textContent = T(PT_KEY_BTN[s]);
+}
+let keyMode = 'off';
+const keySay = t => { $('keyMsg').textContent = T(t); };
+function openKeyDlg() {
+  keyMode = ptKeyState(); if (keyMode === 'hidden' || keyMode === 'nocrypto') return;
+  $('keyTitle').textContent = T(PT_KEY_BTN[keyMode]); $('keyIn').value = ''; $('keyMsg').textContent = '';
+  $('keyReset').hidden = !(keyMode === 'locked' || keyMode === 'wrong');      // forgot it: start again with a new one (what this computer knows is sealed with it)
+  $('keyDlg').showModal(); $('keyIn').focus();
+}
+async function keyGo(change) {
+  const r = await ptSetPass($('keyIn').value, change);
+  if (r === 'ok') { $('keyDlg').close(); toast(T('ตั้งรหัสผ่านทีมแล้ว — เลขบัตร 13 หลักซิงก์ข้ามเครื่องแล้ว')); renderEmpBox(); }
+  else keySay(r === 'short' ? 'รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)' : r === 'wrong' ? 'รหัสผ่านไม่ตรงกับที่ทีมตั้งไว้' : 'เบราว์เซอร์นี้เข้ารหัสไม่ได้');
+}
+$('ptKeyBtn').addEventListener('click', openKeyDlg);
+$('keyOk').addEventListener('click', () => keyGo(keyMode === 'on'));
+$('keyReset').addEventListener('click', async () => {
+  if ($('keyIn').value.length < 6) { keySay('รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)'); return; }
+  if (await ask('ตั้งรหัสผ่านทีมใหม่?\nเลขบัตรที่ซิงก์ไว้ด้วยรหัสเดิมและไม่ได้อยู่ในเครื่องนี้จะหายไป (ชื่อ Part-Time ไม่หาย) — เครื่องอื่นต้องใส่รหัสผ่านใหม่')) keyGo(true);
+});
+$('keyNo').addEventListener('click', () => $('keyDlg').close());
+$('keyIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('keyOk').click(); } });
 $('ptOpen').addEventListener('click', () => openPtDlg());
 $('ptClose').addEventListener('click', () => $('ptDlg').close());
 /* the Part-Time card: name, barcode and number, 2 cards across an A4 page */
@@ -4627,6 +4737,23 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เลือก', 'Select', 'ရွေးရန်'],
   ['บาร์โค้ด 13 หลัก', 'Barcode: 13 digits', 'ဘားကုဒ် ၁၃ လုံး'],
   ['13 หลัก', '13-digit', '၁၃ လုံး'],
+  ['เลขบัตร 13 หลักอยู่ในเครื่องนี้เท่านั้น — ตั้งรหัสผ่านทีมเพื่อซิงก์ข้ามเครื่อง (เข้ารหัส)', '13-digit ID numbers stay on this computer only — set a team passphrase to sync them between computers (encrypted)', 'မှတ်ပုံတင်နံပါတ် ၁၃ လုံးကို ဤကွန်ပျူတာတွင်သာ သိမ်းထားသည် — ကွန်ပျူတာများအကြား ထပ်တူပြုရန် အဖွဲ့စကားဝှက် သတ်မှတ်ပါ (ကုဒ်ဝှက်ထားသည်)'],
+  ['มีเลขบัตร 13 หลักจากเครื่องอื่น (เข้ารหัสไว้) — ใส่รหัสผ่านทีมเพื่ออ่าน', 'There are 13-digit ID numbers from another computer (encrypted) — enter the team passphrase to read them', 'အခြားကွန်ပျူတာမှ မှတ်ပုံတင်နံပါတ် ၁၃ လုံး (ကုဒ်ဝှက်ထား) ရှိသည် — ဖတ်ရန် အဖွဲ့စကားဝှက် ထည့်ပါ'],
+  ['รหัสผ่านทีมไม่ตรงกับที่ซิงก์ไว้ — ใส่ใหม่', 'The team passphrase does not match the synced one — enter it again', 'အဖွဲ့စကားဝှက်သည် ထပ်တူပြုထားသည်နှင့် မကိုက်ညီပါ — ပြန်ထည့်ပါ'],
+  ['เลขบัตร 13 หลักซิงก์ข้ามเครื่องแล้ว (เข้ารหัส)', '13-digit ID numbers are synced between computers (encrypted)', 'မှတ်ပုံတင်နံပါတ် ၁၃ လုံးကို ကွန်ပျူတာများအကြား ထပ်တူပြုပြီး (ကုဒ်ဝှက်ထား)'],
+  ['เบราว์เซอร์นี้เข้ารหัสไม่ได้ — เลขบัตร 13 หลักอยู่ในเครื่องนี้เท่านั้น', 'This browser cannot encrypt — the 13-digit ID numbers stay on this computer only', 'ဤဘရောက်ဇာသည် ကုဒ်ဝှက်၍ မရပါ — မှတ်ပုံတင်နံပါတ် ၁၃ လုံးကို ဤကွန်ပျူတာတွင်သာ သိမ်းသည်'],
+  ['ตั้งรหัสผ่านทีม', 'Set team passphrase', 'အဖွဲ့စကားဝှက် သတ်မှတ်ရန်'],
+  ['ใส่รหัสผ่านทีม', 'Enter team passphrase', 'အဖွဲ့စကားဝှက် ထည့်ရန်'],
+  ['เปลี่ยนรหัสผ่านทีม', 'Change team passphrase', 'အဖွဲ့စကားဝှက် ပြောင်းရန်'],
+  ['เลขบัตรประชาชนจะถูกเข้ารหัสด้วยรหัสผ่านนี้ในเครื่อง ก่อนส่งขึ้นฐานข้อมูลทีม — ทุกเครื่องที่ใส่รหัสผ่านเดียวกันจะอ่านเลขได้เหมือนกัน คนอื่นอ่านไม่ได้ (ฐานข้อมูลทีมเปิดให้อ่านได้กว้าง จึงไม่ส่งเลขบัตรแบบไม่เข้ารหัส) · ลืมรหัสผ่านแล้วกู้ไม่ได้ ต้องตั้งใหม่', 'The ID-card numbers are encrypted in this computer with this passphrase before they go to the team database — every computer that types the same passphrase reads the same numbers, nobody else can (the team database can be read widely, so the numbers are never sent unencrypted) · a forgotten passphrase cannot be recovered, set a new one', 'မှတ်ပုံတင်နံပါတ်များကို အဖွဲ့ဒေတာဘေ့စ်သို့ မပို့မီ ဤစကားဝှက်ဖြင့် ကွန်ပျူတာထဲတွင် ကုဒ်ဝှက်မည် — စကားဝှက်တူသော ကွန်ပျူတာတိုင်း နံပါတ်တူတူ ဖတ်နိုင်ပြီး အခြားသူ ဖတ်၍မရပါ (အဖွဲ့ဒေတာဘေ့စ်ကို ကျယ်ကျယ်ဖတ်နိုင်သဖြင့် နံပါတ်ကို ကုဒ်မဝှက်ဘဲ မပို့ပါ) · စကားဝှက်မေ့လျှင် ပြန်ယူ၍မရ၊ အသစ်ပြန်သတ်မှတ်ပါ'],
+  ['รหัสผ่านทีม (อย่างน้อย 6 ตัว)', 'Team passphrase (at least 6 characters)', 'အဖွဲ့စကားဝှက် (အနည်းဆုံး ၆ လုံး)'],
+  ['รหัสผ่านทีม', 'Team passphrase', 'အဖွဲ့စကားဝှက်'],
+  ['ตั้งรหัสผ่านใหม่ (ทิ้งเลขเดิมที่ซิงก์ไว้)', 'Set a new passphrase (drop the numbers synced before)', 'စကားဝှက်အသစ် သတ်မှတ်ရန် (ယခင်ထပ်တူပြုထားသော နံပါတ်များ ပယ်ရန်)'],
+  ['รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)', 'Passphrase too short (at least 6 characters)', 'စကားဝှက် တိုလွန်းသည် (အနည်းဆုံး ၆ လုံး)'],
+  ['รหัสผ่านไม่ตรงกับที่ทีมตั้งไว้', 'The passphrase does not match the one the team set', 'စကားဝှက်သည် အဖွဲ့သတ်မှတ်ထားသည်နှင့် မကိုက်ညီပါ'],
+  ['เบราว์เซอร์นี้เข้ารหัสไม่ได้', 'This browser cannot encrypt', 'ဤဘရောက်ဇာသည် ကုဒ်ဝှက်၍ မရပါ'],
+  ['ตั้งรหัสผ่านทีมแล้ว — เลขบัตร 13 หลักซิงก์ข้ามเครื่องแล้ว', 'Team passphrase set — the 13-digit ID numbers are now synced between computers', 'အဖွဲ့စကားဝှက် သတ်မှတ်ပြီး — မှတ်ပုံတင်နံပါတ် ၁၃ လုံးကို ကွန်ပျူတာများအကြား ထပ်တူပြုပြီး'],
+  ['ตั้งรหัสผ่านทีมใหม่?\nเลขบัตรที่ซิงก์ไว้ด้วยรหัสเดิมและไม่ได้อยู่ในเครื่องนี้จะหายไป (ชื่อ Part-Time ไม่หาย) — เครื่องอื่นต้องใส่รหัสผ่านใหม่', 'Set a new team passphrase?\nID numbers synced with the old passphrase that are not on this computer will be lost (Part-Time names stay) — other computers must enter the new passphrase', 'အဖွဲ့စကားဝှက်အသစ် သတ်မှတ်မလား?\nစကားဝှက်အဟောင်းဖြင့် ထပ်တူပြုထားပြီး ဤကွန်ပျူတာတွင် မရှိသော နံပါတ်များ ပျောက်မည် (Part-Time အမည်များ မပျောက်) — အခြားကွန်ပျူတာများ စကားဝှက်အသစ် ထည့်ရမည်'],
   ['ลบข้อมูลทั้งหมด', 'Delete all data', 'ဒေတာအားလုံး ဖျက်ရန်'],
   ['ใส่เลขบัตรประชาชน 13 หลักของคนนี้ (หรือ 4 ตัวท้าย)', 'Enter this person\'s 13-digit ID-card number (or its last 4 digits)', 'ဤသူ၏ မှတ်ပုံတင်နံပါတ် ၁၃ လုံး ထည့်ပါ (သို့မဟုတ် နောက်ဆုံး ၄ လုံး)'],
   ['ใส่เลขบัตรประชาชน 13 หลัก (หรือ 4 ตัวท้าย)', 'Enter the 13-digit ID-card number (or its last 4 digits)', 'မှတ်ပုံတင်နံပါတ် ၁၃ လုံး ထည့်ပါ (သို့မဟုတ် နောက်ဆုံး ၄ လုံး)'],
@@ -5084,6 +5211,7 @@ const CLOUD_SETS = {
   parttime: { get: () => ptime, empty: () => !Object.keys(ptime).length, set: v => { ptime = v && typeof v === 'object' ? v : {}; cloudLs(LS_PT, ptime); } },
   trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
   sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
+  ptid:     { get: () => ptidEnv, empty: () => !ptidEnv, set: v => { ptidEnv = v && v.ct && v.iv && v.salt ? v : null; cloudLs(LS_PTENV, ptidEnv || undefined); ptKeyOk = null; ptidOpen(); } },      // the Part-Time ID card numbers, ENCRYPTED (only ciphertext is ever in the team database)
 };
 cloudQ = (() => {
   let cfg = null, busy = false, again = false, timer = null, lastRun = 0, bigWarned = false, st = { kind: 'off', at: 0 };
@@ -5166,6 +5294,8 @@ cloudQ = (() => {
   if (CLOUD_CONFIG && !CLOUD_BLOCKED) { api.configure(CLOUD_CONFIG); schedule(1500); }
   return api;
 })();
+
+if (ptPass() && ptidEnv) ptidOpen();      // the encrypted copy this computer already holds: does its passphrase still open it? (a changed passphrase shows as "wrong" at once, not only after the next pull)
 
 /* test/debug hook */
 window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg }) };
