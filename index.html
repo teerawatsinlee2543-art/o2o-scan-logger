@@ -4336,7 +4336,8 @@ function slotStyle(time) {
 function sheetHtml(r, r2) {                       // r2: undefined = the same order on both slips; null = nothing on the bottom slip; a row = another order on the bottom slip
   const slipOf = r => {
   // the picker is shown by NAME, never by the 4-digit badge number: the roster nickname, else the name the person has now (roster / Part-Time), else the name saved with the scan — blank when nobody knows the name
-  const pk = nickOf(r.emp) || nameOfEmp(r.emp) || r.name || '', picker = /^\d+$/.test(pk) ? '' : pk, inf = orderInfo[r.order] || {}, nm = inf.name || '';
+  // a Part-Time picker is printed as "บิว / T." (T. = temporary), so the slip tells at a glance that it was not picked by regular staff
+  const pk = nickOf(r.emp) || nameOfEmp(r.emp) || r.name || '', pt = !(r.emp in roster) && (r.emp in ptime), picker = /^\d+$/.test(pk) ? '' : pk + (pk && pt ? ' / T.' : ''), inf = orderInfo[r.order] || {}, nm = inf.name || '';
   return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
