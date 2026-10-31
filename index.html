@@ -593,6 +593,10 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rphead b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rpnote{min-height:20px;margin-bottom:6px;font-size:13px;color:var(--pt);opacity:.9}
 .rpbox{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;gap:14px;overflow:auto}
+.rpnote.ok,.rpnote.bad,.rpnote.wait{display:inline-block;align-self:flex-start;max-width:100%;padding:2px 12px;border-radius:99px;font-weight:700;opacity:1}      /* what the sheet knows about the order on show */
+.rpnote.ok{background:#e3f6ea;color:#17683d}
+.rpnote.bad{background:#fde3e3;color:#b42318}
+.rpnote.wait{background:#fff3cd;color:#7a4b00}
 .rppg{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:100%}
 .rppgcap{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 12px;border-radius:99px;background:rgba(255,255,255,.75);color:var(--pt);font-size:12px;font-weight:700}
 .rppg.sel .rppgcap{background:var(--pt);color:#fff}
@@ -3572,9 +3576,10 @@ function fitRpView() {
   const s = one ? Math.min(cw / 794, (box.clientHeight - 26) / 1122, 1.25) : Math.min(cw / 794, 1);      // one page: the whole page fits the box; several: each is as wide as the box and the box scrolls
   ws.forEach(w => { w.style.width = Math.floor(794 * s) + 'px'; w.style.height = Math.floor(1122 * s) + 'px'; w.firstElementChild.style.transform = `scale(${s})`; });
 }
-/* the preview shows the pages the four fields have in hand, put together the way they will be printed: field 1 = the latest order (the same order on both slips), field 2 = the latest page of two different orders,
-   field 3 = every waiting order on a page of its own, field 4 = the waiting orders two to a page. An order that the sheet does not know (the red alert) is not shown; a page whose data is still being fetched shows a placeholder. */
-let rpSel = null, rpShown = [];                        // the page the green print button prints · the pages on show
+/* the preview shows ONE page — the page of the order scanned last (or the one picked in the list), put together the way it will be printed: field 1 / 3 = the order on both slips, field 2 / 4 = two different orders
+   on one page (the pair the last order belongs to). A line above it says what the sheet knows: "ข้อมูลเข้าแล้ว" once the data of the order has arrived, "กำลังค้นหา" while it is on its way, and an order that the sheet
+   does not know (the red alert) is not shown at all. */
+let rpSel = null, rpShown = [];                        // the page the green print button prints · the page on show
 const rpNoData = o => sheetUsable() && !hasInfo(o) && (sheetIdx && Date.now() - sheetIdxAt < 600000 ? !sheetIdx.has(o) : (sheetMiss.get(o) || 0) > Date.now() - 60000);
 function rpPages() {
   const pg = [], L = state.reprints;
@@ -3586,27 +3591,29 @@ function rpPages() {
 }
 function renderRpView() {
   if (!document.querySelector('.panel.purple').classList.contains('zoomed')) return;
-  const box = $('rpBox'), inList = x => state.reprints.some(r => r.order === x);
+  const box = $('rpBox'), note = $('rpNote'), inList = x => state.reprints.some(r => r.order === x);
   if (pairWait && !inList(pairWait)) pairWait = null;                        // taken out of the list again
   if (previewPair && !previewPair.every(inList)) previewPair = null;
   if (previewOrder && !inList(previewOrder)) previewOrder = null;
-  const shown = [], gone = [];
-  for (const p of rpPages()) {
-    const fresh = p.orders.some(o => { const e = state.reprints.find(x => x.order === o); return e && Date.now() - e.ts < 6000; });      // (the data of an order just scanned is still on its way; after 6 s the sheet is shown as it is, e.g. offline)
-    p.st = p.orders.every(rpNoData) ? 'gone' : (!sheetUsable() || p.orders.some(hasInfo) || !fresh) ? 'ready' : 'wait';
-    (p.st === 'gone' ? gone : shown).push(p);
-  }
-  clearTimeout(renderRpView.t); if (shown.some(p => p.st === 'wait')) renderRpView.t = setTimeout(renderRpView, 6100);
-  rpSel = (previewOrder ? shown.filter(p => p.orders.includes(previewOrder)).pop() : null) || shown[shown.length - 1] || null;
-  $('rpTitle').textContent = rpSel ? T('ตัวอย่างใบที่จะพิมพ์ — {0}', rpSel.orders.join(' + ') + (rpSel.pair && rpSel.orders.length < 2 ? ' + …' : '')) + (shown.length > 1 ? ' · ' + T('{0} หน้า', shown.length) : '') : T('ตัวอย่างใบที่จะพิมพ์');
-  $('rpPrint').disabled = !rpSel; rpShown = shown;
-  const noInfo = rpSel && !sheetUsable() && rpSel.orders.some(x => !orderInfo[x]);
-  $('rpNote').textContent = gone.length ? T('ไม่แสดง {0} ใบที่ไม่มีข้อมูลในชีต', gone.reduce((n, p) => n + p.orders.length, 0)) : noInfo ? 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet' : '';      // the note (it wraps to several lines on a phone) is set first: it takes height from the box the sheets are fitted into
-  if (!shown.length) { box.innerHTML = `<div class="rpempty">${gone.length ? xesc(T('ไม่มีใบที่แสดงได้ — ออเดอร์ที่ไม่มีข้อมูลในชีตไม่แสดงในตัวอย่าง')) : 'ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย'}</div>`; return; }
-  box.innerHTML = shown.map((p, i) => `<div class="rppg${p === rpSel ? ' sel' : ''}" data-i="${i}"><div class="rppgcap">${xesc(T('ช่อง {0} · 1 Page / {1} Order', p.f, p.pair ? 2 : 1))} · ${xesc(p.orders.join(' + '))}</div>` +
-    (p.st === 'wait' ? `<div class="rpwait">${xesc(T('กำลังค้นหาข้อมูลออเดอร์ …'))}</div>` : `<div class="rpwrap">${p.pair ? sheetHtml(reprintRow(p.orders[0]), p.orders[1] ? reprintRow(p.orders[1]) : null) : sheetHtml(reprintRow(p.orders[0]))}</div>`) + '</div>').join('');
+  const pages = rpPages(), p = (previewOrder ? pages.filter(x => x.orders.includes(previewOrder)).pop() : null) || pages[pages.length - 1] || null;
+  clearTimeout(renderRpView.t); rpSel = null; rpShown = [];
+  note.className = 'rpnote';
+  if (!p) { $('rpTitle').textContent = T('ตัวอย่างใบที่จะพิมพ์'); $('rpPrint').disabled = true; note.textContent = ''; box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; return; }
+  const have = p.orders.filter(hasInfo).length, fresh = p.orders.some(o => { const e = state.reprints.find(x => x.order === o); return e && Date.now() - e.ts < 6000; });      // (the data of an order just scanned is still on its way; after 6 s the sheet is shown as it is, e.g. offline)
+  p.st = p.orders.every(rpNoData) ? 'gone' : (!sheetUsable() || have || !fresh) ? 'ready' : 'wait';
+  if (p.st === 'wait') renderRpView.t = setTimeout(renderRpView, 6100);
+  rpSel = p.st === 'gone' ? null : p; rpShown = rpSel ? [p] : [];
+  $('rpTitle').textContent = T('ตัวอย่างใบที่จะพิมพ์ — {0}', p.orders.join(' + ') + (p.pair && p.orders.length < 2 ? ' + …' : ''));
+  $('rpPrint').disabled = !rpSel;
+  const names = p.orders.map(o => (orderInfo[o] || {}).name).filter(Boolean).join(' / ');
+  if (p.st === 'gone') { note.className = 'rpnote bad'; note.textContent = T('ไม่มีข้อมูลออเดอร์นี้ในชีต — ไม่แสดงตัวอย่าง (ติดต่อ Admin Counter)'); }
+  else if (p.st === 'wait') { note.className = 'rpnote wait'; note.textContent = T('กำลังค้นหาข้อมูลออเดอร์ …'); }
+  else if (have) { note.className = 'rpnote ok'; note.textContent = '✓ ' + (have === p.orders.length ? T('ข้อมูลเข้าแล้ว') : T('ข้อมูลเข้าแล้ว {0}/{1} ใบ', have, p.orders.length)) + (names ? ' · ' + names : ''); }
+  else note.textContent = 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';      // the note (it wraps to several lines on a phone) is set first: it takes height from the box the sheet is fitted into
+  if (p.st === 'gone') { box.innerHTML = `<div class="rpempty">${xesc(T('ไม่มีข้อมูลออเดอร์นี้ในชีต — ไม่แสดงตัวอย่าง (ติดต่อ Admin Counter)'))}</div>`; return; }
+  box.innerHTML = `<div class="rppg sel" data-i="0"><div class="rppgcap">${xesc(T('ช่อง {0} · 1 Page / {1} Order', p.f, p.pair ? 2 : 1))} · ${xesc(p.orders.join(' + '))}</div>` +
+    (p.st === 'wait' ? `<div class="rpwait">${xesc(T('กำลังค้นหาข้อมูลออเดอร์ …'))}</div>` : `<div class="rpwrap">${p.pair ? sheetHtml(reprintRow(p.orders[0]), p.orders[1] ? reprintRow(p.orders[1]) : null) : sheetHtml(reprintRow(p.orders[0]))}</div>`) + '</div>';
   fitSheets(box); fitRpView();
-  const sel = box.querySelector('.rppg.sel'); if (sel && shown.length > 1) sel.scrollIntoView({ block: 'nearest' });
 }
 window.addEventListener('resize', fitRpView);
 /* printing: the sheet goes into a hidden page and that page is printed, so nothing of ours covers the preview; the browser's own print window is the browser's
@@ -4693,6 +4700,9 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ซิงก์สดไม่ได้ — ลองใหม่เอง', 'Live sync is not working — retrying', 'တိုက်ရိုက်ထပ်တူပြု၍မရ — ပြန်ကြိုးစားမည်'],
   ['ซิงก์สด: รายการสแกน / Assign / Re-Print สแกนที่เครื่องไหน ทุกจอเห็นเหมือนกัน (ล้างที่เครื่องหนึ่ง = หายทุกเครื่อง)', 'Live sync: scan list / Assign / Re-Print — scan on any computer and every screen shows the same (clear on one = cleared everywhere)', 'တိုက်ရိုက်ထပ်တူပြု — စကင်စာရင်း / Assign / Re-Print — ဘယ်ကွန်ပျူတာတွင်စကင်ဖတ်ဖတ် မျက်နှာပြင်အားလုံး တူညီစွာမြင်ရမည် (တစ်လုံးတွင်ရှင်းလျှင် အားလုံးပျောက်)'],
   ['ช่อง {0} · 1 Page / {1} Order', 'Field {0} · 1 Page / {1} Order', 'ကွက် {0} · 1 Page / {1} Order'],
+  ['ข้อมูลเข้าแล้ว', 'Data received', 'ဒေတာ ရရှိပြီ'],
+  ['ข้อมูลเข้าแล้ว {0}/{1} ใบ', 'Data received {0}/{1}', 'ဒေတာ ရရှိပြီ {0}/{1}'],
+  ['ไม่มีข้อมูลออเดอร์นี้ในชีต — ไม่แสดงตัวอย่าง (ติดต่อ Admin Counter)', 'This order has no data in the sheet — no preview (contact the Admin Counter)', 'ဤအော်ဒါသည် Sheet တွင် ဒေတာမရှိ — နမူနာမပြပါ (Admin Counter သို့ ဆက်သွယ်ပါ)'],
   ['{0} หน้า', '{0} pages', '{0} မျက်နှာ'],
   ['กำลังค้นหาข้อมูลออเดอร์ …', 'Looking up the order data …', 'အော်ဒါဒေတာ ရှာနေသည် …'],
   ['ไม่แสดง {0} ใบที่ไม่มีข้อมูลในชีต', 'Not shown: {0} with no data in the sheet', 'Sheet တွင် ဒေတာမရှိသော {0} ခု မပြပါ'],
