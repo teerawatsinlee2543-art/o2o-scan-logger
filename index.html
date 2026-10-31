@@ -897,7 +897,11 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .fillfull .row{margin-top:8px}
 .addbar .row{flex:1;flex-wrap:wrap;min-width:min(260px,100%)}
 .dfoot{margin-top:14px;justify-content:space-between}
-.dfoot .danger{border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.dfoot .danger{margin-left:auto;border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.dfoot .gprint{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:1px solid transparent;color:#fff;font-weight:700;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 4px 14px rgba(27,127,72,.38)}      /* the green print button, like the one in the barcode window */
+.dfoot .gprint:hover:not(:disabled){filter:brightness(1.08);border-color:transparent}
+.dfoot .gprint:disabled{opacity:.5;box-shadow:none;cursor:default}
+.dfoot .gprint svg{width:20px;height:20px;flex:none}
 .preview{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--soft);font-size:14px;line-height:1.65}
 .preview .add{color:var(--ok);font-weight:700}
 .preview .chg{color:var(--warn);font-weight:700}
@@ -1294,6 +1298,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       </div>
       <div class="row dfoot">
         <button id="rExport" type="button">ส่งออกรายชื่อ (.xlsx)</button>
+        <button id="rPrintAll" type="button" class="gprint" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg><span id="rPrintAllTxt">พิมพ์บัตรทั้งหมด</span></button>
         <button id="rClear" type="button" class="danger">ลบรายชื่อทั้งหมด</button>
       </div>
     </section>
@@ -2556,6 +2561,7 @@ function renderRoster() {
   $('rEmpty').hidden = ids.length > 0; $('rEmpty').textContent = rosterCount() ? 'ไม่พบที่ค้นหา' : 'ยังไม่มีรายชื่อ';
   $('rUndo').hidden = !hasRosterBackup();
   $('rClear').disabled = !rosterCount(); $('rExport').disabled = !rosterCount();
+  $('rPrintAll').disabled = !rosterCount(); $('rPrintAllTxt').textContent = rosterCount() ? T('พิมพ์บัตรทั้งหมด ({0} ใบ)', rosterCount()) : T('พิมพ์บัตรทั้งหมด');
 }
 
 $('btnRoster').addEventListener('click', () => { resetImport(); resetTrip(); $('rSearch').value = ''; $('tSearch').value = ''; renderRoster(); $('rFillIn').value = ''; fillShow(); $('rFillBox').open = missingFull() > 0; showTab('emp'); rosterDlg.showModal(); });
@@ -2651,6 +2657,12 @@ $('rFillGo').addEventListener('click', () => {
   const r = fillScan(); if (!r.hit.length) return;
   backupRoster(); for (const [id, full] of r.hit) rosterInfo[id] = Object.assign({}, rosterInfo[id], { full });
   saveRInfo(); $('rFillIn').value = ''; fillShow(); renderRoster(); render(); toast(T('เติมเลข 8 หลักให้ {0} คนแล้ว', r.hit.length));
+});
+$('rPrintAll').addEventListener('click', async () => {      // the barcode card of every employee of the list (the whole 8 digits where they are known), 8 cards to an A4 page
+  const ids = Object.keys(roster).sort(); if (!ids.length) return;
+  const miss = missingFull();
+  await printEmpCards(ids);
+  toast(miss ? T('พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (พิมพ์เป็น 4 หลัก)', ids.length, miss) : T('พิมพ์บัตรพนักงานประจำ {0} ใบ', ids.length));
 });
 $('rClear').addEventListener('click', async () => {
   if (!rosterCount() || !await ask(`ลบรายชื่อพนักงานทั้งหมด ${rosterCount()} คน?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
@@ -4522,6 +4534,10 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['พิมพ์บัตร {0} ใบ', 'Print {0} cards', 'ကတ် {0} ခု ပုံနှိပ်ရန်'],
   ['ยังไม่มีเลข 8 หลัก {0}', 'No 8-digit number yet {0}', 'ဂဏန်း ၈ လုံး မရှိသေးပါ {0}'],
   ['คนที่ยังไม่มีเลข 8 หลักจะพิมพ์เป็นเลข 4 หลัก — วางเลข 8 หลักที่ Update Data → รายชื่อปัจจุบัน → เติมเลข 8 หลัก หรือสแกนบัตรคนนั้น 1 ครั้ง', 'People without the 8-digit number are printed with 4 digits — paste the 8-digit numbers in Update Data → Current list → Fill in the 8 digits, or scan that person\'s badge once', 'ဂဏန်း ၈ လုံး မရှိသူများကို ၄ လုံးဖြင့် ပုံနှိပ်မည် — Update Data → လက်ရှိစာရင်း → ဂဏန်း ၈ လုံး ဖြည့်ရန် တွင် ကူးထည့်ပါ သို့မဟုတ် ထိုသူ၏ကတ်ကို တစ်ကြိမ် စကင်ဖတ်ပါ'],
+  ['พิมพ์บัตรทั้งหมด', 'Print all cards', 'ကတ်အားလုံး ပုံနှိပ်ရန်'],
+  ['พิมพ์บัตรทั้งหมด ({0} ใบ)', 'Print all cards ({0})', 'ကတ်အားလုံး ပုံနှိပ်ရန် ({0} ခု)'],
+  ['พิมพ์บัตรพนักงานประจำ {0} ใบ', 'Printing {0} employee cards', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည်'],
+  ['พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (พิมพ์เป็น 4 หลัก)', 'Printing {0} employee cards · {1} people have no 8-digit number yet (printed with 4 digits)', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည် · {1} ဦးတွင် ဂဏန်း ၈ လုံး မရှိသေး (၄ လုံးဖြင့် ပုံနှိပ်သည်)'],
   ['รหัส 4 หรือ 8 หลัก', 'ID — 4 or 8 digits', 'ကုဒ် ၄ သို့မဟုတ် ၈ လုံး'],
   ['รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก', 'The employee ID must be 4 or 8 digits', 'ဝန်ထမ်းကုဒ်သည် ဂဏန်း ၄ လုံး သို့မဟုတ် ၈ လုံး ဖြစ်ရမည်'],
   ['เติมเลข 8 หลักให้รายชื่อเดิม', 'Fill in the 8-digit numbers of the people already listed', 'စာရင်းရှိပြီးသူများ၏ ဂဏန်း ၈ လုံး ဖြည့်ရန်'],
