@@ -937,6 +937,29 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 }
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90}
 .toast.show{opacity:.96}
+/* the zone check inside the Trip tab (section ค): result tables and chips, scoped to the section */
+#zoneSec .msg{margin-top:10px;font-weight:600}
+#zoneSec .msg.err{color:var(--bad)} #zoneSec .msg.ok{color:var(--ok)}
+#zoneSec label.f{display:flex;align-items:center;gap:8px}
+#zoneSec .zbox{margin-top:12px} #zoneSec .zbox summary{cursor:pointer;font-weight:700}
+#zoneSec textarea{width:100%;min-height:260px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+#zoneSec .sum{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+#zoneSec .chip{padding:8px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+#zoneSec .chip b{font-size:20px;display:block;line-height:1.2}
+#zoneSec .chip small{color:var(--muted)}
+#zoneSec .muted{color:var(--muted)}
+#zoneSec .tag{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);margin-right:4px}
+#zoneSec .tag.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+#zoneSec .tag.ok{color:var(--ok)}
+#zoneSec .cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+#zoneSec .cmp th,#zoneSec .cmp td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+#zoneSec .cmp th:first-child,#zoneSec .cmp td:first-child{text-align:left}
+#zoneSec .tw{overflow-x:auto}
+#zoneSec .zt td{vertical-align:top}
+#zoneSec .zt th:nth-child(2),#zoneSec .zt td:nth-child(2){text-align:left}
+#zoneSec .zt select{max-width:110px}
+#zoneSec .note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn);font-size:14px}
+#zoneSec h3{margin:16px 0 6px;font-size:16px}
 </style>
 </head>
 <body>
@@ -1295,6 +1318,34 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
         <button id="tExport" type="button">ส่งออกเส้นทาง (.xlsx)</button>
         <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
       </div>
+    </section>
+    <section class="dsec" id="zoneSec">
+      <p class="dtitle"><span class="dnum">ค</span>ตรวจโซน Trip 1-20 กับออเดอร์จริง <span class="rcount">อ่านอย่างเดียว</span></p>
+      <p class="hint">ใช้ตารางโซนที่คนวางแผนไว้ (Trip 1-20) เป็นหลัก: ดูว่าออเดอร์ของไฟล์เข้าโซนไหน ออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — กด "ใช้ผลนี้เป็นเส้นทาง Trip" เพื่อใส่ลงตารางเส้นทางด้านบน ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
+      <div class="row">
+        <button id="btnSheet" class="primary" type="button">ดึงจากชีตที่เชื่อมต่อไว้</button>
+        <label class="f">วันที่ส่ง <input id="dateIn" type="date"></label>
+      </div>
+      <label class="drop" id="zDrop" for="zFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+        <b>หรือ ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์</b>
+        <small>.xlsx · .csv · .tsv · .txt</small>
+      </label>
+      <input id="zFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <div id="srcMsg" class="msg"></div>
+      <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
+      <details class="zbox"><summary>ตารางโซน Trip 1-20 (พิมพ์จากรูป — ตรวจและแก้ได้)</summary>
+        <p class="hint">1 บรรทัดต่อ 1 Trip: <code>เลข Trip [Tab] โซน / โซน / โซน</code> · ชื่อเรียกอื่นของโซนเดียวกันคั่นด้วย <code>|</code> · ชื่อในวงเล็บนับเป็นโซนเพิ่ม · ดี4 (รับหน้ากระจก) ไม่นำมาจับออเดอร์</p>
+        <textarea id="zoneIn" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:6px"><button id="btnZoneReset" type="button">คืนค่าตารางจากรูป</button></div>
+      </details>
+      <div class="row" style="margin-top:10px">
+        <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
+        <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
+        <button id="btnZone" class="primary" type="button" disabled>ตรวจโซน</button>
+      </div>
+      <div id="zoneMsg" class="msg"></div>
+      <div id="zoneOut" hidden></div>
     </section>
     </div>
 
@@ -2673,6 +2724,376 @@ $('tExport').addEventListener('click', () => {
   Object.values(tripMap).sort((a, b) => a.t.localeCompare(b.t, undefined, { numeric: true }) || a.a.localeCompare(b.a)).forEach(e => rows.push([{ v: e.t }, { v: e.a }]));
   download(buildXlsx([{ name: 'เส้นทาง Trip', widths: [16, 34], rows }]), `trip-routes_${stamp()}.xlsx`);
 });
+
+/* ---------- ค. ตรวจโซน Trip 1-20 กับออเดอร์จริง (the lane planner, inside the Trip tab) ----------
+   The zone table that somebody already keeps (Trip 1-20: roads / communities / areas) is checked against the orders of a file or of the connected sheet (read only): which orders are outside it, which Trip is reached first
+   (driving time, Google Maps / OpenStreetMap), which road / soi belongs to which Trip (learned from the orders already in a zone). "ใช้ผลนี้เป็นเส้นทาง Trip" turns the result into the area -> Trip table above (sub-district level),
+   which is what the cover sheet prints. Nothing is written to the sheet or the file; everything stays in this browser. */
+(() => {
+'use strict';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const THAI = /[฀-๿]/;
+const norm = s => String(s == null ? '' : s).toLowerCase().trim().replace(/^(เขต|แขวง|อำเภอ|ตำบล|จังหวัด|อ\.|ต\.|จ\.|khet\s|khwaeng\s|amphoe\s|tambon\s)\s*/i, '').replace(/[\s._\-,()\/\\']/g, '');
+const normH = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9฀-๿]/g, '');
+const D_EN = { 'Min Buri': 'มีนบุรี', 'Khlong Sam Wa': 'คลองสามวา', 'Khan Na Yao': 'คันนายาว', 'Bueng Kum': 'บึงกุ่ม', 'Bang Khen': 'บางเขน', 'Sai Mai': 'สายไหม', 'Saphan Sung': 'สะพานสูง',
+  'Lat Krabang': 'ลาดกระบัง', 'Nong Chok': 'หนองจอก', 'Lat Phrao': 'ลาดพร้าว', 'Bang Kapi': 'บางกะปิ', 'Wang Thonglang': 'วังทองหลาง', 'Lam Luk Ka': 'ลำลูกกา', 'Lak Si': 'หลักสี่', 'Don Mueang': 'ดอนเมือง',
+  'Chatuchak': 'จตุจักร', 'Prawet': 'ประเวศ' };
+const SD_EN = { 'Min Buri': 'มีนบุรี', 'Saen Saep': 'แสนแสบ', 'Sam Wa Tawan Tok': 'สามวาตะวันตก', 'Sam Wa Tawan Ok': 'สามวาตะวันออก', 'Bang Chan': 'บางชัน', 'Sai Kong Din': 'ทรายกองดิน', 'Sai Kong Din Tai': 'ทรายกองดินใต้',
+  'Khan Na Yao': 'คันนายาว', 'Ram Inthra': 'รามอินทรา', 'Saphan Sung': 'สะพานสูง', 'Rat Phatthana': 'ราษฎร์พัฒนา', 'Thap Chang': 'ทับช้าง', 'Khlong Kum': 'คลองกุ่ม', 'Nawamin': 'นวมินทร์', 'Nuan Chan': 'นวลจันทร์',
+  'Anusawari': 'อนุสาวรีย์', 'Tha Raeng': 'ท่าแร้ง', 'Sai Mai': 'สายไหม', 'O Ngoen': 'ออเงิน', 'Khlong Thanon': 'คลองถนน', 'Lat Krabang': 'ลาดกระบัง', 'Khlong Song Ton Nun': 'คลองสองต้นนุ่น', 'Khlong Sam Prawet': 'คลองสามประเวศ',
+  'Lam Pla Thio': 'ลำปลาทิว', 'Thap Yao': 'ทับยาว', 'Khum Thong': 'ขุมทอง', 'Lam Phak Chi': 'ลำผักชี', 'Nong Chok': 'หนองจอก', 'Krathum Rai': 'กระทุ่มราย', 'Khlong Sip': 'คลองสิบ', 'Khlong Sip Song': 'คลองสิบสอง',
+  'Khok Faet': 'โคกแฝด', 'Khu Fang Nuea': 'คู้ฝั่งเหนือ', 'Lam Toiting': 'ลำต้อยติ่ง', 'Chorakhe Bua': 'จรเข้บัว', 'Lat Phrao': 'ลาดพร้าว', 'Khlong Chan': 'คลองจั่น', 'Hua Mak': 'หัวหมาก', 'Bueng Kham Phroi': 'บึงคำพร้อย',
+  'Lam Luk Ka': 'ลำลูกกา', 'Khu Khot': 'คูคต', 'Wang Thonglang': 'วังทองหลาง' };
+const mapOf = o => new Map(Object.entries(o).map(([e, t]) => [norm(e), t]));
+const D_MAP = mapOf(D_EN), SD_MAP = mapOf(SD_EN);
+const canonD = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(เขต|อำเภอ)\s*/, '') : (D_MAP.get(norm(t)) || t); };
+const canonSd = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(แขวง|ตำบล)\s*/, '') : (SD_MAP.get(norm(t)) || t); };
+
+/* districts that touch each other (Bangkok north-east and neighbours): the "how near" of two areas that have no coordinates */
+const EDGES = [['มีนบุรี', 'คลองสามวา'], ['มีนบุรี', 'หนองจอก'], ['มีนบุรี', 'ลาดกระบัง'], ['มีนบุรี', 'สะพานสูง'], ['มีนบุรี', 'คันนายาว'], ['คลองสามวา', 'สายไหม'], ['คลองสามวา', 'คันนายาว'], ['คลองสามวา', 'หนองจอก'],
+  ['คลองสามวา', 'ลำลูกกา'], ['คันนายาว', 'บึงกุ่ม'], ['คันนายาว', 'สะพานสูง'], ['คันนายาว', 'สายไหม'], ['คันนายาว', 'บางเขน'], ['บึงกุ่ม', 'บางเขน'], ['บึงกุ่ม', 'ลาดพร้าว'], ['บึงกุ่ม', 'วังทองหลาง'], ['บึงกุ่ม', 'บางกะปิ'],
+  ['บึงกุ่ม', 'สะพานสูง'], ['บางเขน', 'สายไหม'], ['บางเขน', 'หลักสี่'], ['บางเขน', 'จตุจักร'], ['บางเขน', 'ลาดพร้าว'], ['บางเขน', 'ดอนเมือง'], ['สายไหม', 'ดอนเมือง'], ['สายไหม', 'ลำลูกกา'], ['สายไหม', 'หลักสี่'],
+  ['สะพานสูง', 'บางกะปิ'], ['สะพานสูง', 'ลาดกระบัง'], ['สะพานสูง', 'ประเวศ'], ['ลาดกระบัง', 'หนองจอก'], ['ลาดกระบัง', 'ประเวศ'], ['ลาดพร้าว', 'จตุจักร'], ['ลาดพร้าว', 'วังทองหลาง'], ['บางกะปิ', 'วังทองหลาง'],
+  ['บางกะปิ', 'ประเวศ'], ['หลักสี่', 'ดอนเมือง'], ['หลักสี่', 'จตุจักร'], ['ดอนเมือง', 'ลำลูกกา']];
+const ADJ = new Map(); for (const [a, b] of EDGES) { (ADJ.get(a) || ADJ.set(a, new Set()).get(a)).add(b); (ADJ.get(b) || ADJ.set(b, new Set()).get(b)).add(a); }
+const hopMemo = new Map();
+function hops(a, b) {                                              // number of district borders to cross, 9 = unknown district
+  if (a === b) return 0; const k = a + '>' + b; if (hopMemo.has(k)) return hopMemo.get(k);
+  let r = 9; if (ADJ.has(a) && ADJ.has(b)) { const seen = new Set([a]); let fr = [a], d = 0; while (fr.length && r === 9) { d++; const nx = []; for (const x of fr) for (const y of ADJ.get(x)) if (!seen.has(y)) { if (y === b) { r = d; break; } seen.add(y); nx.push(y); } fr = nx; } }
+  hopMemo.set(k, r); return r;
+}
+const rad = x => x * Math.PI / 180;
+const hav = (p, q) => { const dl = rad(q[0] - p[0]), dn = rad(q[1] - p[1]), a = Math.sin(dl / 2) ** 2 + Math.cos(rad(p[0])) * Math.cos(rad(q[0])) * Math.sin(dn / 2) ** 2; return 12742 * Math.asin(Math.sqrt(a)); };
+/* ---------- reading a file: .xlsx (zip + xml, read in this browser) / csv ---------- */
+async function inflateRaw(u8) { const st = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+function unzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('ไฟล์นี้ไม่ใช่ .xlsx');
+  const n = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true); const files = new Map(), dec = new TextDecoder();
+  for (let k = 0; k < n && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    files.set(dec.decode(u8.subarray(p + 46, p + 46 + nl)), { method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), lho: dv.getUint32(p + 42, true) }); p += 46 + nl + el + cl;
+  }
+  return { has: n => files.has(n), async text(name) { const f = files.get(name); if (!f) return null; const s = f.lho + 30 + dv.getUint16(f.lho + 26, true) + dv.getUint16(f.lho + 28, true); const raw = u8.subarray(s, s + f.csize); return new TextDecoder('utf-8').decode(f.method === 0 ? raw : await inflateRaw(raw)); } };
+}
+const unxml = s => s.indexOf('&') < 0 ? s : s.replace(/&(#x?[0-9a-fA-F]+|amp|lt|gt|quot|apos);/g, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[e]));
+const colIdx = L => L.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+async function readXlsx(u8) {
+  const z = unzip(u8); if (!z.has('xl/workbook.xml')) throw new Error('ไม่ใช่ไฟล์ Excel (.xlsx)');
+  const wb = await z.text('xl/workbook.xml'), rels = await z.text('xl/_rels/workbook.xml.rels');
+  const rid = (/<sheet\b[^>]*r:id="([^"]+)"/.exec(wb) || [])[1], relTag = [...rels.matchAll(/<Relationship\b[^>]*>/g)].map(m => m[0]).find(t => rid && t.includes('Id="' + rid + '"'));
+  let target = relTag && (/Target="([^"]+)"/.exec(relTag) || [])[1] || 'worksheets/sheet1.xml'; target = target.startsWith('/') ? target.slice(1) : 'xl/' + target;
+  const xml = await z.text(target); if (!xml) throw new Error('ไม่พบข้อมูลในชีตแรก');
+  const sst = []; if (z.has('xl/sharedStrings.xml')) { const sx = await z.text('xl/sharedStrings.xml'); for (const m of sx.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)) { let t = ''; for (const x of m[1].replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)) t += unxml(x[1]); sst.push(t); } }
+  const rows = [];
+  for (const rm of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+    const arr = [];
+    for (const cm of rm[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+      const at = cm[1], body = cm[2]; if (!body) continue;
+      const ref = (/\br="([A-Z]+)\d+"/.exec(at) || [])[1], t = (/\bt="([^"]+)"/.exec(at) || [])[1]; if (!ref) continue;
+      let v = ''; if (t === 'inlineStr') { v = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(x => unxml(x[1])).join(''); } else { const vm = /<v>([\s\S]*?)<\/v>/.exec(body); v = vm ? vm[1] : ''; v = t === 's' ? (sst[+v] || '') : unxml(v); }
+      arr[colIdx(ref)] = v;
+    }
+    rows.push(Array.from(arr, x => (x == null ? '' : String(x).trim())));
+  }
+  return rows;
+}
+function splitLine(line, d) { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const c = line[i]; if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === '"') q = true; else if (c === d) { out.push(cur.trim()); cur = ''; } else cur += c; } out.push(cur.trim()); return out; }
+function parseDelimited(text) { const lines = text.split(/\r?\n/).filter(l => l.trim()); const smp = lines.slice(0, 5).join('\n'); const d = ['\t', ',', ';', '|'].map(x => [x, smp.split(x).length]).sort((a, b) => b[1] - a[1])[0][0]; return lines.map(l => splitLine(l, d)); }
+async function fileToRows(file) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  if (u8[0] === 0x50 && u8[1] === 0x4B) return readXlsx(u8);
+  if (u8[0] === 0xD0 && u8[1] === 0xCF) throw new Error('ไฟล์ .xls แบบเก่าอ่านไม่ได้ — Save As เป็น .xlsx');
+  let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^﻿/, ''); } catch (_) { text = new TextDecoder('windows-874').decode(u8); }
+  return parseDelimited(text);
+}
+
+const firstDate = s => { const p = String(s || '').split(/\s+-\s+/)[0].trim(); return p; };
+function waveOf(t) {
+  const m = /(\d{1,2}):(\d{2})(?::\d{2})?\s*-\s*(\d{1,2}):(\d{2})/.exec(String(t || '')); if (!m) return 'อื่น ๆ';
+  const h = +m[1]; return h < 8 ? '05:00-08:00' : h < 12 ? '08:00-12:00' : h < 16 ? '12:00-16:00' : h < 20 ? '16:00-20:00' : 'อื่น ๆ';
+}
+const WAVES = ['05:00-08:00', '08:00-12:00', '12:00-16:00', '16:00-20:00', 'อื่น ๆ'];
+const KEYS = { no: ['ordernumber'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'], addr: ['shippingaddress'], zip: ['postcode'] };
+function rowsToOrders(rows) {
+  const hi = rows.findIndex(r => r.some(c => normH(c) === 'ordernumber')); if (hi < 0) throw new Error('ไม่พบหัวคอลัมน์ "Order Number" — ต้องเป็นไฟล์ออเดอร์ของ Call Center');
+  const head = rows[hi].map(normH), at = k => head.map((h, i) => KEYS[k].includes(h) ? i : -1).filter(i => i >= 0), I = {}; for (const k of Object.keys(KEYS)) I[k] = at(k);
+  if (!I.sd.length && !I.d.length) throw new Error('ไม่พบคอลัมน์ "Sub District" / "District" ในไฟล์');
+  const get = (r, k) => { for (const i of I[k]) if (r[i]) return r[i]; return ''; };
+  const out = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i], no = get(r, 'no'); if (!no) continue;
+    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype'), addr: get(r, 'addr'), zip: get(r, 'zip') });
+  }
+  return out;
+}
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+const hooks = { fetch: (u, o) => fetch(u, o) };
+async function gviz(cfg, tq) {
+  const u = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq?gid=${cfg.gid}&tqx=out:csv&tq=${encodeURIComponent(tq)}`;
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
+  try { const r = await hooks.fetch(u, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' }); if (!r.ok) throw new Error('HTTP ' + r.status); const text = await r.text(); if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared'); return text; } finally { clearTimeout(timer); }
+}
+async function ordersFromSheet(dateText) {
+  let cfg = null; try { cfg = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); } catch (_) {}
+  if (!cfg || !cfg.id) throw new Error('ยังไม่ได้เชื่อมต่อชีตในโปรแกรมสแกน — เปิด Update Data → ฐานข้อมูลออเดอร์ ก่อน (หน้านี้ใช้ชีตที่เชื่อมต่อไว้ที่นั่น) หรือใช้ไฟล์แทน');
+  const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
+  const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
+  if (!cols.no || !cols.date || !(cols.sd || cols.d)) throw new Error('ชีตไม่มีคอลัมน์ Order Number / Original Expected Date / Sub District');
+  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), esc1 = dateText.replace(/'/g, "''");
+  const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${cols.date} contains '${esc1}'`);
+  const rows = parseDelimited(text); if (!rows.length) return [];
+  const fake = [want.map(k => KEYS[k][0])].concat(rows.slice(1));           // (the first row of the answer is the column labels)
+  return rowsToOrders(fake.map(r => r.slice()));
+}
+
+const dateNum = s => { const m = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s); return m ? +m[3] * 10000 + (MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()) + 1) * 100 + +m[1] : 0; };
+let geo = new Map();
+const S = { orders: [], src: '' };
+const say = (t, k) => { const e = $('srcMsg'); e.className = 'msg' + (k ? ' ' + k : ''); e.textContent = t; };
+/* ---------- the zone table that somebody already keeps (Trip 1-20): which orders are outside it, and which Trip is the nearest for them ---------- */
+const LS_ZONES = 'o2o-lane-zones-v1';
+const DEFAULT_ZONES = [
+  'ดี4\tจอดหน้ากระจกทั้งหมด (ดีเฮง, สมชาย, เอกบุรพา, ละมุนลิ้น)',
+  '1\tนิมิตรใหม่ | นิมิตใหม่ | นิมิใหม่ / ประชาร่วมใจ / ไมตรีจิต',
+  '2\tหทัยราษฎร์ / ราษฎร์นิมิตร | ราษฎร์นิมิต',
+  '3\tพระยาสุเรนทร์',
+  '4\tรามอินทรา',
+  '5\tร่มเกล้า / บึงขวาง / คุ้มเกล้า',
+  '6\tรามคำแหง',
+  '7\tเสรีไทย | เสรีไท / สวนสยาม (บ้านไร่, ทรงวิทย์)',
+  '8\tสีหะบุรานุกิจ / ราษฎร์อุทิศ | ราษอุทิศ | ราฏร์อุทิศ',
+  '9\tราษฎร์พัฒนา / เคหะร่มเกล้า',
+  '10\tแฟชั่น | แฟชั่นไอส์แลนด์ / ปัญญา / คู้บอน / บางชัน',
+  '11\tนวมินทร์ / นวลจันทร์ / ประเสริฐมนูกิจ / ลาดพร้าว',
+  '12\tสุขา 5 | สุขาภิบาล 5 / ท่าแร้ง / เทพรักษ์',
+  '13\tคู้บอน 27 / เลียบกาญจนา',
+  '14\tไทยรามัญ / จตุโชติ / หนองระแหง',
+  '15\tทับช้าง / สะพานสูง / ศรีนครินทร์',
+  '16\tสุเหร่าคลองหนึ่ง | สุเหร่า / เจริญพัฒนา',
+  '17\tซาฟารี / เลียบคลองสอง / เลกาซี',
+  '18\tวัชรพล / ถนอมมิตร',
+  '19\tสุวินทวงศ์ | สุวินทวงค์ / CP ทุกโรง',
+  '20\tพี่แดง',
+].join('\n');
+const fz = s => String(s == null ? '' : s).toLowerCase().replace(/[\s._\-,()\/\\'"\u200b\u200c\u200d]/g, '').replace(/[ะ์่้๊๋]/g, '').replace(/ฎ/g, 'ฏ');      // spelling-tolerant: no spaces, no sara a / thanthakhat / tone marks, ฎ = ฏ
+const nk = s => fz(String(s == null ? '' : s).trim().replace(/^(ถนน|ซอย|แขวง|เขต|ถ\.|ซ\.)/, ''));
+const WEAK = new Set(['รามอินทรา', 'รามคำแหง', 'ลาดพร้าว', 'นวมินทร์', 'สุวินทวงศ์', 'สุวินทวงค์', 'เสรีไทย', 'เสรีไท', 'ศรีนครินทร์', 'สะพานสูง'].map(nk));      // big roads / districts that pass through many areas: only used when nothing more specific is found
+function parseZones(text) {
+  const trips = [], errs = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const m = /^\s*(ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)\s*(.+)$/.exec(line); if (!m) { errs.push(line.trim().slice(0, 30)); continue; }
+    const label = m[1].replace(/\s+/g, ''), num = /^\d+$/.test(label) ? +label : null, extras = [];
+    const base = m[2].replace(/[(（]([^)）]*)[)）]/g, (_, x) => { x.split(/[,，]/).forEach(s => s.trim() && extras.push(s.trim())); return ' '; });
+    const zones = base.split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean).concat(extras).map(z => ({ raw: z, names: z.split('|').map(s => s.trim()).filter(Boolean) }));
+    trips.push({ label, num, line: line.trim(), zones, special: num === null });
+  }
+  return { trips, errs };
+}
+function buildMatcher(zt) {
+  const kws = [], kmap = new Map(), dups = [];
+  for (const t of zt.trips) if (!t.special) for (const z of t.zones) for (const nm of z.names) {
+    const k = nk(nm); if (k.length < 2) continue;
+    if (kmap.has(k)) { if (kmap.get(k) !== t.num) dups.push(`"${nm}" อยู่ทั้ง Trip ${kmap.get(k)} และ ${t.num} (ใช้ Trip ${kmap.get(k)})`); continue; }
+    kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k) });
+  }
+  kws.sort((a, b) => b.k.length - a.k.length);
+  return { kws, kmap, dups };
+}
+function matchOrder(o, M) {                                          // -> {trip, how} ; how: road (a zone name in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
+  const sdk = nk(o.sd), dk = nk(o.d);
+  let text = fz(o.addr);
+  for (const x of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(o.zip || '')]) if (x && x.length > 1) text = text.split(x).join('|');      // the administrative words of the address are not road names
+  for (const w of M.kws) if (!w.weak && text.includes(w.k)) return { trip: w.trip, how: 'road' };
+  if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };
+  for (const w of M.kws) if (w.weak && text.includes(w.k)) return { trip: w.trip, how: 'weak' };
+  if (M.kmap.has(dk)) return { trip: M.kmap.get(dk), how: 'weak' };
+  return { trip: null, how: '' };
+}
+const Z = { groups: new Map(), zt: null, rows: [], day: '' };
+const roadBase = r => String(r).replace(/^(ถ\.|ซ\.)/, '').replace(/[0-9\-\/].*$/, '');
+function roadHint(r) { const v = Z.roadVotes && Z.roadVotes.get(roadBase(r)); if (!v || !v.size) return ''; let b = null; for (const [t, n] of v) if (!b || n > b[1]) b = [t, n]; return ' → Trip ' + b[0]; }
+function roadsOf(addr) {                                                // road / soi / village names written in an address (no house numbers): what is missing from the table is told by these
+  const s = String(addr || ''), res = new Set(); let m;
+  const re = /(ถนน|ถ\.|ซอย|ซ\.|หมู่บ้าน|ม\.บ\.|โครงการ)\s*([^\s,\/()]{2,28})/g;
+  while ((m = re.exec(s))) { const nm = m[2].replace(/^[0-9\-\/]+$/, ''); if (!nm || /^\d/.test(nm) && nm.length < 4) continue; const kind = /^(ถนน|ถ\.)$/.test(m[1]) ? 'ถ.' : /^(ซอย|ซ\.)$/.test(m[1]) ? 'ซ.' : ''; res.add(kind + nm.replace(/^(\d)/, '$1')); if (res.size >= 3) break; }
+  return res;
+}
+/* Areas that no Trip of the table serves yet: where is the nearest area that a Trip DOES serve, measured by DRIVING time on the road? The Trip that looks after that nearest area is reached first, so the area goes with it.
+   ROAD = the centre of every sub-district of the orders file (OpenStreetMap place search) and the driving time / distance between all of them (OpenStreetMap road network, free-flow, measured once).
+   GMAP = the same pairs measured on Google Maps (typical traffic, driving): where a pair is here it replaces the OSM figure. Nothing here comes from a customer: only area names and numbers. */
+const ROAD = {"keys":["มีนบุรี|มีนบุรี","คันนายาว|คันนายาว","แสนแสบ|มีนบุรี","สามวาตะวันตก|คลองสามวา","คลองกุ่ม|บึงกุ่ม","ออเงิน|สายไหม","สายไหม|สายไหม","คลองสองต้นนุ่น|ลาดกระบัง","อนุสาวรีย์|บางเขน","ทรายกองดินใต้|คลองสามวา","สามวาตะวันออก|คลองสามวา","ทรายกองดิน|คลองสามวา","คลองถนน|สายไหม","ลำปลาทิว|ลาดกระบัง","กระทุ่มราย|หนองจอก","บึงคำพร้อย|ลำลูกกา","คลองจั่น|บางกะปิ","หัวหมาก|บางกะปิ","โคกแฝด|หนองจอก","คลองสามประเวศ|ลาดกระบัง","ลาดกระบัง|ลาดกระบัง","ตลาดบางเขน|หลักสี่","หนองจอก|หนองจอก","ดอนเมือง|ดอนเมือง","คลองเจ้าคุณสิงห์|วังทองหลาง","ลาดสวาย|ลำลูกกา","ทุ่งวัดดอน|สาทร","บางชัน|คลองสามวา","นวลจันทร์|บึงกุ่ม","รามอินทรา|คันนายาว","จรเข้บัว|ลาดพร้าว","ทับช้าง|สะพานสูง","สะพานสูง|สะพานสูง","ราษฎร์พัฒนา|สะพานสูง","ท่าแร้ง|บางเขน","นวมินทร์|บึงกุ่ม","ลาดพร้าว|ลาดพร้าว","ลำผักชี|หนองจอก"],"ll":[[13.81247,100.72835],[13.7954,100.69127],[13.82607,100.75932],[13.88772,100.72227],[13.78532,100.66866],[13.90128,100.66533],[13.92126,100.65785],[13.75457,100.72413],[13.87564,100.59695],[13.83709,100.77009],[13.88891,100.73532],[13.84522,100.74348],[13.90535,100.62219],[13.75819,100.79976],[13.81174,100.93165],[13.93254,100.74967],[13.77557,100.64938],[13.75193,100.64519],[13.85374,100.82874],[13.75472,100.75393],[13.72233,100.75291],[13.87349,100.58088],[13.859,100.86404],[13.92265,100.601],[13.78653,100.61342],[13.95385,100.6842],[13.71245,100.52144],[13.81909,100.69907],[13.83488,100.63771],[13.83892,100.66194],[13.83959,100.5992],[13.73923,100.69277],[13.76846,100.68542],[13.78469,100.70558],[13.85838,100.64089],[13.80537,100.64301],[13.80366,100.59086],[13.78428,100.8285]],"min":[[0,6.9,6.6,13.1,11.7,20.2,26.7,12.5,20.8,9.5,17.9,10.6,23.9,16.3,19.2,20.8,15.9,18.4,16.8,14.3,13.7,22.7,18.5,27.5,21.4,23.8,34.6,7.2,14.7,12.1,19.9,18,13.4,8.1,15.8,15.8,25.5,14.7],[5.2,0,9.8,14.3,6.1,16.7,23.1,13.8,19.2,12.5,20.5,13.6,22.2,20.2,22.3,22,10.3,12.9,20,18.3,15.5,21.1,21.6,25.9,15.9,20.2,29.1,6.8,13.1,10.4,18.3,12.7,8.3,6.5,14.2,14,20.8,17.8],[10.2,13.2,0,19.3,18,26.5,33,18,27.2,7,22,14.7,30.2,21.7,21.4,24.9,22.2,24,11.1,19.8,19.2,29.1,16,33.8,27.7,30.1,40.1,13.5,21.1,18.4,26.2,23.3,18.7,13.5,22.1,22.2,31.8,16.8],[13.1,16.1,15.3,0,20.9,13.5,15.3,23,23.8,17.5,15.6,11.8,22.1,26.7,27.8,15.2,24.3,27.6,25.5,24.8,24.2,25.8,27.1,30.6,22.8,18.8,38.4,12.6,17.8,15.1,25.3,27.2,22.6,17.4,16,21.2,27.9,23.3],[10.3,5,14.9,19.3,0,17.5,23.9,16.8,21,17.5,25.5,18.6,24.1,23.2,27.4,22.8,7.9,10.5,25.1,21.3,17.5,22.9,26.6,27.7,13.5,21,26.7,10.6,14.9,12.3,18,15.8,11.4,9.5,16,11.8,18.4,22.8],[17,17.5,21.6,13.3,21.3,0,8,29.3,13.9,24.3,22.2,22.4,8.8,33,34.1,19,21.3,23.2,31.8,31.1,28.2,18.4,33.3,23.2,15.2,12.6,30.8,15.1,11.6,10.2,19.5,28.5,24.2,21.3,8.4,18.3,20.3,29.5],[24.6,24.8,29.2,15.4,28.3,8,0,36.6,11,31.8,23.3,27,7.2,40.6,41.7,17.4,29.3,31.2,39.4,38.7,35.2,15.5,40.9,18.6,23.2,11,33.5,22,19.5,18.2,21,35.6,31.2,28.9,16.4,26.2,24,37.1],[15.5,12.5,18.6,24.6,13.5,24.8,31.2,0,28.3,22.1,30.5,23.3,31.4,15.3,31.3,30.1,13.7,9.3,28.9,13.3,12.1,30.2,30.5,35,18.4,28.3,28.1,18.1,22.2,19.6,25.5,7.7,7.8,8.9,23.3,19.1,23.2,23.5],[16.4,16.9,21,22.6,20.7,15.1,13.7,28.7,0,23.6,29.8,24.8,6.6,32.4,33.5,24.8,20.7,25,31.2,30.5,27.6,5.7,32.7,10.5,16,19.6,22.5,14.5,11,9.6,10.2,28,23.6,20.7,8.5,17.7,13,28.9],[8.9,12,8.9,18.1,16.7,25.3,31.7,17.4,25.9,0,20.7,13.5,29,21.1,22,23.7,20.9,23.4,10,19.2,18.6,27.8,14.8,32.6,26.5,28.9,39.5,12.3,19.8,17.2,25,22.7,18.1,12.9,20.9,20.9,30.6,17.5],[14.1,17.1,14.5,11.5,21.9,20.9,22,22.5,26.6,16,0,10.3,28.4,26.2,27.2,10.1,26.1,28.5,24.7,24.3,23.7,28.5,26.4,33.3,27.5,20.1,43.2,14.6,20.5,17.9,28.1,27.8,23.3,18,21.6,24,32.6,22.6],[9.5,12.5,9.9,12.9,17.3,23.6,28.2,17.9,26.5,11.4,15.6,0,29.5,21.6,22.6,18.5,21.4,23.9,20.1,19.7,19.1,28.3,21.8,33.1,27,28.5,40,12.8,20.3,17.7,25.5,23.2,18.7,13.4,21.4,21.5,31.1,18],[19.5,20,24.1,21.9,23.9,8.8,7.2,31.8,5.1,26.8,28.6,27.9,0,35.5,36.6,21.9,23.8,28.5,34.3,33.6,30.7,9.6,35.9,14.4,20.5,15.5,27.6,17.7,14.1,12.7,15.1,31.1,26.7,23.8,11.6,20.8,18.1,32.1],[19.2,22.2,18.2,28.3,26.5,34.6,41.1,13,36.2,22.7,31.1,23.8,39.2,0,18.2,34,26,21.5,20.4,12.4,15.9,38,16.7,42.8,30.6,38.2,36.9,22.5,30,27.4,35.2,20.7,20.8,21.9,31.1,31.2,35.5,8.3],[20.7,23.7,19.7,29.9,28.5,37.1,43.5,28.5,37.7,24.2,32.6,25.4,40.7,21.8,0,35.6,32.7,34.7,20,28,29.8,39.6,15.8,44.4,38.3,40.6,50.7,24,31.6,28.9,36.8,34,29.4,24.1,32.7,32.7,42.4,13.9],[21.2,19,22.3,16.1,22.6,14.8,14.7,30.3,22.1,23.8,9.8,18.1,20.2,34.1,35,0,26.7,29.3,27.4,32.1,29.4,26.6,29.9,29.8,24.9,11.9,40.6,19.3,21.3,20,29.3,29.8,25.4,23.5,18.2,25.8,30,30.4],[12.7,7.5,17.3,21.7,5.8,19.9,26.3,16.8,22,19.9,27.9,21.1,25,23.3,29.8,25.2,0,7.1,27.5,21.3,16.2,23.9,29,28.4,10.1,23.5,23.2,13.1,12.2,13.2,15.1,12.6,11.2,11.7,17,7.7,15,25.2],[14.2,9,18,23.3,7.3,21.4,27.9,13.5,23.9,21.5,29.5,22.6,27,19.9,30.6,26.7,4.5,0,28.2,17.9,12.9,25.8,29.9,27.2,9.1,25,20,14.6,14.4,15.4,17.3,9.2,10.2,10.6,18.7,9.9,14,26.1],[16.6,19.7,10.9,25.8,24.5,33,39.5,24.4,33.6,10.8,28.4,21.2,36.7,24.9,21.7,28.5,28.6,30.5,0,26.2,25.6,35.5,7.6,40.3,34.2,36.6,46.6,20,27.5,24.9,32.7,29.8,25.2,19.9,28.6,28.6,38.3,17.1],[14.8,18.4,16.5,24.5,20.4,31.3,37.7,6.9,32.4,20,28.4,21.1,35.4,12.6,29.1,31.3,20.7,16.2,26.7,0,10.2,34.3,28.4,39.1,25.3,34.9,33.5,18.7,26.3,23.6,31.5,14.7,14.7,15.8,27.4,26.1,30.2,20.8],[13.8,16,15.4,23.5,18.1,26.2,32.6,7.5,29.7,18.9,27.3,20.1,32.8,13.1,28.1,30.2,17.5,13,25.6,11.8,0,31.6,27.3,35.7,22.1,29.7,28.4,17.6,23.6,21,28.5,12.1,13.9,15.5,24.7,22.9,27,21.3],[19.6,20,24.2,25.8,23.9,18.3,17.2,31.8,7.2,26.8,33,28,10.2,35.6,36.7,28,23.9,24.6,34.4,33.6,30.8,0,35.9,9.6,18.2,23.2,23.1,17.7,14.1,12.8,13,29.8,26.7,23.9,11.7,20.8,15.7,32.1],[19.2,22.3,16.4,28.4,27,35.6,42,26.6,36.2,16.4,31.2,23.9,39.3,19.9,15.8,29.7,31.2,33.2,5.6,26.1,28.4,38.1,0,42.9,36.8,39.2,49.3,22.6,30.1,27.5,35.3,32.5,27.9,22.7,31.2,31.2,40.9,12],[25.1,25.6,29.7,30.2,29.4,22.6,15.1,37.4,12.7,32.3,32.5,33.5,13.9,41.1,42.2,25.8,29.4,31.6,39.9,39.2,36.3,11.5,41.4,0,25.9,19.4,30.1,23.2,19.7,18.3,20.7,36.7,32.3,29.4,17.2,26.4,23.5,37.6],[18.4,13.2,23,26.1,11.5,18.2,26.2,20.3,19.5,25.7,33.7,26.8,22.6,26.7,35.5,27.9,8.7,10.5,33.2,24.8,19.7,21.4,34.8,23.1,0,26.2,22,18.8,14.4,15.8,14.1,16.1,15.5,15.9,14.3,12.6,9.6,31],[22.8,20.6,27.3,16.6,24.1,9.8,9.7,32.4,17,30,19.8,28.1,15.1,38.1,39.9,13.1,28.3,30.9,37.5,36.8,31,21.5,39.1,24.7,25,0,39.5,20.9,21.3,20,27,31.3,26.9,25.1,18.2,27.3,30,35.3],[33.9,28.7,37.6,38.8,27,30.9,34.7,31,24.6,41.1,47.4,42.3,27.7,35.6,50.3,40.7,24.2,20.9,47.9,35.3,28.5,26.7,49.5,26.3,22.5,38.9,0,33.5,27.1,28.5,24.5,26.1,29.8,30.3,27,29.5,23,43.9],[3.6,6.6,8.2,12.6,11.4,16.7,22.3,15.8,17.4,10.8,18.8,11.9,20.4,19.6,20.7,21.7,15.4,18.1,18.4,17.6,17,19.3,19.9,24.1,18.2,20.3,33.8,0,11.3,8.6,16.5,17.7,13.1,7.8,12.3,12.4,22,16.1],[12.8,13.2,17.3,19,17.1,13.2,21.3,25,12.6,20,26.2,21.1,15.6,28.8,29.9,23,13.5,17.8,27.6,26.8,24,14.5,29.1,19.3,9.7,21.2,25.4,10.9,0,6,10,23,19.8,17,7.6,10.4,13.6,25.3],[6.8,7.2,11.4,14.6,11.1,13.1,19.5,19,16.3,14,20.8,15.1,19.3,22.8,23.9,18.4,14.4,17.9,21.6,20.8,18,18.1,23.1,22.9,17.2,16.6,32.8,4.9,10.1,0,15.4,18.3,13.9,11,11.2,11.3,21,19.3],[19.1,19.5,23.7,25.3,21.6,17.8,19.7,31.3,9.7,26.3,32.5,27.4,12.7,35.1,36.2,27.5,17.7,21.8,33.9,33.1,29.8,11.8,35.4,16.6,12.9,25.7,21.6,17.2,12.3,12.3,0,27.4,26.2,23.3,11.2,14.7,6.8,31.6],[16.2,12.9,19.8,25.2,13.9,25.2,31.6,11.4,28.7,23.3,31.4,24.5,31.8,17.8,32.5,30.5,13.4,9,30.1,15.9,12.6,30.6,31.7,35.1,18,28.7,27.8,18.5,22.6,20,25.9,0,8.2,11.7,23.7,18.8,22.9,26.1],[11.6,8.2,15.2,20.6,9.3,20.5,27,13.6,24.1,18.7,26.8,19.8,27.1,20,27.8,25.8,11.1,11.3,25.4,18.1,15,26,27.1,30.8,16.5,24.1,28.5,13.9,18,15.3,21.2,8.4,0,7.8,19,15.4,21.4,23.3],[6.6,7.1,10.2,15.6,9.2,19.6,26.1,11.1,23.2,13.7,21.8,14.9,26.2,17.6,22.9,24.7,12,13.4,20.4,15.7,15.5,25.1,22.1,29.9,17.5,23.2,29.4,9.5,17.1,14.4,20.4,11.7,8.1,0,18.2,15.4,22.3,18.3],[10.3,10.7,14.9,16.5,14.6,8.4,16.4,22.5,10.4,17.5,23.7,18.6,13.4,26.3,27.4,20.5,14.6,19,25.1,24.3,21.5,12.2,26.6,17,11,18.8,26.6,8.4,4.6,3.5,12.6,21.8,17.4,14.5,0,11.5,16.1,22.8],[11.9,12.4,16.5,19.7,12.3,18,25.7,23.4,17.3,19.1,26.9,20.3,20.4,27.9,29,25,8.4,13.7,26.7,26,22.8,19.2,28.2,24,12.3,23.3,27.9,10,7.6,8.6,10.5,19.2,16.8,16.2,12.3,0,16.1,24.4],[22.4,17.7,27,25.9,16.1,18,25.2,24.9,15.2,29.7,34.5,30.8,18.2,31.3,39.5,27.7,13.2,15.1,37.2,29.3,24.3,17.3,38.7,20.9,6.1,26,23.5,20.5,14.2,15.6,9,20.6,20,20.5,14.1,17.4,0,34.9],[17.2,20.3,16.3,26.4,25.1,33.6,40.1,16.2,34.2,20.8,29.2,21.9,37.3,9.5,16.3,32.1,29.2,24.7,18.5,15.7,19.1,36.1,14.8,40.9,33.8,37.2,40.1,20.6,28.1,25.5,33.3,23.9,24,20.7,29.2,29.2,38.7,0]],"km":[[0,5.6,5.5,11.7,9.1,19.5,26.5,11.4,19.6,7.4,14.4,7.9,22.1,14.7,24,17,12,15,14.1,11.2,13.2,20.9,19.5,26.4,17,24.8,33,5.5,12.9,11.3,16.1,16,10.8,7.4,14.1,12.3,18.6,16.6],[4.7,0,9.4,12.1,4.4,18.5,25.5,12.3,17.6,10.7,16.7,11.3,20.1,17.8,27.9,24.6,7.3,10.3,18.1,14.3,15.2,18.8,23.4,24.4,12.3,23.7,28.3,5.4,10.8,9.2,14,10.5,5.3,5.7,12,11.4,16.6,20.6],[8,11.9,0,16.8,15.3,25.8,32.8,15.3,25.9,4.7,16.8,10.3,28.4,18.5,24.3,19.4,18.3,20.2,8.9,15,17,27.1,12.6,32.7,23.3,31,38.2,11.8,19.1,17.5,22.3,19.8,14.6,11.3,20.3,18.5,24.8,17],[10,13.9,13.1,0,17.3,9.2,10.1,20.8,18.7,12.2,11,7.3,14.9,24.1,31.6,8.9,18.5,23.2,21.8,20.5,22.6,22.2,27.2,27.8,22.8,12.7,41.7,10.2,14.2,12.6,19.9,23.2,18,14.7,14.7,16.1,26.1,24.3],[8.2,3.4,12.9,15.6,0,18.5,25.5,14,18.6,14.2,20.2,14.7,21.1,19.6,31.3,24.5,4.4,7.3,21.5,16,16,19.8,26.9,25.4,9.4,23.7,25.4,7.9,11.9,10.3,14.5,12.2,7,7.4,13.1,7.4,13.6,24],[17.6,15.6,22.4,9.1,18.2,0,5.6,30,10.3,23.7,14.2,16.3,5.7,33.3,40.8,15.9,17.2,25.7,31,29.8,28.7,13.9,36.4,19.5,15.4,10.6,34.2,15.2,9.6,9.3,15.4,30.9,19.7,20.9,6,14.7,18.6,33.5],[21.5,26.2,26.2,10.1,28.3,5.6,0,36.8,10,27.5,14.1,17.4,4.9,37.1,44.6,13.4,22.7,31.3,34.8,33.6,38.8,13.6,40.2,17.6,20.9,8.1,31.3,16.2,15.1,14.9,17.7,35,29.8,24.7,11.5,20.3,20.9,37.3],[11.5,10.1,17.3,18.9,10.6,24.9,31.9,0,25.1,19.5,26.5,20.1,27.6,13.6,35.7,31,12.4,9.1,25.9,10.1,11.1,26.3,31.3,31.9,16,30.2,30.7,14.5,18.3,16.8,21.1,6.2,5.7,6,19.6,16.3,20.2,19.6],[18.4,16.4,23.1,20.6,19,14.1,11.1,30.7,0,24.4,25.9,24.9,6.2,34,41.5,25.9,17.9,21,31.7,30.5,29.5,5,37.1,10.6,14,17.6,21.3,15.9,10.3,10,8,25.7,20.5,21.6,8,15.5,11,34.2],[6.3,10.2,6.2,15.1,13.6,24.1,31.1,14.5,24.2,0,15.2,8.7,26.7,17.8,25.1,17.7,16.6,19.4,7.6,14.3,16.3,25.4,11.3,31,21.6,29.4,37.5,10.1,17.5,15.9,20.6,19.1,13.9,10.5,18.7,16.8,23.1,17.8],[10.8,14.6,11.1,7.9,18.1,13.3,13.2,18.9,23,11.6,0,6.7,23.2,22.2,29.6,7.3,21,23.9,19.8,18.7,20.7,24.3,25.1,29.9,23.9,16.9,42.8,11.6,16.3,14.7,22,23.5,18.3,14.9,17.5,18.2,27.2,22.3],[6.3,10.2,6.7,8.2,13.7,17.2,18.3,14.5,24.2,7.1,10.7,0,26.7,17.8,25.2,13.3,16.6,19.4,15.3,14.3,16.3,25.4,20.7,31,21.6,22.8,37.5,10.1,17.5,15.9,20.6,19.1,13.9,10.5,18.7,16.9,23.2,17.8],[21,19,25.8,14.8,21.6,5.7,5,33.4,4.6,27.1,24.1,27.6,0,36.7,44.2,18.1,20.5,30,34.4,33.2,32.1,8.2,39.8,13.8,19.6,12.8,25.9,18.6,13,12.7,12.3,28.3,23.1,24.3,10.6,18.1,15.5,36.9],[19.9,23.8,17.9,28.7,21.3,37.7,44.7,10.7,37.8,21.7,28.8,22.3,40.3,0,18.6,31.3,26.6,23.3,14.9,7.7,11.6,39,13.3,44.6,30.2,43,41.6,23.7,31.1,29.5,34.2,16.9,16.4,16.1,32.3,30.4,34.4,6],[25.6,29.5,23.6,34.4,32.9,43.4,50.4,27.9,43.5,27.4,34.4,27.9,46,21.6,0,37,35.9,37.8,13.5,24.8,34.6,44.7,10.2,50.3,40.9,48.6,55.8,29.4,36.7,35.1,39.9,37.4,32.2,28.8,37.9,36.1,42.4,15.3],[23.7,22.2,17.4,9,24.3,12.1,11.5,25.2,20.4,17.8,7,12.9,16.1,28.5,35.9,0,27.2,30.1,20.5,25,34.8,24,24.6,28,26.9,9.8,45.7,21.3,21.1,20.8,26.9,31,25.8,26.1,18.8,24.5,30.1,28.5],[10.4,5.7,15.1,17.8,3.4,20.7,27.7,14.8,18.3,16.4,22.4,17,20.8,20.3,33.5,26.8,0,4.8,23.7,16.8,17.4,19.5,29.1,26,6.8,26,22.8,10.1,8,10,10.9,8.4,6.2,8.3,12.8,4.5,11,26.2],[12.4,7.7,16.1,19.8,5.4,22.7,29.7,12.6,22.8,18.4,24.4,18.9,25.3,18.1,34.5,28.8,3.3,0,24.7,14.6,15.2,24,30.1,33.9,6.9,28,23,12.1,10.8,12.7,13.7,6.2,7.1,9.2,16.8,7.2,11.1,27.2],[13.8,17.6,8.8,22.5,21.1,31.5,38.5,21,31.6,8.2,22.6,16.1,34.1,19.8,19.9,21.6,24,25.9,0,20.8,22.8,32.9,5.7,38.4,29,36.8,44,17.5,24.9,23.3,28.1,25.6,20.4,17,26.1,24.3,30.6,12.6],[11.5,15.5,12.7,20.4,15,33.3,40.3,4.4,29.5,14.9,21.9,15.4,32,8.2,31.1,24.5,16.8,13.5,21.3,0,6.6,30.7,26.7,36.3,20.4,38.6,37.3,15.4,22.8,21.2,25.9,10.6,10.1,9.8,24,20.7,24.6,14.2],[13.3,14.2,14.4,22.2,15.2,29,36.1,6.7,29.2,16.6,23.7,17.2,31.7,10.3,32.9,26.2,17.9,14.6,23.1,7.6,0,30.4,28.5,43.9,21.5,34.3,33,17.2,22.4,20.9,31,10.5,11.5,12.4,23.7,21.8,25.7,16.4],[20.1,18.1,24.8,22.3,20.7,15.8,13,32.4,5.6,26.1,27.6,26.6,8.1,35.7,43.2,27.6,19.6,26.5,33.4,32.2,31.2,0,38.8,8.2,15.2,19.5,23.2,17.6,12,11.7,9.3,31.6,22.2,23.3,9.7,17.2,12.2,35.9],[20.2,24,12.9,28.9,27.5,37.9,44.9,22,38,12.4,29,22.5,40.5,15.6,10.2,24.6,30.4,32.3,4.2,18.9,29.2,39.3,0,44.8,35.4,43.2,50.4,23.9,31.3,29.7,34.5,32,26.8,23.4,32.5,30.7,37,9.4],[27.9,25.9,32.6,25,28.5,17.1,13.6,40.3,13.4,33.9,29.3,34.5,12.6,43.6,51.1,23.4,27.4,36.7,41.3,40,39,11.1,46.6,0,25.4,18,33.3,25.4,19.8,19.6,19.1,35.2,30,31.1,17.5,25,22.3,43.8],[15.1,10.4,19.8,25.5,8.1,18.1,23.7,17.6,18.8,21.1,27.1,21.7,21.3,23.1,38.2,30,6,7.6,28.4,19.6,20.2,20,33.8,22,0,29.2,21.6,14.8,13.2,14.4,11.6,11.2,10.5,12.6,12.7,6.1,7.1,30.9],[25.1,23.6,29.9,11.7,25.6,7.8,7.2,34.2,16.1,31.1,16.7,22.6,11.8,42.3,48.3,10.8,28.6,31.5,30.2,37.2,36.1,19.7,43.9,23.7,23.2,0,37.4,22.7,17.4,17.1,23.8,32.4,27.2,27.5,13.8,25.8,27,41],[33.9,29.2,37.7,43.2,27,35.9,32.6,38.6,25.2,39.9,53.7,40.4,27.7,41.6,56.1,47.8,24.8,23.2,46.3,39.4,35.4,26.5,51.7,29.3,23.1,46.9,0,38.1,30.9,32.2,22.1,28.3,28.7,30.8,30.5,28.8,18.5,47.6],[3.9,6.3,8.6,11.3,9.8,17.2,16.2,16.2,17.3,9.9,15.9,10.4,19.8,19.5,27,18.5,12.4,15.6,17.2,16,18,18.5,22.6,24.1,15.2,22.4,34.1,0,10.5,9,13.7,15.7,10.5,7.1,11.8,9.9,16.2,19.7],[13.3,11.2,18,15.5,13.8,10.6,16.2,25.6,10.9,19.3,20.8,19.8,13.4,28.9,36.4,22.4,9.6,18.3,26.6,25.4,24.3,12.2,32,17.8,7.9,21.6,26.8,10.8,0,4.9,7.1,23.5,14.2,16.5,5.4,7.2,8.9,29.1],[8.3,6.3,13.1,12.2,8.9,13.4,20.4,20.7,16.4,14.4,16.8,14.9,18.9,24,31.5,19.5,11.5,14.8,21.7,20.5,19.4,17.6,27.1,23.2,17.3,18.7,36.1,5.9,9.7,0,12.8,15.6,10.4,11.6,10.9,9.1,15.4,24.2],[19.9,17.9,24.6,22.1,15.7,15.6,16.7,32.3,9.3,25.9,27.4,26.5,11.8,35.6,43.1,27.4,12.9,16.2,33.2,32,33.8,10.6,38.6,16.2,9.1,23.2,19.3,17.4,7.7,11.6,0,19.8,18.3,23.1,9.5,10.5,4.8,35.7],[13.3,9.6,16.7,20.7,10.1,24.5,31.5,8.6,24.6,18.9,25.4,19.4,27.2,14.2,35.1,30.6,9.3,6.1,25.3,10.6,9.9,25.9,30.7,38.6,13,29.8,27.6,14.1,17.9,16.3,20.6,0,5.3,6.9,19.1,13.3,17.2,20.2],[9.4,5.7,12.8,16.9,6.3,20.6,27.6,10.6,20.8,15,21.5,15.6,23.3,16.1,31.2,26.7,7,9.3,21.4,12.6,11.9,22,26.8,27.6,11.3,25.9,26.5,10.2,14,12.4,16.8,6.2,0,5.9,15.2,9.5,15.5,23.9],[5.5,5.8,8.9,12.9,7.1,21,28,7.7,21.1,11.1,17.5,11.6,23.6,13.2,27.3,20.1,9.4,10.8,17.5,9.7,15.4,22.3,22.9,27.9,13.7,26.2,28.9,7.7,14.4,12.8,17.1,7.6,5.3,0,15.6,12.4,17.9,20],[11.8,9.8,16.6,14,12.4,6,11.5,24.2,9.5,17.8,19.4,18.4,12.1,27.5,35,19.3,11.3,20,25.2,23.9,22.9,10.8,30.6,16.4,9.6,18.5,28.5,9.4,3,3.5,8.8,19.1,13.9,15.1,0,8.9,12.9,27.7],[10.6,8.6,15.3,15.3,8,14.6,19.2,19.7,15,16.6,20.6,17.2,17.5,26.2,33.8,24,5.2,9.7,23.9,22.7,22.4,16.2,29.3,21.8,9.1,23.2,28,8.1,4.7,6.6,7.6,13.4,10.6,13.8,9.4,0,10.1,26.4],[23,14.2,27.7,25.7,12,18.4,20.5,21.5,13.1,29,36.2,29.6,15.6,27,46.2,30.2,9.8,11.5,36.3,23.5,24.1,14.4,41.7,20.6,4.4,29.4,19.5,20.5,13.4,14.7,5.2,15.1,14.4,16.5,13,12,0,38.8],[17.8,21.7,15.8,26.6,25.1,35.6,42.6,13.5,35.7,19.6,26.6,20.2,38.2,7.2,16.5,29.2,29.4,26.1,12.8,10.4,14.4,36.9,11.2,42.5,33,40.9,44.4,21.6,29,27.4,32.1,19.7,19.2,21.1,30.2,28.3,37.2,0]]};
+const GMAP = {'สายไหม|สายไหม>คลองถนน|สายไหม':12,'สายไหม|สายไหม>ออเงิน|สายไหม':13,'สายไหม|สายไหม>อนุสาวรีย์|บางเขน':31,'กระทุ่มราย|หนองจอก>แสนแสบ|มีนบุรี':24,'กระทุ่มราย|หนองจอก>มีนบุรี|มีนบุรี':25,'กระทุ่มราย|หนองจอก>คันนายาว|คันนายาว':32,'ลาดกระบัง|ลาดกระบัง>คลองสองต้นนุ่น|ลาดกระบัง':13,'ลาดกระบัง|ลาดกระบัง>คลองสามประเวศ|ลาดกระบัง':13,'ลาดกระบัง|ลาดกระบัง>ทับช้าง|สะพานสูง':21,'บึงคำพร้อย|ลำลูกกา>สามวาตะวันออก|คลองสามวา':13,'บึงคำพร้อย|ลำลูกกา>ออเงิน|สายไหม':27,'บึงคำพร้อย|ลำลูกกา>สามวาตะวันตก|คลองสามวา':19,'โคกแฝด|หนองจอก>ทรายกองดินใต้|คลองสามวา':11,'โคกแฝด|หนองจอก>แสนแสบ|มีนบุรี':11,'โคกแฝด|หนองจอก>มีนบุรี|มีนบุรี':19,'ตลาดบางเขน|หลักสี่>อนุสาวรีย์|บางเขน':11,'ตลาดบางเขน|หลักสี่>คลองถนน|สายไหม':26,'ตลาดบางเขน|หลักสี่>ท่าแร้ง|บางเขน':29,'ลำปลาทิว|ลาดกระบัง>คลองสามประเวศ|ลาดกระบัง':10,'ลำปลาทิว|ลาดกระบัง>คลองสองต้นนุ่น|ลาดกระบัง':11,'ลำปลาทิว|ลาดกระบัง>แสนแสบ|มีนบุรี':27,'หนองจอก|หนองจอก>แสนแสบ|มีนบุรี':22,'หนองจอก|หนองจอก>ทรายกองดินใต้|คลองสามวา':14,'หนองจอก|หนองจอก>มีนบุรี|มีนบุรี':24,'ดอนเมือง|ดอนเมือง>อนุสาวรีย์|บางเขน':19,'ดอนเมือง|ดอนเมือง>คลองถนน|สายไหม':23,'ดอนเมือง|ดอนเมือง>ท่าแร้ง|บางเขน':36,'คลองเจ้าคุณสิงห์|วังทองหลาง>คลองจั่น|บางกะปิ':21,'คลองเจ้าคุณสิงห์|วังทองหลาง>ลาดพร้าว|ลาดพร้าว':24,'คลองเจ้าคุณสิงห์|วังทองหลาง>หัวหมาก|บางกะปิ':24,'ลาดสวาย|ลำลูกกา>ออเงิน|สายไหม':20,'ลาดสวาย|ลำลูกกา>คลองถนน|สายไหม':27,'ลาดสวาย|ลำลูกกา>สามวาตะวันตก|คลองสามวา':26,'ทุ่งวัดดอน|สาทร>หัวหมาก|บางกะปิ':45,'ทุ่งวัดดอน|สาทร>ลาดพร้าว|ลาดพร้าว':48,'ทุ่งวัดดอน|สาทร>คลองจั่น|บางกะปิ':58};      // (minutes, driving, typical traffic, measured on Google Maps 2026-11-06: area > nearest served areas)
+const ROAD_IDX = new Map(ROAD.keys.map((k, i) => [k, i]));
+const ownTotal = (stat, k) => { const m = stat.sd.get(k); return m ? [...m.values()].reduce((a, b) => a + b, 0) : 0; };
+function roadSuggest(g, stat) {
+  const x = g.sd + '|' + g.d, xi = ROAD_IDX.get(x); if (xi == null) return null;
+  const cands = [];
+  for (const [k, ki] of ROAD_IDX) {
+    if (k === x) continue; const m = stat.sd.get(k), tot = ownTotal(stat, k); if (!m || tot < 10) continue;
+    const gm = GMAP[x + '>' + k], all = [...m].sort((a, b) => b[1] - a[1]);
+    cands.push({ k, sd: k.split('|')[0], min: gm != null ? gm : ROAD.min[xi][ki], km: ROAD.km[xi][ki], g: gm != null, trip: all[0][0], share: all[0][1] / tot, ll: ROAD.ll[ki] });
+  }
+  const pool = cands.some(c => c.g) ? cands.filter(c => c.g) : cands;   // (never mix a Google figure with an OSM one: Google times include traffic)
+  if (!pool.length) return null;
+  pool.sort((a, b) => (a.min - 2 * a.share) - (b.min - 2 * b.share));      // (a tie on time goes to the Trip that looks after that area the most)
+  const n = pool[0], src = n.g ? 'Google Maps' : 'OpenStreetMap', lim = n.g ? [18, 28] : [10, 16];
+  const conf = n.min <= lim[0] && n.share >= 0.5 ? 'สูง' : n.min <= lim[1] ? 'กลาง' : 'ต่ำ';
+  const alt = pool.slice(1, 3).map(c => `${c.sd} ${c.min.toFixed(0)} นาที→Trip ${c.trip}`).join(' · ');
+  const p0 = ROAD.ll[xi];
+  return { trip: n.trip, conf, link: `https://www.google.com/maps/dir/${p0[0]},${p0[1]}/${n.ll[0]},${n.ll[1]}`,
+    why: `ยังไม่มีออเดอร์ของแขวงนี้ในโซน — ขับไปแขวง${n.sd}ถึงก่อน ~${n.min.toFixed(0)} นาที (${n.km.toFixed(1)} กม., ${src}) ซึ่ง Trip ${n.trip} ดูแลอยู่ ${Math.round(n.share * 100)}%${alt ? ' · รองลงมา: ' + alt : ''}` };
+}
+function suggestFor(g, stat, geoOK, cent) {                           // g = {sd, d, n} an area outside the table; stat = what the matched orders say
+  if (ownTotal(stat, g.sd + '|' + g.d) < 10) { const rs = roadSuggest(g, stat); if (rs) return rs; }      // (a few orders of its own say little: the nearest served area by road decides)
+  const best = m => { let b = null; for (const [t, n] of m) if (!b || n > b[1]) b = [t, n]; return b; };
+  const bySd = stat.sd.get(g.sd + '|' + g.d); if (bySd && bySd.size) { const b = best(bySd), all = [...bySd].sort((x, y) => y[1] - x[1]), tot = all.reduce((x, y) => x + y[1], 0); return { trip: b[0], conf: all.length > 3 && b[1] < tot * 0.5 ? 'กลาง' : 'สูง', why: `แขวงเดียวกันที่เข้าโซนแล้ว ${tot} ใบ: ${all.slice(0, 3).map(([t, n]) => `Trip ${t} (${n})`).join('  ')}${all.length > 3 ? '  …' : ''}${all.length > 1 ? ' — แขวงนี้ถูกแบ่งหลาย Trip ดูถนนที่พบประกอบ' : ''}` }; }
+  if (geoOK && geo.get(g.sd) && cent.size) { let b = null; for (const [t, c] of cent) { const dd = hav(geo.get(g.sd), c) * 1.35; if (!b || dd < b[1]) b = [t, dd]; } return { trip: b[0], conf: b[1] < 3 ? 'สูง' : b[1] < 8 ? 'กลาง' : 'ต่ำ', why: `ใกล้โซนของ Trip ${b[0]} ที่สุด ~${b[1].toFixed(1)} กม. (จากพิกัด)` }; }
+  const byD = stat.d.get(g.d); if (byD && byD.size) { const b = best(byD); return { trip: b[0], conf: 'กลาง', why: `เขต${g.d}: Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; }
+  for (let h = 1; h <= 3; h++) { const m = new Map(); for (const [d, tm] of stat.d) if (hops(g.d, d) === h) for (const [t, n] of tm) m.set(t, (m.get(t) || 0) + n); if (m.size) { const b = best(m); return { trip: b[0], conf: 'ต่ำ', why: `เขตที่ติดกัน (ข้าม ${h} เขต): Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; } }
+  return { trip: null, conf: '—', why: 'หาโซนใกล้เคียงไม่ได้ — เลือก Trip เอง' };
+}
+/* Street level. The orders that are already in a zone tell which Trip delivers which road / soi / village (the zone table is written in road names, the file is by sub-district, so the roads inside an address are the finer clue).
+   A road counts when at least 2 other orders in a zone used it and 60 % of them went one way (3 orders and 75 % = sure). `self` = the Trip an order itself voted for: it is taken out of the evidence first (a fair test). */
+const mooOf = addr => { const m = /(?:หมู่ที่|หมู่|ม\.)\s*(\d{1,2})(?!\d)/.exec(String(addr || '')); return m ? +m[1] : 0; };
+function evKeys(o) {                                                    // what an address says about its place: the roads / soi / villages in it, and the village number (หมู่) inside its sub-district
+  const ks = []; for (const rd of roadsOf(o.addr)) { const b = roadBase(rd); if (b.length >= 3) ks.push({ key: b, label: rd }); }
+  const mo = mooOf(o.addr); if (mo) ks.push({ key: 'หมู่' + mo + '@' + o.sd, label: 'หมู่ ' + mo + ' (แขวง' + o.sd + ')' });
+  return ks;
+}
+function roadVerdict(o, votes, self) {
+  let best = null;
+  for (const e of evKeys(o)) {
+    const rd = e.label, v = votes.get(e.key); if (!v) continue;
+    let tot = 0, top = null; for (const [t, n0] of v) { const n = t === self ? n0 - 1 : n0; if (n <= 0) continue; tot += n; if (!top || n > top[1]) top = [t, n]; }
+    if (tot < 2 || !top) continue; const share = top[1] / tot; if (share < 0.6) continue;
+    const sc = tot * share; if (!best || sc > best.sc) best = { trip: top[0], road: rd, n: tot, share, sc, conf: tot >= 3 && share >= 0.75 ? 'สูง' : 'กลาง' };
+  }
+  return best;
+}
+const finalOf = o => o.zt != null ? o.zt : o.rd ? o.rd.trip : (() => { const g = Z.groups.get(o.sd + '|' + o.d); return g && g.pick ? +g.pick : null; })();
+function runZones() {
+  const zt = parseZones($('zoneIn').value); try { localStorage.setItem(LS_ZONES, $('zoneIn').value); } catch (_) {}
+  const M = buildMatcher(zt), msg = $('zoneMsg'), nums = zt.trips.filter(t => !t.special).map(t => t.num).sort((a, b) => a - b);
+  if (!nums.length) { msg.className = 'msg err'; msg.textContent = 'ยังไม่มีโซนของ Trip ในตาราง'; return; }
+  const day = $('daySel').value, useAll = $('zAll').checked;
+  const orders = S.orders.filter(o => (useAll || o.date === day) && !/cancel|return/i.test(o.status));
+  geo = new Map();
+  const how = { road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
+  for (const o of orders) {
+    const r = matchOrder(o, M); o.zt = r.trip; o.zhow = r.how;
+    if (r.trip == null) { how.none++; out.push(o); continue; }
+    how[r.how]++; byTrip.set(r.trip, (byTrip.get(r.trip) || 0) + 1);
+    if (r.how !== 'weak') for (const e of evKeys(o)) { const v = roadVotes.get(e.key) || roadVotes.set(e.key, new Map()).get(e.key); v.set(r.trip, (v.get(r.trip) || 0) + 1); }
+    const k = o.sd + '|' + o.d; (stat.sd.get(k) || stat.sd.set(k, new Map()).get(k)).set(r.trip, ((stat.sd.get(k).get(r.trip)) || 0) + 1);
+    (stat.d.get(o.d) || stat.d.set(o.d, new Map()).get(o.d)).set(r.trip, ((stat.d.get(o.d).get(r.trip)) || 0) + 1);
+  }
+  const areaKeys = new Set(orders.map(o => o.sd)); let withGeo = 0; for (const k of areaKeys) if (geo.has(k)) withGeo++; const geoOK = geo.size > 0 && withGeo / Math.max(1, areaKeys.size) >= 0.9;
+  const cent = new Map(); if (geoOK) { const acc = new Map(); for (const o of orders) if (o.zt != null && geo.has(o.sd)) { const p = geo.get(o.sd), a = acc.get(o.zt) || [0, 0, 0]; a[0] += p[0]; a[1] += p[1]; a[2]++; acc.set(o.zt, a); } for (const [t, a] of acc) cent.set(t, [a[0] / a[2], a[1] / a[2]]); }
+  const groups = new Map(); for (const o of out) { const k = o.sd + '|' + o.d; (groups.get(k) || groups.set(k, { sd: o.sd, d: o.d, n: 0, orders: [], roads: new Map() }).get(k)).n++; groups.get(k).orders.push(o); for (const r of roadsOf(o.addr)) groups.get(k).roads.set(r, (groups.get(k).roads.get(r) || 0) + 1); }
+  for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
+  const useRoad = $('zRoad').checked; for (const o of out) o.rd = useRoad ? roadVerdict(o, roadVotes, null) : null;      // street level: a road / soi that the orders already in a zone use decides the order by itself
+  let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
+  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr) });
+  renderZones(); msg.className = 'msg ok'; msg.textContent = `ตรวจ ${orders.length.toLocaleString()} ออเดอร์ (${Z.day})${M.dups.length ? ' · ' + M.dups.join(' · ') : ''}${zt.errs.length ? ' · ข้ามบรรทัดที่อ่านไม่ได้ ' + zt.errs.length + ' บรรทัด' : ''}`;
+}
+const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
+function addedByTrip() { const m = new Map(); for (const g of Z.groups.values()) for (const o of g.orders) { const t = finalOf(o); if (t != null) m.set(t, (m.get(t) || 0) + 1); } return m; }
+function roadSplit(g) { const m = new Map(); let n = 0; for (const o of g.orders) if (o.rd) { n++; m.set(o.rd.trip, (m.get(o.rd.trip) || 0) + 1); } return n ? `${n} ใบ: ` + [...m].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, c]) => `T${t}×${c}`).join(' ') : '—'; }
+function renderTripTable() {
+  const add = addedByTrip(); let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง</th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th></tr>';
+  for (const t of Z.zt.trips) {
+    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td colspan="3" class="muted">ไม่นำมาจับออเดอร์</td></tr>`; continue; }
+    const a = Z.byTrip.get(t.num) || 0, b = add.get(t.num) || 0;
+    h += `<tr><td><b>${t.num}</b></td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td>${a}</td><td>${b ? '+' + b : ''}</td><td><b>${a + b}</b></td></tr>`;
+  }
+  $('ztTrips').innerHTML = h + '</table>';
+}
+function renderZones() {
+  const { how, groups, orders } = Z, outN = how.none, tot = orders.length, inN = tot - outN, rows = [...groups.values()].sort((a, b) => b.n - a.n);
+  const opts = pick => '<option value="">ไม่เพิ่ม</option>' + Z.nums.map(n => `<option value="${n}"${String(n) === pick ? ' selected' : ''}>Trip ${n}</option>`).join('');
+  const roadN = rows.reduce((a, g) => a + g.orders.filter(o => o.rd).length, 0);
+  let h = `<div class="sum" style="margin-top:12px"><div class="chip"><b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small></div><div class="chip"><b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small></div>
+    <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div>${Z.useRoad ? `<div class="chip"><b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small></div>` : ''}</div>
+    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
+  if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
+  if ([...groups.values()].some(g => g.link)) h += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
+  if (Z.useRoad) h += `<p class="note"><b>ระดับถนน/ซอย:</b> ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน — ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง · ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว ${Z.back.ev.toLocaleString()} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย) — ทายตรงกับตาราง <b>${pct(Z.back.ok, Z.back.ev)}%</b> (วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)</p>`;
+  h += '<h3 style="margin:14px 0 6px">แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)</h3><div id="ztTrips" class="tw"></div>';
+  h += `<h3 style="margin:16px 0 6px">แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด</h3><div class="tw"><table class="cmp zt"><tr><th>แขวง</th><th>เขต</th><th>ใบ</th><th>ตามถนน/ซอย</th><th>ที่เหลือ → Trip</th><th>มั่นใจ</th><th>ถนน/ซอยที่พบ</th><th>เหตุผล</th></tr>`;
+  rows.slice(0, 200).forEach(g => { h += `<tr><td>${esc(g.sd)}</td><td>${esc(g.d)}</td><td>${g.n}</td><td style="text-align:left;font-size:13px">${esc(roadSplit(g))}</td><td><select data-g="${esc(g.sd + '|' + g.d)}">${opts(g.pick)}</select></td><td><span class="tag ${g.conf === 'สูง' ? 'ok' : g.conf === 'ต่ำ' || g.conf === '—' ? 'warn' : ''}">${g.conf}</span></td><td style="text-align:left;font-size:13px">${esc([...g.roads].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ('+ c + ')' + roadHint(r)).join('  ·  '))}</td><td style="text-align:left;font-size:14px">${esc(g.why)}${g.link ? ` <a href="${g.link}" target="_blank" rel="noopener">ดูเส้นทางใน Google Maps</a>` : ''}</td></tr>`; });
+  h += '</table></div>' + (rows.length > 200 ? `<p class="muted">แสดง 200 แขวงแรกจาก ${rows.length}</p>` : '') + (rows.length ? '' : '<p class="ok">ทุกออเดอร์อยู่ในโซนของตารางแล้ว</p>');
+  if (Z.useRoad) {
+    const rm = new Map(); for (const g of rows) for (const o of g.orders) if (o.rd) { const k = o.rd.road + '|' + o.rd.trip, e = rm.get(k) || rm.set(k, { road: o.rd.road, trip: o.rd.trip, n: 0, ev: o.rd.n, share: o.rd.share }).get(k); e.n++; }
+    const lr = [...rm.values()].sort((a, b) => b.n - a.n).slice(0, 40);
+    if (lr.length) h += `<h3 style="margin:16px 0 6px">ถนน/ซอยที่เรียนรู้ได้ — ควรเพิ่มเข้าตารางโซน</h3><p class="muted" style="margin:0 0 6px;font-size:14px">ถนน/ซอย/หมู่บ้านที่ออเดอร์ซึ่งเข้าโซนแล้วใช้ไปทาง Trip เดียวกันชัดเจน และพบในออเดอร์ที่อยู่นอกตาราง (เรียงตามจำนวนใบที่แก้ได้)</p><div class="tw"><table class="cmp zt"><tr><th>ถนน/ซอย</th><th>Trip</th><th>ออเดอร์นอกตารางที่แก้ได้</th><th>หลักฐาน</th></tr>${lr.map(e => `<tr><td style="text-align:left">${esc(e.road)}</td><td><b>${e.trip}</b></td><td>${e.n}</td><td>${e.ev} ใบที่เข้าโซนแล้ว · ${Math.round(e.share * 100)}% ไป Trip ${e.trip}</td></tr>`).join('')}</table></div>`;
+  }
+  h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div>';
+  const el = $('zoneOut'); el.hidden = false; el.innerHTML = h; renderTripTable();
+  el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
+  $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
+  $('zApplyTrip').onclick = applyRoutes;
+  $('zCsvOut').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Suggested Trip,Based On,Confidence'].concat([...Z.groups.values()].flatMap(g => g.orders.map(o => { const t = finalOf(o); return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, o.rd ? 'ถนน/ซอย ' + o.rd.road : (g.pick ? 'แขวง/เส้นทาง' : ''), o.rd ? o.rd.conf : (g.pick ? g.conf : '')].map(csvCell).join(','); }))), 'orders-outside-zones.csv');
+  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const t = finalOf(o); const by = o.zt != null ? ({ road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : o.rd ? 'ถนน/ซอย ' + o.rd.road + ' (' + o.rd.conf + ')' : t != null ? 'แนะนำ' : 'ไม่มี'; return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
+}
+const csvCell = c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c);
+function saveCsv(lines, name) { download(new Blob([String.fromCharCode(0xFEFF) + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), name); }
+function extendedTable() {
+  const by = new Map(), add = (t, s) => (by.get(t) || by.set(t, []).get(t)).push(s);
+  const roads = new Map(); for (const g of Z.groups.values()) for (const o of g.orders) if (o.rd) { const m = roads.get(o.rd.trip) || roads.set(o.rd.trip, new Map()).get(o.rd.trip); m.set(o.rd.road, (m.get(o.rd.road) || 0) + 1); }
+  for (const [t, m] of roads) [...m].sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([r]) => add(+t, r));      // (the learned roads / soi first, then the areas that still have orders without a road verdict)
+  for (const g of Z.groups.values()) if (g.pick && g.orders.some(o => !o.rd)) add(+g.pick, g.sd + (g.d ? ` (เขต${g.d})` : ''));
+  return Z.zt.trips.map(t => t.special || !by.has(t.num) ? t.line : t.line + ' / [เพิ่ม] ' + by.get(t.num).join(' / ')).join('\n');
+}
+function setOrders(orders, src) {
+  S.orders = orders; S.src = src;
+  const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
+  const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
+  $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
+  $('btnZone').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน (${src})` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
+}
+async function loadFile(f) {
+  say('กำลังอ่านไฟล์ …');
+  try { setOrders(rowsToOrders(await fileToRows(f)), f.name); } catch (e) { say(String(e.message || e), 'err'); }
+}
+$('zFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
+const zDropBox = $('zDrop');
+['dragenter', 'dragover'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.remove('over'); }));
+zDropBox.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
+$('btnSheet').addEventListener('click', async () => {
+  const v = $('dateIn').value; if (!v) { say('เลือกวันที่ส่งก่อน', 'err'); return; }
+  const [y, m, d] = v.split('-'), dt = `${d}-${MON[+m - 1]}-${y}`; say('กำลังอ่านจากชีต (อ่านอย่างเดียว) …');
+  try { setOrders(await ordersFromSheet(dt), 'ชีตที่เชื่อมต่อไว้ ' + dt); }
+  catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
+});
+$('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
+$('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
+$('btnZone').addEventListener('click', runZones);
+$('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
+/* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
+   the English spellings of those sub-districts get the same Trip. It is added to the table above (the same area written the same way is replaced, the rest stays) and "ย้อนกลับครั้งล่าสุด" brings the old table back. */
+async function applyRoutes() {
+  if (!Z.zt) return;
+  const bySd = new Map();
+  for (const o of Z.orders) { const t = finalOf(o); if (t == null || !o.sd) continue; const m = bySd.get(o.sd) || bySd.set(o.sd, new Map()).get(o.sd); m.set(t, (m.get(t) || 0) + 1); }
+  if (!bySd.size) { toast('ยังไม่มีแขวงที่จัด Trip ได้'); return; }
+  const en = {}; for (const [e, th] of Object.entries(SD_EN)) (en[th] = en[th] || []).push(e);
+  const entries = new Map();
+  for (const [sd, m] of bySd) { const best = [...m].sort((a, b) => b[1] - a[1])[0][0]; entries.set(normArea(sd), { a: sd, t: String(best) }); for (const e of (en[sd] || [])) entries.set(normArea(e), { a: e, t: String(best) }); }
+  const old = Object.keys(tripMap).length, tripsN = new Set([...entries.values()].map(e => e.t)).size;
+  if (!await ask(`ใช้ผลนี้เป็นเส้นทาง Trip?\n${bySd.size} แขวง (รวมชื่อภาษาอังกฤษ ${entries.size} พื้นที่) ใน ${tripsN} Trip\nแขวงที่ซ้ำกับเส้นทางเดิมจะถูกแทนที่ ที่ไม่ซ้ำยังอยู่ (เส้นทางเดิม ${old} พื้นที่)\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
+  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
+  for (const [k, e] of entries) tripMap[k] = e;
+  saveTrip(); renderTrip(); render(); toast(`ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
+}
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, Z, S };
+
+})();
 
 /* ---------- ฐานข้อมูลออเดอร์ (Update Data, tab 3): a Google Sheet used as a READ-ONLY database ----------
    The sheet must be shared "anyone with the link can view". Only GET requests go to Google's gviz query address, each one asking for the rows of a few order numbers and a few
