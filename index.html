@@ -1499,6 +1499,7 @@ try { const o = JSON.parse(localStorage.getItem(LS_INFO) || 'null'); if (o && ty
 function saveInfo() {
   const ks = Object.keys(orderInfo); if (ks.length > 5000) ks.slice(0, ks.length - 5000).forEach(k => delete orderInfo[k]);
   try { localStorage.setItem(LS_INFO, JSON.stringify(orderInfo)); } catch (_) {}
+  if (shareCfg && state.share !== false) { clearTimeout(shareT); shareT = setTimeout(shareRun, 600); }      // (the data of an order that is on the shared lists goes to the other computers too)
 }
 const rosterCount = () => Object.keys(roster).length;
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';      // the red delete boxes hold this drawn cross: it is centred in the box, a "×" character sits low in most fonts
@@ -5260,7 +5261,11 @@ async function sharePush() {
   if (minted) { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {} }      // (the ids are saved with the lists; not through save(), which would start another send)
   const writes = [], marks = [];
   for (const [sid, { k, e }] of cur) { const json = cloudCanon(e), h = hash32(json), p = share.pub[sid]; if (!p || p.h !== h) { writes.push(shareWrite(sid, k, json, false)); marks.push([sid, h, k]); } }
-  for (const [sid, p] of Object.entries(share.pub)) if (!cur.has(sid) && p.h !== null) { writes.push(shareWrite(sid, p.k || 'r', '{}', true)); marks.push([sid, null, p.k || 'r']); }
+  // the data of the orders on the lists (customer name, date, round, sub-district, …) — whatever this computer got from the sheet or from an imported file — so every screen shows the same sheet, not a blank one
+  const ords = new Set(); for (const { e } of cur.values()) if (e.order) ords.add(e.order);
+  for (const sid of Object.keys(share.pub)) if (share.pub[sid].k === 'i' && !ords.has(sid.slice(2))) delete share.pub[sid];      // (an order that left the lists is forgotten here)
+  for (const o of ords) { const inf = orderInfo[o]; if (!inf || !Object.values(inf).some(Boolean)) continue; const json = cloudCanon(inf), h = hash32(json), sid = 'i_' + o, p = share.pub[sid]; if (!p || p.h !== h) { writes.push(shareWrite(sid, 'i', json, false)); marks.push([sid, h, 'i']); } }
+  for (const [sid, p] of Object.entries(share.pub)) if (!cur.has(sid) && p.h !== null && p.k !== 'i') { writes.push(shareWrite(sid, p.k || 'r', '{}', true)); marks.push([sid, null, p.k || 'r']); }
   for (let i = 0; i < writes.length; i += 200) await shareReq(':commit', { writes: writes.slice(i, i + 200) });
   for (const [sid, h, k] of marks) { const p = share.pub[sid] || (share.pub[sid] = { sk: 0 }); p.h = h; p.k = k; }
   if (marks.length) saveShare();
@@ -5268,13 +5273,22 @@ async function sharePush() {
 function shareApply(doc, touched) {            // one document from the cloud -> the lists; true when something changed
   const id = String(doc.name || '').split('/').pop(); if (!id.startsWith(SHARE_PREFIX)) return false;
   const sid = id.slice(SHARE_PREFIX.length), f = doc.fields || {}, sk = Date.parse((f.sk || {}).timestampValue || '') || 0, p = share.pub[sid], k = (f.k || {}).stringValue;
-  if (!SHARE_LISTS[k] || (p && p.sk >= sk)) return false;
+  if ((!SHARE_LISTS[k] && k !== 'i') || (p && p.sk >= sk)) return false;
+  if (k === 'i') {                               // the data of an order: it only FILLS what this computer does not have yet (so the two computers' copies converge, nothing ping-pongs)
+    let inf; try { inf = JSON.parse((f.d || {}).stringValue); } catch (_) { return false; }
+    if (!inf || typeof inf !== 'object' || Array.isArray(inf) || !sid.startsWith('i_')) return false;
+    const order = sid.slice(2), next = Object.assign({}, orderInfo[order]); let ch = false;
+    for (const [key, v] of Object.entries(inf)) if (v && !next[key]) { next[key] = v; ch = true; }
+    if (ch) { orderInfo[order] = next; touched.info = true; }
+    share.pub[sid] = { sk, h: hash32(cloudCanon(orderInfo[order] || inf)), k: 'i' }; return ch;
+  }
   const arr = SHARE_LISTS[k](), i = arr.findIndex(e => e.sid === sid);
   if (f.x && f.x.booleanValue === true) { if (i >= 0) arr.splice(i, 1); share.pub[sid] = { sk, h: null, k }; return i >= 0; }
   let e; try { e = JSON.parse((f.d || {}).stringValue); } catch (_) { return false; }
   if (!e || typeof e !== 'object' || Array.isArray(e)) return false; e.sid = sid;
   if (i >= 0) { if (p && hash32(cloudCanon(arr[i])) !== p.h) { p.sk = sk; return false; } arr[i] = e; }      // (an edit made here and not sent yet wins)
-  else { if (p && p.h !== null) return false; arr.push(e); touched.add(k); }                              // (an entry deleted here whose "deleted" is not sent yet stays deleted)
+  else { if (p && p.h !== null) return false; arr.push(e); touched.add(k); if (k === 'p' && (!touched.latestP || e.ts > touched.latestP.ts)) touched.latestP = e; }      // (an entry deleted here whose "deleted" is not sent yet stays deleted · the newest Re-Print entry that came from another computer)
+  if (e.order) (touched.ords || (touched.ords = new Set())).add(e.order);
   share.pub[sid] = { sk, h: hash32(cloudCanon(e)), k }; return true;
 }
 async function sharePull() {
@@ -5292,8 +5306,12 @@ async function sharePull() {
     for (const k of touched) SHARE_LISTS[k]().sort((a, b) => (a.ts - b.ts) || (a.sid < b.sid ? -1 : 1));
     if (touched.has('r')) lastImport = null;                       // (the rows moved: the "undo import" positions are not true any more)
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+    if (touched.info) { try { localStorage.setItem(LS_INFO, JSON.stringify(orderInfo)); } catch (_) {} }      // (not through saveInfo(), which would send it straight back)
+    if (touched.latestP) { previewOrder = touched.latestP.order; previewPair = null; }                       // the preview follows the order scanned last on ANY computer
     try { render(); renderRpView(); } catch (_) {}
   }
+  const need = touched.ords ? [...touched.ords].filter(o => !hasInfo(o)) : [];      // orders scanned elsewhere whose data has not come with them: ask the sheet here too (it also tells the preview which orders the sheet does not know)
+  if (need.length && sheetUsable()) ensureInfo(need).then(ch => { if (ch) { try { render(); renderRpView(); } catch (_) {} } });
 }
 async function shareRun() {
   if (!shareCfg || state.share === false) return;
