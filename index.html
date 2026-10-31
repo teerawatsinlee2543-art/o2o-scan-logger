@@ -1321,7 +1321,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
     </section>
     <section class="dsec" id="zoneSec">
       <p class="dtitle"><span class="dnum">ค</span>ตรวจโซน Trip 1-20 กับออเดอร์จริง <span class="rcount">อ่านอย่างเดียว</span></p>
-      <p class="hint">ใช้ตารางโซนที่คนวางแผนไว้ (Trip 1-20) เป็นหลัก: ดูว่าออเดอร์ของไฟล์เข้าโซนไหน ออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — กด "ใช้ผลนี้เป็นเส้นทาง Trip" เพื่อใส่ลงตารางเส้นทางด้านบน ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
+      <p class="hint"><b>ไม่ต้องนำไฟล์เข้า</b> — โปรแกรมอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง แล้วตรวจโซน Trip 1-20 ให้อัตโนมัติ: เปิดแท็บนี้ · ทุก 10 นาที · และ <b>ทุกครั้งที่คุณอัปเดตเส้นทาง Trip (ก) หรือแก้ตารางโซนด้านล่าง</b> ดูว่าออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — ผลเข้าตารางเส้นทางเอง (เส้นทางที่นำเข้าเองไม่ถูกทับ) ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
       <div class="row">
         <button id="btnSheet" class="primary" type="button">ซิงค์จากชีตตอนนี้</button>
         <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
@@ -1329,12 +1329,14 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <div class="row" style="margin-top:4px">
         <label class="f"><input id="zAutoApply" type="checkbox" checked> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
       </div>
-      <label class="drop" id="zDrop" for="zFile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
-        <b>หรือ ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์</b>
-        <small>.xlsx · .csv · .tsv · .txt</small>
-      </label>
-      <input id="zFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <details class="zbox"><summary>อ่านชีตไม่ได้ (เช่นเปิดใน Artifact)? ใช้ไฟล์ออเดอร์แทน</summary>
+        <label class="drop" id="zDrop" for="zFile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+          <b>ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์</b>
+          <small>.xlsx · .csv · .tsv · .txt</small>
+        </label>
+        <input id="zFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      </details>
       <div id="srcMsg" class="msg"></div>
       <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
       <details class="zbox"><summary>ตารางโซน Trip 1-20 (พิมพ์จากรูป — ตรวจและแก้ได้)</summary>
@@ -2710,6 +2712,7 @@ $('tApply').addEventListener('click', () => {
   tripMap = {}; for (const [k, e] of p.entries) tripMap[k] = e;
   saveTrip(); toast(`อัปเดตเส้นทางแล้ว: ${p.entries.size} พื้นที่ / ${p.trips.size} Trip`);
   resetTrip(); renderTrip(); render();
+  try { document.dispatchEvent(new CustomEvent('o2o-routes-imported', { detail: { entries: [...p.entries.values()] } })); } catch (_) {}      // (section ค checks the zones again by itself)
 });
 $('tUndo').addEventListener('click', () => {
   try { const r = JSON.parse(localStorage.getItem(LS_TRIP_BAK) || 'null'); if (r && typeof r === 'object') { tripMap = r; saveTrip(); localStorage.removeItem(LS_TRIP_BAK); toast('ย้อนกลับแล้ว'); } } catch (_) {}
@@ -3095,6 +3098,34 @@ async function syncSheet(manual) {
 }
 $('btnSheet').addEventListener('click', () => syncSheet(true));
 $('tabTrip').addEventListener('click', () => { if ($('zAuto').checked && Date.now() - zLastSync > 120000) syncSheet(false); });
+/* When the Trip / zone data is updated the check runs again by itself, on the orders already read from the sheet (or after reading them): no file is needed.
+   - the routes of section ก were applied (event "o2o-routes-imported"): the imported Trips replace the lines of the same Trip numbers in the zone table (the other lines stay), then the check runs;
+   - the zone table is edited: 1.5 s after the last key. */
+let zChkT = null, zEditT = null;
+function autoCheck() {
+  clearTimeout(zChkT);
+  zChkT = setTimeout(async () => {
+    if (S.orders.length && (Date.now() - zLastSync < 600000 || !sheetReady())) { runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
+    else if (sheetReady()) await syncSheet(false);
+  }, 400);
+}
+function mergeZones(entries) {
+  const by = new Map();
+  for (const e of entries) { const m = /\d+/.exec(String(e.t)); if (!m) continue; const n = +m[0]; (by.get(n) || by.set(n, []).get(n)).push(e.a); }
+  if (!by.size) return null;
+  const seen = new Set(), out = [];
+  for (const ln of $('zoneIn').value.split(/\r?\n/)) {
+    if (!ln.trim()) continue; const m = /^\s*(ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)/.exec(ln), n = m && /^\d+$/.test(m[1]) ? +m[1] : null;
+    if (n != null && by.has(n)) { if (!seen.has(n)) { out.push(`${n}\t${[...new Set(by.get(n))].join(' / ')}`); seen.add(n); } } else out.push(ln);
+  }
+  for (const [n, a] of [...by].sort((x, y) => x[0] - y[0])) if (!seen.has(n)) out.push(`${n}\t${[...new Set(a)].join(' / ')}`);
+  return out.join('\n');
+}
+document.addEventListener('o2o-routes-imported', e => {
+  const t = mergeZones((e.detail && e.detail.entries) || []); if (t) { $('zoneIn').value = t; try { localStorage.setItem(LS_ZONES, t); } catch (_) {} }
+  autoCheck();
+});
+$('zoneIn').addEventListener('input', () => { clearTimeout(zEditT); zEditT = setTimeout(autoCheck, 1500); });
 setInterval(() => { if ($('zAuto').checked && $('paneTrip').offsetParent !== null && Date.now() - zLastSync > 600000) syncSheet(false); }, 60000);
 /* without opening any tab: a few seconds after the program starts, if the automatic fill is on and a sheet is connected, the sync + fill run once every 6 hours (the route table then reaches the other computers with the usual sync) */
 const LS_ZAT = 'o2o-zone-auto-at-v1';
