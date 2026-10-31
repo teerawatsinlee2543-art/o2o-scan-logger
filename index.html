@@ -2675,7 +2675,7 @@ $('rPrintAll').addEventListener('click', async () => {      // the barcode card 
   const ids = Object.keys(roster).sort(); if (!ids.length) return;
   const miss = missingFull();
   await printEmpCards(ids);
-  toast(miss ? T('พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (พิมพ์เป็น 4 หลัก)', ids.length, miss) : T('พิมพ์บัตรพนักงานประจำ {0} ใบ', ids.length));
+  toast(miss ? T('พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (บาร์โค้ด 4 หลัก)', ids.length, miss) : T('พิมพ์บัตรพนักงานประจำ {0} ใบ', ids.length));
 });
 $('rClear').addEventListener('click', async () => {
   if (!rosterCount() || !await ask(`ลบรายชื่อพนักงานทั้งหมด ${rosterCount()} คน?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
@@ -3871,7 +3871,7 @@ const empNoIn = $('empNoIn'), empNoMsg = $('empNoMsg'), empQList = $('empQList')
 let empQueue = [], empAddedAt = 0, empNoT = null;
 const empSay = (kind, text) => { empNoMsg.className = ('pdmsg ' + kind).trim(); empNoMsg.textContent = text; };
 async function printEmpCards(ids) {                                        // one card for each number (2 across an A4 page)
-  const items = ids.map(id => { const full = roster[id] || '', nick = nickOf(id); return { id: fullOf(id), name: nick || full, tag: nick && full && nick !== full ? full : 'EMPLOYEE' }; });
+  const items = ids.map(id => { const full = roster[id] || '', nick = nickOf(id); return { id, code: fullOf(id), name: nick || full, tag: nick && full && nick !== full ? full : 'EMPLOYEE' }; });      // (the number printed under the barcode is only the last 4; the barcode itself holds the whole 8 digits when they are known)
   if (IN_VIEWER) { if (await download(new Blob([cardsHtml(items, true, 'บัตรพนักงาน')], { type: 'text/html' }), ids.length === 1 ? `employee-card_${ids[0]}.html` : 'employee-cards.html')) toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง'); return; }
   printDoc(cardsHtml(items, false, 'บัตรพนักงาน'));
 }
@@ -3898,7 +3898,7 @@ function renderEmpQueue(newIds) {
     li.append(t, b); empQList.appendChild(li);
   });
   const n = empQueue.length;
-  const miss = empQueue.filter(id => !(rosterInfo[id] && rosterInfo[id].full)).length; empQCnt.textContent = n ? T('{0} คน', n) + (miss ? ' · ' + T('ยังไม่มีเลข 8 หลัก {0}', miss) : '') : ''; empQCnt.title = miss ? T('คนที่ยังไม่มีเลข 8 หลักจะพิมพ์เป็นเลข 4 หลัก — วางเลข 8 หลักที่ Update Data → รายชื่อปัจจุบัน → เติมเลข 8 หลัก หรือสแกนบัตรคนนั้น 1 ครั้ง') : ''; empQClr.hidden = !n; empSyncGo();
+  const miss = empQueue.filter(id => !(rosterInfo[id] && rosterInfo[id].full)).length; empQCnt.textContent = n ? T('{0} คน', n) + (miss ? ' · ' + T('ยังไม่มีเลข 8 หลัก {0}', miss) : '') : ''; empQCnt.title = miss ? T('คนที่ยังไม่มีเลข 8 หลักจะได้บาร์โค้ด 4 หลัก — วางเลข 8 หลักที่ Update Data → รายชื่อปัจจุบัน → เติมเลข 8 หลัก หรือสแกนบัตรคนนั้น 1 ครั้ง') : ''; empQClr.hidden = !n; empSyncGo();
   $('empQGoTxt').textContent = n ? T('พิมพ์บัตร {0} ใบ', n) : T('พิมพ์บัตร');
   empNoIn.placeholder = n ? T('Enter = พิมพ์ {0} ใบ', n) : T('ใส่เลข 4 ตัวท้าย หรือสแกนบัตร');
   if (newIds && newIds.length) empQList.scrollTop = empQList.scrollHeight;
@@ -4555,11 +4555,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['{0} · สั้นเกินไป (ต้องมี 4 ตัว)', '{0} · too short (needs 4 digits)', '{0} · တိုလွန်းသည် (၄ လုံးလိုသည်)'],
   ['พิมพ์บัตร {0} ใบ', 'Print {0} cards', 'ကတ် {0} ခု ပုံနှိပ်ရန်'],
   ['ยังไม่มีเลข 8 หลัก {0}', 'No 8-digit number yet {0}', 'ဂဏန်း ၈ လုံး မရှိသေးပါ {0}'],
-  ['คนที่ยังไม่มีเลข 8 หลักจะพิมพ์เป็นเลข 4 หลัก — วางเลข 8 หลักที่ Update Data → รายชื่อปัจจุบัน → เติมเลข 8 หลัก หรือสแกนบัตรคนนั้น 1 ครั้ง', 'People without the 8-digit number are printed with 4 digits — paste the 8-digit numbers in Update Data → Current list → Fill in the 8 digits, or scan that person\'s badge once', 'ဂဏန်း ၈ လုံး မရှိသူများကို ၄ လုံးဖြင့် ပုံနှိပ်မည် — Update Data → လက်ရှိစာရင်း → ဂဏန်း ၈ လုံး ဖြည့်ရန် တွင် ကူးထည့်ပါ သို့မဟုတ် ထိုသူ၏ကတ်ကို တစ်ကြိမ် စကင်ဖတ်ပါ'],
+  ['คนที่ยังไม่มีเลข 8 หลักจะได้บาร์โค้ด 4 หลัก — วางเลข 8 หลักที่ Update Data → รายชื่อปัจจุบัน → เติมเลข 8 หลัก หรือสแกนบัตรคนนั้น 1 ครั้ง', 'People without the 8-digit number get a 4-digit barcode — paste the 8-digit numbers in Update Data → Current list → Fill in the 8 digits, or scan that person\'s badge once', 'ဂဏန်း ၈ လုံး မရှိသူများသည် ဘားကုဒ် ၄ လုံး ရမည် — Update Data → လက်ရှိစာရင်း → ဂဏန်း ၈ လုံး ဖြည့်ရန် တွင် ကူးထည့်ပါ သို့မဟုတ် ထိုသူ၏ကတ်ကို တစ်ကြိမ် စကင်ဖတ်ပါ'],
   ['พิมพ์บัตรทั้งหมด', 'Print all cards', 'ကတ်အားလုံး ပုံနှိပ်ရန်'],
   ['พิมพ์บัตรทั้งหมด ({0} ใบ)', 'Print all cards ({0})', 'ကတ်အားလုံး ပုံနှိပ်ရန် ({0} ခု)'],
   ['พิมพ์บัตรพนักงานประจำ {0} ใบ', 'Printing {0} employee cards', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည်'],
-  ['พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (พิมพ์เป็น 4 หลัก)', 'Printing {0} employee cards · {1} people have no 8-digit number yet (printed with 4 digits)', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည် · {1} ဦးတွင် ဂဏန်း ၈ လုံး မရှိသေး (၄ လုံးဖြင့် ပုံနှိပ်သည်)'],
+  ['พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (บาร์โค้ด 4 หลัก)', 'Printing {0} employee cards · {1} people have no 8-digit number yet (barcode with 4 digits)', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည် · {1} ဦးတွင် ဂဏန်း ၈ လုံး မရှိသေး (ဘားကုဒ် ၄ လုံး)'],
   ['รหัส 4 หรือ 8 หลัก', 'ID — 4 or 8 digits', 'ကုဒ် ၄ သို့မဟုတ် ၈ လုံး'],
   ['รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก', 'The employee ID must be 4 or 8 digits', 'ဝန်ထမ်းကုဒ်သည် ဂဏန်း ၄ လုံး သို့မဟုတ် ၈ လုံး ဖြစ်ရမည်'],
   ['เติมเลข 8 หลักให้รายชื่อเดิม', 'Fill in the 8-digit numbers of the people already listed', 'စာရင်းရှိပြီးသူများ၏ ဂဏန်း ၈ လုံး ဖြည့်ရန်'],
