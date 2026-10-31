@@ -3307,6 +3307,7 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
       const got = await sheetLookup(chunk);
       for (const o of chunk) {
         const v = got.get(o); if (!v) { sheetMiss.set(o, Date.now()); continue; }
+        if (sheetIdx) sheetIdx.add(o);                // (it is in the sheet after all: the index of the sheet learns it)
         const cur = orderInfo[o] || {}; orderInfo[o] = Object.assign({}, cur, Object.fromEntries(Object.entries(v).filter(([, x]) => x))); changed = true;
       }
     } catch (_) { break; }                       // offline / not shared / blocked: the sheet is just skipped, scanning goes on
@@ -3330,10 +3331,37 @@ function noDataAlert(list) {
 $('ndOk').addEventListener('click', () => ndDlg.close());
 ndDlg.addEventListener('cancel', e => e.preventDefault());      // (Esc does not close it: the button does)
 ndDlg.addEventListener('close', () => { ndOrders.length = 0; clearTimeout(ndT); if (document.activeElement === document.body) focusNext(); });
+function noDataRetract(list) {                   // the sheet did know them after all: they leave the open alert (it closes when nothing is left)
+  if (!ndDlg.open) return;
+  for (const o of list) { const i = ndOrders.indexOf(o); if (i >= 0) ndOrders.splice(i, 1); }
+  if (!ndOrders.length) { ndDlg.close(); toast(T('พบข้อมูลออเดอร์นี้ในชีตแล้ว')); return; }
+  $('ndOrders').innerHTML = ndOrders.map(o => `<span>${xesc(o)}</span>`).join('');
+}
+/* a per-order question to the sheet takes ~1.3 s (measured), too slow for an alarm. So the order numbers of the sheet (one column, ~150 KB, ~1.2 s) are kept in memory and renewed every minute:
+   a scan is judged against them at once — an order that is not in the index raises the alert on the spot, and the per-order question (which also fetches the customer data) follows in the background:
+   if the sheet knows the order after all (it was added after the last renewal) the alert takes itself back. */
+let sheetIdx = null, sheetIdxAt = 0, sheetIdxBusy = false;
+async function refreshSheetIdx() {
+  if (!sheetUsable() || sheetIdxBusy) return;
+  sheetIdxBusy = true;
+  try {
+    const rows = csvRows(await gviz(sheetCfg, `select ${sheetCfg.cols.order}`)), set = new Set();
+    for (const r of rows) { const o = cellText(r[0]); if (o) set.add(o); }
+    if (set.size > 100) { sheetIdx = set; sheetIdxAt = Date.now(); }      // (an empty or broken answer never becomes the truth)
+  } catch (_) {} finally { sheetIdxBusy = false; }
+}
+if (sheetUsable()) refreshSheetIdx();
+setInterval(() => { if (sheetUsable() && !document.hidden) refreshSheetIdx(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sheetUsable() && Date.now() - sheetIdxAt > 30000) refreshSheetIdx(); });
 function scanCheck(orders, alertFor) {           // asks the sheet for the orders (see ensureInfo) and raises the alert for those of `alertFor` (default: all) that it does not know; resolves true when new data arrived
   if (!sheetUsable()) return Promise.resolve(false);
+  const target = [...new Set(alertFor || orders)].filter(o => ORD_RE.test(o));
+  const early = sheetIdx && Date.now() - sheetIdxAt < 600000 ? target.filter(o => !hasInfo(o) && !sheetIdx.has(o)) : [];
+  if (early.length) noDataAlert(early);          // not in the index of the sheet: the alert does not wait for the per-order question
   return ensureInfo(orders).then(ch => {
-    const miss = [...new Set(alertFor || orders)].filter(o => ORD_RE.test(o) && !hasInfo(o) && (sheetMiss.get(o) || 0) > Date.now() - 60000);
+    const found = early.filter(o => hasInfo(o) || (sheetIdx && sheetIdx.has(o)));
+    if (found.length) noDataRetract(found);
+    const miss = target.filter(o => !early.includes(o) && !hasInfo(o) && (sheetMiss.get(o) || 0) > Date.now() - 60000);
     if (miss.length) noDataAlert(miss);
     return ch;
   });
@@ -3352,7 +3380,7 @@ $('dbConnect').addEventListener('click', async () => {
   $('dbConnect').disabled = true; box.innerHTML = T('กำลังเชื่อมต่อ …');
   try {
     const { cfg, missing, nCols } = await connectSheet(link);
-    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} cloudTouch('sheet');
+    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} cloudTouch('sheet'); sheetIdx = null; refreshSheetIdx();
     const cols = Object.entries(DB_NAMES).map(([k, n]) => cfg.cols[k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', cfg.cols[k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
     box.innerHTML = `<div class="add">${T('เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', nCols)}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>` + (missing.length ? `<div class="chg">${T('ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า')}</div>` : '');
   } catch (e) {
@@ -3363,7 +3391,7 @@ $('dbConnect').addEventListener('click', async () => {
   }
   $('dbConnect').disabled = IN_VIEWER; renderDb(); render();
 });
-$('dbOff').addEventListener('click', () => { sheetCfg = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+$('dbOff').addEventListener('click', () => { sheetCfg = null; sheetIdx = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
 $('dbTestGo').addEventListener('click', async () => {
   const o = cleanScan($('dbTest').value), out = $('dbTestOut'); out.hidden = false;
   if (!ORD_RE.test(o)) { out.innerHTML = `<span class="err">${T('ใส่เลขออเดอร์ 11 ตัว')}</span>`; return; }
@@ -4616,6 +4644,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไม่มีเลขออเดอร์ อยู่ในระบบ', 'This order number is not in the system', 'ဤအော်ဒါနံပါတ်သည် စနစ်ထဲတွင် မရှိပါ'],
   ['รบกวนติดต่อที่ Admin Counter', 'Please contact the Admin Counter', 'Admin Counter သို့ ဆက်သွယ်ပါ'],
   ['รับทราบ', 'OK, understood', 'သိပါပြီ'],
+  ['พบข้อมูลออเดอร์นี้ในชีตแล้ว', 'This order was found in the sheet after all', 'ဤအော်ဒါကို Sheet ထဲတွင် တွေ့ပါပြီ'],
   ['ลบ {0} ออกจากรายการ', 'Remove {0} from the list', '{0} ကို စာရင်းမှ ဖယ်ရန်'],
   ['ยังไม่มีเลขที่พบในรายชื่อ — ใส่เลขพนักงานประจำก่อน', 'No number found in the list yet — enter regular-employee numbers first', 'စာရင်းတွင် တွေ့သောနံပါတ် မရှိသေးပါ — ပုံမှန်ဝန်ထမ်းနံပါတ်များ အရင်ထည့်ပါ'],
   ['✓ พิมพ์บัตร {0} ใบแล้ว — ใส่ชุดต่อไปได้เลย', '✓ {0} cards sent to print — you can enter the next batch', '✓ ကတ် {0} ခု ပုံနှိပ်ပြီး — နောက်အစုကို ထည့်နိုင်ပြီ'],
@@ -5128,7 +5157,7 @@ const CLOUD_SETS = {
                 ptime = inc; cloudLs(LS_PT, ptime); if (keep) setTimeout(() => cloudTouch('parttime'), 0);
               } },
   trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
-  sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
+  sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; sheetIdx = null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
 };
 cloudQ = (() => {
   let cfg = null, busy = false, again = false, timer = null, lastRun = 0, bigWarned = false, st = { kind: 'off', at: 0 };
