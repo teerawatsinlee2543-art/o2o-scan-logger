@@ -919,6 +919,20 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .askdlg::backdrop{background:rgba(16,24,40,.55)}
 .askdlg p{margin:0 0 16px;font-size:15px;line-height:1.55;white-space:pre-line}
 .askdlg .row{justify-content:flex-end}
+dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-radius:24px;background:linear-gradient(160deg,#e5393d,#b3141a);color:#fff;box-shadow:0 0 0 6px #c62828,0 30px 90px rgba(120,0,0,.65);overflow:hidden}      /* the red "no such order" alert */
+.nodatadlg::backdrop{background:rgba(110,0,0,.62);backdrop-filter:blur(2px)}
+.nodatadlg .ndbox{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 26px 24px;text-align:center}
+.nodatadlg .ndico{width:84px;height:84px;border-radius:50%;background:#fff;color:#c62828;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.3);animation:ndpulse 1s ease-in-out infinite}
+.nodatadlg .ndico svg{width:50px;height:50px}
+.nodatadlg h2{margin:0;font-size:clamp(24px,4.4vw,34px);line-height:1.25;font-weight:800}
+.nodatadlg p{margin:0;font-size:clamp(18px,3.4vw,24px);font-weight:700;color:#ffe3e3}
+.nodatadlg .ndorders{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-height:30vh;overflow:auto}
+.nodatadlg .ndorders span{padding:6px 16px;border-radius:12px;background:#fff;color:#8f0f14;font-size:clamp(20px,4vw,28px);font-weight:800;letter-spacing:.04em}
+.nodatadlg button{margin-top:6px;min-width:220px;padding:14px 32px;border-radius:16px;border:0;background:#fff;color:#b3141a;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.28)}
+.nodatadlg button:hover:not(:disabled){background:#fff;border:0;filter:brightness(.95)}
+.nodatadlg button:disabled{opacity:.55;cursor:default}
+@keyframes ndpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.nodatadlg .ndico{animation:none}}
 
 /* ---- cover-sheet print view: 2 identical slips per A4 page, like the printed ones ---- */
 #printView{position:fixed;inset:0;z-index:100;overflow:auto;background:#000}      /* black around the sheets */
@@ -1205,6 +1219,15 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 <dialog id="askDlg" class="askdlg" aria-labelledby="askMsg">
   <p id="askMsg"></p>
   <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
+</dialog>
+<dialog id="nodataDlg" class="nodatadlg" role="alertdialog" aria-labelledby="ndTitle" aria-describedby="ndMsg">
+  <div class="ndbox">
+    <div class="ndico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v5M12 17.6v.1"/></svg></div>
+    <h2 id="ndTitle">ไม่มีเลขออเดอร์ อยู่ในระบบ</h2>
+    <p id="ndMsg">รบกวนติดต่อที่ Admin Counter</p>
+    <div id="ndOrders" class="ndorders"></div>
+    <button id="ndOk" type="button">รับทราบ</button>
+  </div>
 </dialog>
 
 
@@ -1560,6 +1583,7 @@ const sfx = {
   full: () => { const c = bcfg(), d = Math.round(c.d * .75), g = d + 40; tone(c, d, 0, 1); tone(c, d, g, 1.19); tone(c, Math.round(c.d * 1.8), 2 * g, 1.43); },
   dup:  () => { const f = bcfg().f * .385; beep(f, 150, 'square', bvol() * .9); beep(f, 150, 'square', bvol() * .9, 210); },
   bad:  () => beep(480, 420, 'square', bvol()),
+  alarm: () => { const v = Math.min(0.3, bvol() * 1.3); for (let i = 0; i < 4; i++) { beep(920, 190, 'square', v, i * 400); beep(640, 190, 'square', v, i * 400 + 200); } },      // the siren of the red "no such order" alert: 4 x (high, low), about 1.6 s
 };
 
 /* ---------- feedback ---------- */
@@ -1648,7 +1672,7 @@ function handleScan(raw) {
     const emp = noEmp ? '' : state.emp;
     state.rows.push({ ts: Date.now(), emp, name: nameOfEmp(emp), order: v });
     save();
-    if (sheetUsable()) ensureInfo([v]).then(ch => { if (ch) render(); });       // customer name / date / round / sub-district from the Google Sheet, when one is connected
+    scanCheck([v]).then(ch => { if (ch) render(); });       // customer name / date / round / sub-district from the Google Sheet, when one is connected (an order the sheet does not know gets the red alert)
     if (dupOf) {
       sfx.dup();
       feedback('dup', 'ซ้ำ ' + v,
@@ -3290,6 +3314,30 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
   if (changed) saveInfo();
   return changed;
 }
+/* An order that is neither in the connected Google Sheet nor in an imported Call Center file has no data for its cover sheet: the scan gets a siren and a red pop-up
+   "ไม่มีเลขออเดอร์ อยู่ในระบบ — รบกวนติดต่อที่ Admin Counter". Only when the sheet really answered (a lookup that failed — offline, not shared — is not a miss), so a bad connection never cries wolf;
+   with no sheet connected (or on the claude.ai copy, which cannot reach it) nothing can be checked and nothing is raised. Several orders scanned while the pop-up is open are added to its list. */
+const hasInfo = o => !!(orderInfo[o] && (orderInfo[o].name || orderInfo[o].time));
+const ndDlg = $('nodataDlg'), ndOrders = [];
+let ndT = null;
+function noDataAlert(list) {
+  list.forEach(o => { if (!ndOrders.includes(o)) ndOrders.push(o); });
+  $('ndOrders').innerHTML = ndOrders.map(o => `<span>${xesc(o)}</span>`).join('');
+  sfx.alarm();
+  const ok = $('ndOk'); ok.disabled = true; clearTimeout(ndT); ndT = setTimeout(() => { ok.disabled = false; ok.focus(); }, 1200);      // (the Enter of a scanner that is still sending must not dismiss it at once)
+  if (!ndDlg.open) ndDlg.showModal();
+}
+$('ndOk').addEventListener('click', () => ndDlg.close());
+ndDlg.addEventListener('cancel', e => e.preventDefault());      // (Esc does not close it: the button does)
+ndDlg.addEventListener('close', () => { ndOrders.length = 0; clearTimeout(ndT); if (document.activeElement === document.body) focusNext(); });
+function scanCheck(orders, alertFor) {           // asks the sheet for the orders (see ensureInfo) and raises the alert for those of `alertFor` (default: all) that it does not know; resolves true when new data arrived
+  if (!sheetUsable()) return Promise.resolve(false);
+  return ensureInfo(orders).then(ch => {
+    const miss = [...new Set(alertFor || orders)].filter(o => ORD_RE.test(o) && !hasInfo(o) && (sheetMiss.get(o) || 0) > Date.now() - 60000);
+    if (miss.length) noDataAlert(miss);
+    return ch;
+  });
+}
 function renderDb() {
   const on = sheetUsable();
   $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on); $('tabDbCnt').classList.toggle('live', on);   // green when connected, no colour when not
@@ -3358,8 +3406,8 @@ async function assignOrder(raw) {
   const auto = state.assignAutoPrint !== false && AUTO_PRINT_RE.test(v);    // like Re-Print: an order ending in A / B has its cover sheet printed at once, with the picker's name on it
   save(); sfx.ok(); sideMsg('assign', 'ok', `✓ Assign ${v} → ${empLabel(emp, name)}` + (auto ? ' · กำลังพิมพ์' : state.assignAutoPrint !== false ? ' · ไม่พิมพ์ทันที (ลงท้ายไม่ใช่ A / B)' : ''));
   render();
+  const got = scanCheck([v]).then(ch => { if (ch) render(); });            // (the sheet is asked for every Assign: an order it does not know gets the red alert)
   if (auto) {                                                              // the data of the order (Google Sheet) is waited for, at most 6 s
-    const got = ensureInfo([v]).then(ch => { if (ch) render(); });
     Promise.race([got, new Promise(r => setTimeout(r, 6000))]).then(() => setTimeout(() => {
       if (IN_VIEWER) sideMsg('assign', 'warn', 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบปะหน้า" เพื่อบันทึกเป็นไฟล์พิมพ์'); else printSheets([reprintRow(v)]);
     }, 60));
@@ -3386,8 +3434,8 @@ function reprintOrder(raw) {
   sideMsg('reprint', 'ok', `✓ Re-Print ${v}` + (auto ? ' · รอผู้จัด' : state.autoPrint !== false ? ' · ไม่พิมพ์อัตโนมัติ (ลงท้ายไม่ใช่ A / B)' : ''));
   render();
   // the data of the order (from the Google Sheet, if one is connected) is fetched in the background: the print page and the preview are refreshed when it arrives
-  ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
-  if (auto) openRpDlg([v]);                                                // "who is the picker?" pops up: scan the employee badge -> the print page opens by itself with the picker's name
+  scanCheck([v]).then(ch => { if (ch) renderRpView(); });
+  if (auto) openRpDlg([v]);                                               // "who is the picker?" pops up: scan the employee badge -> the print page opens by itself with the picker's name
 }
 /* Re-Print, 1 page / 2 orders (the second field): a page carries two DIFFERENT orders, one on each slip. The first scan waits for its pair (the sheet on the right shows it alone on the top slip),
    the second completes the page — any two valid orders (with the automatic flow on, the picker window and the print page then follow; with it off the button prints). */
@@ -3401,7 +3449,7 @@ function reprintOrder2(raw) {
   const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false;
   state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp), pair: true });
   save(); sfx.ok();
-  const refresh = list => ensureInfo(list).then(ch => { if (ch) renderRpView(); });
+  const refresh = (list, alertFor) => scanCheck(list, alertFor).then(ch => { if (ch) renderRpView(); });      // (alertFor: only the order scanned just now can raise the red alert)
   // (every order is paired, whatever it ends in — an order that did not end in A / B used to be shown alone on both slips, which did not match the "1 Page / 2 Order" field)
   if (!pairWait) {
     pairWait = v; previewOrder = v; previewPair = [v];
@@ -3409,8 +3457,8 @@ function reprintOrder2(raw) {
   }
   const a = pairWait; pairWait = null; previewOrder = v; previewPair = [a, v];
   sideMsg('reprint', 'ok', `✓ Re-Print ${a} + ${v}` + (autoOn ? ' · รอผู้จัด' : '')); render();
-  refresh([a, v]);
-  if (autoOn) openRpDlg([a, v]);                                           // the page is complete: the picker window, then the print page with this one page of two orders
+  refresh([a, v], [v]);
+  if (autoOn) openRpDlg([a, v]);                                          // the page is complete: the picker window, then the print page with this one page of two orders
 }
 /* Re-Print, MANY orders in one go (the third and fourth fields, red border): the orders are only collected here (no print on each scan). Once at least one waits, the green "เสร็จสิ้น / ใส่ชื่อผู้จัด" button
    under the field asks who the picker is (a pop-up with the one field that takes a scanned badge or a typed nickname), and then the print page comes up by itself with every waiting order, the picker's name on
@@ -3430,7 +3478,7 @@ function reprintBulk(raw, two) {
   const list = bulkPending(two), n = list.length;
   previewOrder = v; previewPair = two ? (n % 2 ? [v] : [list[n - 2].order, v]) : null; save(); sfx.ok();
   sideMsg('reprint', 'ok', two ? T('✓ {0} · รอพิมพ์ {1} ออเดอร์ ({2} หน้า) — สแกนต่อได้ หรือกดปุ่มเขียว', v, n, Math.ceil(n / 2)) : T('✓ {0} · รอพิมพ์ {1} ออเดอร์ — สแกนต่อได้ หรือกดปุ่มเขียว', v, n));
-  render(); ensureInfo([v]).then(ch => { if (ch) renderRpView(); });
+  render(); scanCheck([v]).then(ch => { if (ch) renderRpView(); });
 }
 function bulkApply(two) {                             // the picker who is signed in goes on every waiting order, then the print page
   const emp = state.emp, name = nameOfEmp(emp), list = bulkPending(two);
@@ -4565,6 +4613,9 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เลข 4 ตัวท้ายซ้ำกัน {0} (ข้าม)', 'same last 4 digits {0} (skipped)', 'နောက်ဆုံး ၄ လုံး တူနေသည် {0} (ကျော်သည်)'],
   ['ข้าม {0} ค่าที่ไม่ใช่เลข 8 หลัก', 'skipped {0} values that are not 8 digits', 'ဂဏန်း ၈ လုံး မဟုတ်သော တန်ဖိုး {0} ခု ကျော်သည်'],
   ['เติมเลข 8 หลักให้ {0} คนแล้ว', '8-digit numbers filled in for {0} people', '{0} ဦးအတွက် ဂဏန်း ၈ လုံး ဖြည့်ပြီး'],
+  ['ไม่มีเลขออเดอร์ อยู่ในระบบ', 'This order number is not in the system', 'ဤအော်ဒါနံပါတ်သည် စနစ်ထဲတွင် မရှိပါ'],
+  ['รบกวนติดต่อที่ Admin Counter', 'Please contact the Admin Counter', 'Admin Counter သို့ ဆက်သွယ်ပါ'],
+  ['รับทราบ', 'OK, understood', 'သိပါပြီ'],
   ['ลบ {0} ออกจากรายการ', 'Remove {0} from the list', '{0} ကို စာရင်းမှ ဖယ်ရန်'],
   ['ยังไม่มีเลขที่พบในรายชื่อ — ใส่เลขพนักงานประจำก่อน', 'No number found in the list yet — enter regular-employee numbers first', 'စာရင်းတွင် တွေ့သောနံပါတ် မရှိသေးပါ — ပုံမှန်ဝန်ထမ်းနံပါတ်များ အရင်ထည့်ပါ'],
   ['✓ พิมพ์บัตร {0} ใบแล้ว — ใส่ชุดต่อไปได้เลย', '✓ {0} cards sent to print — you can enter the next batch', '✓ ကတ် {0} ခု ပုံနှိပ်ပြီး — နောက်အစုကို ထည့်နိုင်ပြီ'],
