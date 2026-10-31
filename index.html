@@ -1323,8 +1323,11 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
       <p class="dtitle"><span class="dnum">ค</span>ตรวจโซน Trip 1-20 กับออเดอร์จริง <span class="rcount">อ่านอย่างเดียว</span></p>
       <p class="hint">ใช้ตารางโซนที่คนวางแผนไว้ (Trip 1-20) เป็นหลัก: ดูว่าออเดอร์ของไฟล์เข้าโซนไหน ออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — กด "ใช้ผลนี้เป็นเส้นทาง Trip" เพื่อใส่ลงตารางเส้นทางด้านบน ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
       <div class="row">
-        <button id="btnSheet" class="primary" type="button">ดึงจากชีตที่เชื่อมต่อไว้</button>
-        <label class="f">วันที่ส่ง <input id="dateIn" type="date"></label>
+        <button id="btnSheet" class="primary" type="button">ซิงค์จากชีตตอนนี้</button>
+        <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <label class="f"><input id="zAutoApply" type="checkbox"> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
       </div>
       <label class="drop" id="zDrop" for="zFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
@@ -2837,14 +2840,14 @@ async function gviz(cfg, tq) {
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
   try { const r = await hooks.fetch(u, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' }); if (!r.ok) throw new Error('HTTP ' + r.status); const text = await r.text(); if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared'); return text; } finally { clearTimeout(timer); }
 }
-async function ordersFromSheet(dateText) {
+async function ordersFromSheet(dateTexts) {
   let cfg = null; try { cfg = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); } catch (_) {}
   if (!cfg || !cfg.id) throw new Error('ยังไม่ได้เชื่อมต่อชีตในโปรแกรมสแกน — เปิด Update Data → ฐานข้อมูลออเดอร์ ก่อน (หน้านี้ใช้ชีตที่เชื่อมต่อไว้ที่นั่น) หรือใช้ไฟล์แทน');
   const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
   const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
   if (!cols.no || !cols.date || !(cols.sd || cols.d)) throw new Error('ชีตไม่มีคอลัมน์ Order Number / Original Expected Date / Sub District');
-  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), esc1 = dateText.replace(/'/g, "''");
-  const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${cols.date} contains '${esc1}'`);
+  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), where = [].concat(dateTexts).map(d => `${cols.date} contains '${String(d).replace(/'/g, "''")}'`).join(' or ');
+  const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${where}`);
   const rows = parseDelimited(text); if (!rows.length) return [];
   const fake = [want.map(k => KEYS[k][0])].concat(rows.slice(1));           // (the first row of the answer is the column labels)
   return rowsToOrders(fake.map(r => r.slice()));
@@ -3065,19 +3068,40 @@ const zDropBox = $('zDrop');
 ['dragenter', 'dragover'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.remove('over'); }));
 zDropBox.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
-$('btnSheet').addEventListener('click', async () => {
-  const v = $('dateIn').value; if (!v) { say('เลือกวันที่ส่งก่อน', 'err'); return; }
-  const [y, m, d] = v.split('-'), dt = `${d}-${MON[+m - 1]}-${y}`; say('กำลังอ่านจากชีต (อ่านอย่างเดียว) …');
-  try { setOrders(await ordersFromSheet(dt), 'ชีตที่เชื่อมต่อไว้ ' + dt); }
-  catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
-});
+/* Auto sync: the orders of the last 30 days (and the next 3) are read from the connected sheet (read only; the link never leaves this browser and is not in this file), the zone check runs on them, and
+   - when the Trip tab is opened (if the last sync is older than 2 minutes) and every 10 minutes while it stays open,
+   - optionally the result goes into the route table by itself ("ใส่ผลลงตารางเส้นทางให้เอง": only when something changes, backup + undo as always). */
+const LS_ZAUTO = 'o2o-zone-auto-v1';
+let zCfg = { auto: true, apply: false }; try { Object.assign(zCfg, JSON.parse(localStorage.getItem(LS_ZAUTO) || '{}')); } catch (_) {}
+$('zAuto').checked = !!zCfg.auto; $('zAutoApply').checked = !!zCfg.apply;
+const zSave = () => { zCfg = { auto: $('zAuto').checked, apply: $('zAutoApply').checked }; try { localStorage.setItem(LS_ZAUTO, JSON.stringify(zCfg)); } catch (_) {} };
+$('zAuto').addEventListener('change', () => { zSave(); if (zCfg.auto) syncSheet(false); });
+$('zAutoApply').addEventListener('change', () => { zSave(); if (zCfg.apply && Z.zt) applyRoutes(true); });
+const sheetReady = () => { if (IN_VIEWER) return false; try { const c = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); return !!(c && c.id); } catch (_) { return false; } };
+const lastDays = (n, ahead) => { const out = [], now = new Date(); for (let k = -ahead; k < n; k++) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - k); out.push(`${String(d.getDate()).padStart(2, '0')}-${MON[d.getMonth()]}-${d.getFullYear()}`); } return out; };
+let zSyncing = false, zLastSync = 0;
+async function syncSheet(manual) {
+  if (zSyncing) return;
+  if (!sheetReady()) { if (manual) say(IN_VIEWER ? 'หน้านี้เปิดใน Artifact — อ่านชีตไม่ได้ ใช้ไฟล์แทน' : 'ยังไม่ได้เชื่อมต่อชีต — เปิดแท็บ "ฐานข้อมูลออเดอร์" แล้วเชื่อมต่อก่อน', 'err'); return; }
+  zSyncing = true; say('กำลังซิงค์จากชีต (อ่านอย่างเดียว) …');
+  try {
+    const orders = await ordersFromSheet(lastDays(30, 3)); zLastSync = Date.now();
+    const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);
+    if (orders.length) { $('zAll').checked = true; runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
+  } catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
+  finally { zSyncing = false; }
+}
+$('btnSheet').addEventListener('click', () => syncSheet(true));
+$('tabTrip').addEventListener('click', () => { if ($('zAuto').checked && Date.now() - zLastSync > 120000) syncSheet(false); });
+setInterval(() => { if ($('zAuto').checked && $('paneTrip').offsetParent !== null && Date.now() - zLastSync > 600000) syncSheet(false); }, 60000);
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
 $('btnZone').addEventListener('click', runZones);
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
 /* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
    the English spellings of those sub-districts get the same Trip. It is added to the table above (the same area written the same way is replaced, the rest stays) and "ย้อนกลับครั้งล่าสุด" brings the old table back. */
-async function applyRoutes() {
+async function applyRoutes(silent) {
   if (!Z.zt) return;
   const bySd = new Map();
   for (const o of Z.orders) { const t = finalOf(o); if (t == null || !o.sd) continue; const m = bySd.get(o.sd) || bySd.set(o.sd, new Map()).get(o.sd); m.set(t, (m.get(t) || 0) + 1); }
@@ -3086,12 +3110,13 @@ async function applyRoutes() {
   const entries = new Map();
   for (const [sd, m] of bySd) { const best = [...m].sort((a, b) => b[1] - a[1])[0][0]; entries.set(normArea(sd), { a: sd, t: String(best) }); for (const e of (en[sd] || [])) entries.set(normArea(e), { a: e, t: String(best) }); }
   const old = Object.keys(tripMap).length, tripsN = new Set([...entries.values()].map(e => e.t)).size;
-  if (!await ask(`ใช้ผลนี้เป็นเส้นทาง Trip?\n${bySd.size} แขวง (รวมชื่อภาษาอังกฤษ ${entries.size} พื้นที่) ใน ${tripsN} Trip\nแขวงที่ซ้ำกับเส้นทางเดิมจะถูกแทนที่ ที่ไม่ซ้ำยังอยู่ (เส้นทางเดิม ${old} พื้นที่)\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
+  const changed = [...entries].filter(([k, e]) => !tripMap[k] || tripMap[k].t !== e.t).length; if (silent && !changed) return;      // (auto mode: nothing to do when the table already says the same)
+  if (!silent && !await ask(`ใช้ผลนี้เป็นเส้นทาง Trip?\n${bySd.size} แขวง (รวมชื่อภาษาอังกฤษ ${entries.size} พื้นที่) ใน ${tripsN} Trip — เพิ่มหรือแก้ ${changed} พื้นที่\nแขวงที่ซ้ำกับเส้นทางเดิมจะถูกแทนที่ ที่ไม่ซ้ำยังอยู่ (เส้นทางเดิม ${old} พื้นที่)\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
   try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
   for (const [k, e] of entries) tripMap[k] = e;
-  saveTrip(); renderTrip(); render(); toast(`ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
+  saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, Z, S };
 
 })();
 
