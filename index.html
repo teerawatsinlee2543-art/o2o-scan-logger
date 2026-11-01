@@ -3118,27 +3118,130 @@ function buildMatcher(zt) {
     kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k), nm: nm.trim() });      // (nm = the name as the table writes it: the cover slip prints it when the address names no road)
   }
   kws.sort((a, b) => b.k.length - a.k.length);
-  return { kws, kmap, dups };
+  return { kws, kmap, dups, fzk: kws.filter(w => !/\d/.test(w.k) && w.k.length >= 6), cn: new Map(), fh: new Map() };      // (fzk = the names a misspelling can be matched to: letters only, 6+; cn / fh = memos of canonName / fuzzyHit)
+}
+/* ===== Reading the road and the soi out of the Shipping Address ===== (the Trip of an order and the road printed on its slip both come from here)
+   - the prefixes ซ. / ซอย / ซ and ถ. / ถนน / ถ, and in English Soi / Alley / Lane and Thanon / Road / Rd;
+   - the name is cut where a run-on word starts ("ราษฎร์อุทิศซอย…", "ไทยรามัญแขวง…"), junk words and one-letter names are dropped, a leading dot is ignored;
+   - a name written differently from the zone table (a misspelling: "พระยาสุเรนท์", "รามอินนทรา", "ประเสิรฐมนูกิจ") is matched to it by edit distance (1; 2 for names of 10+ letters; never when two zone names tie);
+   - English spellings of the roads of the table ("Ram Inthra", "Nawamin", "Serithai") are read as the Thai name;
+   - names that are not in the table are spelled as the most common spelling in the orders (a misspelling within one edit of a name that 4+ orders use). */
+function lev(a, b, max) {      // edit distance (insert / delete / replace / swap of two neighbours); stops early above `max`
+  const m = a.length, n = b.length; if (Math.abs(m - n) > max) return max + 1;
+  let pp = null, p = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const c = [i]; let lo = i;
+    for (let j = 1; j <= n; j++) {
+      let v = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (pp && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, pp[j - 2] + 1);
+      c[j] = v; if (v < lo) lo = v;
+    }
+    if (lo > max) return max + 1; pp = p; p = c;
+  }
+  return p[n];
+}
+function fuzzyHit(t, M) {      // t = a spelling-tolerant (fz) text that STARTS with a road name -> the zone name it is a misspelling of
+  if (t.length < 5) return null;
+  if (M.fh.has(t)) return M.fh.get(t);
+  const r = fuzzyHit0(t, M); M.fh.set(t, r); return r;
+}
+function fuzzyHit0(t, M) {
+  let best = null, tie = false;
+  for (const w of M.fzk) {
+    const L = w.k.length, max = L >= 10 ? 2 : 1;
+    for (let len = L - 1; len <= L + 1 && len <= t.length; len++) {
+      const d = lev(w.k, t.slice(0, len), max); if (d > max) continue;
+      if (!best || d < best.d || (d === best.d && L > best.L)) { best = { d, L, w }; tie = false; }
+      else if (d === best.d && L === best.L && w.k !== best.w.k && w.trip !== best.w.trip) tie = true;
+    }
+  }
+  return best && !tie ? best.w : null;
+}
+const EN_ALIAS_SRC = 'รามอินทรา=ramintra,ramindra,raminthra,rarmintra,ramintara,raminthara;รามคำแหง=ramkhamhaeng,ramkamhaeng,ramkhumhaeng,ramkhamheang,ramkamheang;นวมินทร์=nawamin,nawamintr;เสรีไทย=serithai,sereethai,seerithai,serrithai;หทัยราษฎร์=hathairat,hatairat,hathairaj,hathairatch;พระยาสุเรนทร์=phrayasuren,prayasuren,phrayasurin;นิมิตใหม่=nimitmai,nimitrmai,nimitmay,nimitrmay;ราษฎร์พัฒนา=ratphatthana,ratpattana,ratphattana,ratphatana;ราษฎร์อุทิศ=ratuthit,ratuthid,ratutit,ratuthis;สีหบุรานุกิจ=sihaburanukit,sihaburanukij,sihaburanukitch;ประเสริฐมนูกิจ=prasertmanukit,prasertmanukitch,prasoetmanukit,prasertmanukij,prasertmanukich;ลาดพร้าว=latphrao,ladprao,latprao,ladphrao;สุขาภิบาล=sukhaphiban,sukapiban,sukhapiban,sukaphiban;คู้บอน=khubon,kubon,khuubon;วัชรพล=watcharaphon,watcharapol,watcharaphol,watcharapon;ศรีนครินทร์=srinakarin,sinakharin,srinakharin,srinagarin;สุวินทวงศ์=suwinthawong,suwintawong;ร่มเกล้า=romklao,ramklao,romglao;เคหะร่มเกล้า=keharomklao;บึงขวาง=buengkhwang,buengkwang;คุ้มเกล้า=khumklao,kumklao,khoomklao;เทพรักษ์=theprak,theparak,thepparak;หนองระแหง=nongrahaeng,nongraheang,nongrahang;ไทยรามัญ=thairaman,thairamun;สวนสยาม=suansiam;กาญจนาภิเษก=kanchanaphisek,kanchanapisek;เลียบคลองสอง=liapkhlongsong,liabkhlongsong;สุเหร่าคลองหนึ่ง=suraokhlongnueng,suraokhlongneung;ถนอมมิตร=thanommit,thanommitr;ประชาร่วมใจ=pracharuamjai,prachaaruamjai;เจริญพัฒนา=charoenphatthana,charoenpattana;ราษฎร์นิมิตร=ratnimit,ratnimitr;ไมตรีจิต=maitrijit,maitreejit';      // (the roads of the zone table in Latin letters, no spaces / hyphens)
+const EN_ALIAS = []; for (const part of EN_ALIAS_SRC.split(';')) { const [th, es] = part.split('='); for (const e of es.split(',')) EN_ALIAS.push([e.replace(/[^a-z]/g, ''), th]); }
+EN_ALIAS.sort((a, b) => b[0].length - a[0].length);
+const latinKey = s => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+const enAlias = key => { for (const [e, th] of EN_ALIAS) if (key.includes(e)) return th; return null; };
+const enNamesOf = addr => {      // the roads of the table written in Latin letters anywhere in the address; each run of Latin words is read alone (a comma, a number or a Thai word ends it), so words that are only neighbours never join into a name
+  const s = String(addr || ''); if (!/[A-Za-z]{5}/.test(s)) return NONE;
+  const hit = MEMO.e.get(s); if (hit) return hit; if (MEMO.e.size > 20000) MEMO.e.clear();
+  const out = [];
+  for (const seg of s.split(/[^A-Za-z\s.\-]+/)) { const key = latinKey(seg); if (key.length < 5) continue; for (const [e, th] of EN_ALIAS) if (key.includes(e) && !out.includes(th)) out.push(th); }
+  MEMO.e.set(s, out); return out;
+};
+const NONE = [];
+const NAME_CUT = /(ระหว่าง|แขวง|เขต|ตำบล|อำเภอ|จังหวัด|ตรงข้าม|ใกล้|ติดกับ|ซอย|ถนน|หมู่บ้าน|กรุงเทพ)/g;
+const NAME_JUNK = new Set(['ที่', 'ย่อย', 'เมน', 'main', 'ใหม่', 'ตัน', 'แยก', 'ข้าง', 'หน้า', 'ใน', 'นี้', 'เลขที่', 'บ้าน', 'ซ้าย', 'ขวา']);
+function cleanName(text) {      // "ราษฎร์อุทิศซอย" -> {name:'ราษฎร์อุทิศ', num:''} ; "เสรีไทย 89" -> {name:'เสรีไทย', num:'89'} ; null = not a name
+  let s = String(text || '').replace(/[​‌‍]/g, '').replace(/^[.\-,;:\s]+/, ''), m; NAME_CUT.lastIndex = 0;
+  while ((m = NAME_CUT.exec(s))) { if (m.index >= 3) { s = s.slice(0, m.index); break; } }
+  s = s.replace(/^\d+(?:[\/\-]\d+)*\s*/, '');      // (a house number stuck in front)
+  const di = s.search(/\d/);      // the name ends where the first digit starts; those digits are the soi number ("คู้บอน27แยก2" -> คู้บอน + 27)
+  let name = (di >= 0 ? s.slice(0, di) : s).replace(/[.\-,;:\s]+$/, '').trim(); const num = di >= 0 ? (/^\d+(?:[\/\-]\d+)*/.exec(s.slice(di)) || [''])[0] : '';
+  if (/^[A-Za-z]/.test(name)) { const th = enAlias(latinKey(name)); if (!th) return null; name = th; }      // (an English name that is not a road of the table is not read: it would stay English on a Thai slip)
+  if ((name.match(/[ก-๙]/g) || []).length < 3 || NAME_JUNK.has(name)) return null;
+  return { name, num };
+}
+let LEX = { map: new Map(), list: [] };
+function buildLex(orders, M) {      // the names that 4+ orders use (spelling by their most common form): a name one edit away from one of them is spelled like it
+  const cnt = new Map();
+  for (const o of orders) for (const m of mentionsOf(o.addr)) { if (m.numOnly) continue; const c = cleanName(m.text); if (!c) continue; const disp = canonName(c.name, M, true), k = fz(disp), e = cnt.get(k) || cnt.set(k, { n: 0, disp }).get(k); e.n++; }
+  const list = [...cnt].filter(([k, e]) => e.n >= 4 && k.length >= 6).sort((a, b) => b[1].n - a[1].n).map(([k, e]) => ({ k, disp: e.disp }));
+  LEX = { map: new Map(list.map(e => [e.k, e.disp])), list };
+}
+function lexName(k) {
+  if (LEX.map.has(k)) return LEX.map.get(k); if (k.length < 7) return null;
+  for (const e of LEX.list) { if (Math.abs(e.k.length - k.length) <= 1 && lev(e.k, k, 1) <= 1) return e.disp; }
+  return null;
+}
+function canonName(name, M, noLex) {      // the name as the zone table writes it (a misspelling is corrected); else as the orders mostly write it; else as it is
+  const k = fz(name); let c = M.cn.get(k);
+  if (c === undefined) {
+    c = null;
+    for (const w of M.kws) if (!/\d/.test(w.k) && (k === w.k || (k.startsWith(w.k) && k.length - w.k.length <= 2))) { c = w.nm; break; }
+    if (!c) { const f = fuzzyHit(k, M); if (f) c = f.nm; }
+    M.cn.set(k, c);
+  }
+  return c || (!noLex && lexName(k)) || name;
 }
 /* The soi ("ซ." / "ซอย" / "ซ ") and the road ("ถ." / "ถนน" / "ถ ") that the Shipping Address names, with the name and the number after it ("ซ.เสรีไทย 89", "ซอยคลองเก้า7", "ถนน คุ้มเกล้า"): a soi / road is a small, exact place, while a sub-district or a district of Bangkok
    is a big area that many Trips cross, so these are asked first. */
 const MENTION_RE = /(?:^|[\s,;(\[\-])(ซอย|ซ\.|ซ(?=\s)|ถนน|ถ\.|ถ(?=\s))\s*([^\s,;()\[\]]+(?:\s*\d+(?:[\/\-]\d+)*)?)/g;
-function mentionsOf(addr) {
+const EN_MENTION_RE = /\b(Soi|Alley|Lane|Thanon|Road|Rd)\b\.?\s*([A-Za-z][A-Za-z.\-]*(?:\s+[A-Za-z][A-Za-z.\-]*){0,3})(?:\s*(\d+(?:[\/\-]\d+)*))?/gi;
+const EN_BEFORE_RE = /((?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}(?:\s+(?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}){0,3})\s+(Road|Rd|Soi|Alley|Lane)\b\.?(?:\s*(\d+(?:[\/\-]\d+)*))?/gi;      // (the name is the words before Road / Soi, never Road / Soi themselves; word lengths are bounded so a very long run of letters cannot make the search slow)
+const EN_SOINUM_RE = /\b(?:Soi|Alley|Lane)\s+(\d+(?:[\/\-]\d+)*)/gi;
+const MEMO = { m: new Map(), e: new Map() };      // (the same address is read several times — the match, the label, the guess — so each reading is kept; emptied when it grows large)
+function mentionsOf(addr) {      // -> [{kind:'ซ'|'ถ', text, numOnly?}]
+  const key = String(addr || ''), hit = MEMO.m.get(key); if (hit) return hit;
+  if (MEMO.m.size > 20000) MEMO.m.clear();
+  const r = mentionsOf0(key); MEMO.m.set(key, r); return r;
+}
+function mentionsOf0(addr) {
   const s = String(addr || '').replace(/[​‌‍]/g, ''), out = []; let m; MENTION_RE.lastIndex = 0;
-  while ((m = MENTION_RE.exec(s))) { if (/^[\d\/\-]+$/.test(m[2])) continue; out.push({ kind: m[1][0] === 'ซ' ? 'ซ' : 'ถ', text: m[2] }); if (out.length >= 8) break; }      // (a bare number is a soi of a road named somewhere else: nothing to look up)
+  while ((m = MENTION_RE.exec(s))) {
+    const kind = m[1][0] === 'ซ' ? 'ซ' : 'ถ';
+    if (/^[\d\/\-]+$/.test(m[2])) { if (kind === 'ซ') out.push({ kind, text: m[2], numOnly: true }); continue; }      // (a bare soi number belongs to a road named elsewhere in the address: nothing to look up, but the slip adds it to that road)
+    out.push({ kind, text: m[2] }); if (out.length >= 8) break;
+  }
+  if (/[A-Za-z]{3}/.test(s)) {
+    EN_MENTION_RE.lastIndex = 0; while ((m = EN_MENTION_RE.exec(s))) { const th = enAlias(latinKey(m[2])); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[1]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Soi Ramkhamhaeng 164 -> ซ รามคำแหง164)
+    EN_BEFORE_RE.lastIndex = 0; while ((m = EN_BEFORE_RE.exec(s))) { const th = enAlias(latinKey(m[1])); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[2]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Ram Inthra Road -> ถ รามอินทรา: the name before the word)
+    EN_SOINUM_RE.lastIndex = 0; while ((m = EN_SOINUM_RE.exec(s))) out.push({ kind: 'ซ', text: m[1], numOnly: true });      // (Soi 8: a bare soi number)
+  }
   return out;
 }
 /* Order of asking — each step only when the one before found no zone name:
    1. the soi of the address (ซ. / ซอย / ซ)      2. the road of the address (ถ. / ถนน / ถ)      3. everything else written in the address (communities, villages, roads written without ถ.)
    4. the Sub District column      5. a big road named in the address / the District column (weak evidence).
    In steps 1 and 2 a big road (รามอินทรา, เสรีไทย, …) counts too: named as THE road or soi of the address it is exact, unlike in the free text. */
+const ADMIN_RE = new RegExp([fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต')].join('|'), 'g');
+const adminCleaner = o => { const sdk = nk(o.sd), dk = nk(o.d), zip = String(o.zip || ''); return t => { t = t.replace(ADMIN_RE, '|'); for (const x of [sdk, dk, zip]) if (x && x.length > 1) t = t.split(x).join('|'); return t; }; };      // the administrative words of the address (Bangkok, แขวง, เขต, its own sub-district / district / post code) are not road names
 function matchOrder(o, M) {                                          // -> {trip, how} ; how: soi / road (a zone name in the soi, the road or elsewhere in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
-  const sdk = nk(o.sd), dk = nk(o.d);
-  const clean = t => { for (const x of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(o.zip || '')]) if (x && x.length > 1) t = t.split(x).join('|'); return t; };      // the administrative words of the address are not road names
+  const sdk = nk(o.sd), dk = nk(o.d), clean = adminCleaner(o);
   const hit = (txt, strongOnly) => { for (const w of M.kws) if ((!strongOnly || !w.weak) && txt.includes(w.k)) return w; return null; };
   const ms = mentionsOf(o.addr);
-  for (const kind of ['ซ', 'ถ']) for (const m of ms) if (m.kind === kind) { const t = clean(fz(m.text)), w = hit(t, true) || hit(t, false); if (w) return { trip: w.trip, how: kind === 'ซ' ? 'soi' : 'road' }; }      // (a road written as two roads, "ศรีนครินทร์-ร่มเกล้า": the one that is not a big road wins, as it does in the free text)
-  const text = clean(fz(o.addr));
+  for (const kind of ['ซ', 'ถ']) for (const m of ms) if (m.kind === kind && !m.numOnly) { const t = clean(fz(m.text)), w = hit(t, true) || hit(t, false) || fuzzyHit(t, M); if (w) return { trip: w.trip, how: kind === 'ซ' ? 'soi' : 'road' }; }      // (a road written as two roads, "ศรีนครินทร์-ร่มเกล้า": the one that is not a big road wins, as it does in the free text; a misspelled name is matched by edit distance last)
+  const text = clean(fz(o.addr)) + enNamesOf(o.addr).map(n => '|' + fz(n)).join('');      // (+ the Thai names of roads written in English anywhere in the address)
   const w3 = hit(text, true); if (w3) return { trip: w3.trip, how: 'road' };
   if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };
   const w5 = hit(text, false); if (w5) return { trip: w5.trip, how: 'weak' };
@@ -3153,17 +3256,21 @@ const roadCap = s => s.length > 28 ? s.slice(0, 27).trim() + '…' : s;      // 
 function roadLabel(x) { const r = roadLabel0(x); return r ? roadCap(r) : r; }
 function roadLabel0(x) {
   const addr = String(x.addr || ''); if (!addr.trim()) return undefined;
-  const LET = /[ก-๙A-Za-z]/, tidy = t => t.replace(/\s+/g, ' ').replace(/[.,;:\-\/]+$/, '').trim();
-  const ms = mentionsOf(addr), road = ms.find(m => m.kind === 'ถ' && LET.test(m.text)), soi = ms.find(m => m.kind === 'ซ' && LET.test(m.text));
+  const z = zoneMatcher(), M = z.M, ms = mentionsOf(addr);
+  const named = kind => { for (const m of ms) if (m.kind === kind && !m.numOnly) { const c = cleanName(m.text); if (c) return { name: canonName(c.name, M), num: c.num }; } return null; };
+  const road = named('ถ'), soi = named('ซ'), soiNum = ms.find(m => m.kind === 'ซ' && m.numOnly);
+  const keepNum = r => r.num && M.kws.some(w => w.k === fz(r.name + r.num));      // a number that is part of the road's name (สุขาภิบาล 5), not a house number
+  const roadTxt = r => 'ถ.' + r.name + (keepNum(r) ? ' ' + r.num : '');
   if (road || soi) {
     if (road && soi) {
-      const same = nk(soi.text).includes(nk(road.text)), num = /\d/.test(soi.text) ? tidy(soi.text.replace(/^\D+/, '')) : '';
-      return 'ถ.' + tidy(road.text) + (same ? (num ? ' ซ.' + num : '') : ' ซ.' + tidy(soi.text));
+      if (nk(soi.name) === nk(road.name)) return roadTxt(road) + (soi.num ? ' ซ.' + soi.num : soiNum ? ' ซ.' + soiNum.text : '');      // a soi named after its road is written once: "ถ.เสรีไทย ซ.89"
+      return roadTxt(road) + ' ซ.' + soi.name + (soi.num ? ' ' + soi.num : '');
     }
-    return road ? 'ถ.' + tidy(road.text) : 'ซ.' + tidy(soi.text);
+    if (road) return roadTxt(road) + (soiNum ? ' ซ.' + soiNum.text : '');      // ("ถ.รามอินทรา ซ.8": the bare soi number goes with the road)
+    return 'ซ.' + soi.name + (soi.num ? ' ' + soi.num : '');
   }
-  const z = zoneMatcher(), sdk = nk(x.sd), dk = nk(x.d), clean = t => { for (const y of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(x.zip || '')]) if (y && y.length > 1) t = t.split(y).join('|'); return t; };
-  const text = clean(fz(addr)); let w = null;
+  const clean = adminCleaner(x);
+  const text = clean(fz(addr)) + enNamesOf(addr).map(n => '|' + fz(n)).join(''); let w = null;
   for (const k of z.M.kws) if (!k.weak && text.includes(k.k)) { w = k; break; }
   if (!w) for (const k of z.M.kws) if (text.includes(k.k)) { w = k; break; }
   return w ? w.nm : '';
@@ -3174,15 +3281,19 @@ function roadLabel0(x) {
    each source votes with the share of its orders per Trip; the best Trip needs 60 % of all the votes. OpenStreetMap road positions were tried too (nearest zone road): right only 22-29 % — the Trip table is a plan, not a map. */
 const LS_ZGUESS = 'o2o-zguess-v1';
 const zGuessOn = () => { const e = $('zGuess'); return !e || e.checked; };
-function roadKeyOf(o) { const ms = mentionsOf(o.addr), r = ms.find(m => m.kind === 'ถ') || ms[0], k = r ? nk(r.text).replace(/\d.*$/, '') : ''; return k.length >= 3 ? k : ''; }
-function buildGuess(orders) {
+function roadKeyOf(o, M) {      // the road of the order in its canonical spelling (so a misspelling votes with the others)
+  const ms = mentionsOf(o.addr).filter(m => !m.numOnly), r = ms.find(m => m.kind === 'ถ') || ms[0]; if (!r) return '';
+  const c = cleanName(r.text); if (!c) return '';
+  const k = fz(M ? canonName(c.name, M) : c.name); return k.length >= 3 ? k : '';
+}
+function buildGuess(orders, M) {
   const rk = new Map(), tms = new Map(), sd = new Map(), add = (m, k, t) => { if (!k) return; const e = m.get(k) || m.set(k, new Map()).get(k); e.set(t, (e.get(t) || 0) + 1); };
-  for (const o of orders) if (o.zt != null) { o._rk = roadKeyOf(o); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
+  for (const o of orders) if (o.zt != null) { o._rk = roadKeyOf(o, M); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
   const out = new Map();
   for (const o of orders) {
     if (o.zt != null) continue;
     const comb = new Map(), take = (m, k, w) => { const e = k && m.get(k); if (!e) return; let tot = 0; for (const n of e.values()) tot += n; for (const [t, n] of e) comb.set(t, (comb.get(t) || 0) + w * n / tot); };
-    take(rk, roadKeyOf(o), 3); take(tms, o.trip, 2); take(sd, o.sd + '|' + o.d, 1);
+    take(rk, roadKeyOf(o, M), 3); take(tms, o.trip, 2); take(sd, o.sd + '|' + o.d, 1);
     if (!comb.size) continue;
     let best = null, sum = 0; for (const [t, n] of comb) { sum += n; if (!best || n > best[1]) best = [t, n]; }
     const share = best[1] / sum; if (share >= 0.6) out.set(o.no, { trip: best[0], share });
@@ -3275,7 +3386,7 @@ function runZones() {
   for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
   const useRoad = $('zRoad').checked; for (const o of out) o.rd = useRoad ? roadVerdict(o, roadVotes, null) : null;      // street level: a road / soi that the orders already in a zone use decides the order by itself
   let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
-  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr), guess: buildGuess(orders) });
+  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr), guess: (buildLex(orders, M), buildGuess(orders, M)) });
   renderZones(); msg.className = 'msg ok'; msg.textContent = `ตรวจ ${orders.length.toLocaleString()} ออเดอร์ (${Z.day})${M.dups.length ? ' · ' + M.dups.join(' · ') : ''}${zt.errs.length ? ' · ข้ามบรรทัดที่อ่านไม่ได้ ' + zt.errs.length + ' บรรทัด' : ''}`;
 }
 const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
@@ -3507,7 +3618,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
