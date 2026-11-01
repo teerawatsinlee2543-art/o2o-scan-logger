@@ -50,8 +50,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Sarabun,"Noto 
 .top .tile b{font-size:24px}
 .top .tile span{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:1400px){ .brandbox p{max-width:300px} }
-@media (max-width:1180px){ .top{grid-template-columns:minmax(0,1fr) auto} .top .tiles{grid-column:1 / -1;order:3} }
-@media (max-width:760px){ .top{grid-template-columns:minmax(0,1fr)} .top .tools{justify-content:flex-start;flex-wrap:wrap} }
+/* no empty room in the header at any width: the red bar is as wide as its text (the line under the title no longer wraps at 300 px), the blue button takes whatever is left of its row, and the 4 boxes fill the row under them */
+@media (max-width:1180px){ .top{grid-template-columns:minmax(0,auto) minmax(260px,1fr)} .top .tiles{grid-column:1 / -1;order:3} .brandbox p{max-width:none}
+  .top .tools{width:100%;flex-wrap:nowrap} .top .tools .chipbtn{flex:1 1 auto;justify-content:center} .top .tools .sidebtns{flex:none} }
+@media (max-width:760px){ .top{grid-template-columns:minmax(0,1fr)} .top .brandbox{padding:8px 18px 8px 10px} .brandbox .logo{margin-left:auto} .brandbox > div:last-child{margin-right:auto;min-width:0} }      /* (one column: the red bar spans the row, its logo + text sit in the middle of it; auto margins, not justify-content:center, so a text wider than the bar can never push the logo out of it) */
+@media (max-width:380px){ .nb{white-space:normal} }
 .brandbox{display:flex;align-items:center;gap:14px;padding:8px 30px 8px 8px;border-radius:999px;color:#fff;
   background:linear-gradient(135deg,#c2323d,#b82f3a);box-shadow:0 6px 18px rgba(189,48,59,.32)}
 .logo{flex:none;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
