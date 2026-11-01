@@ -635,6 +635,19 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 #rpPrint:disabled{background:#b3c3d9;box-shadow:none;cursor:default;opacity:.8}
 .rpwrap .sheet{cursor:pointer}
 input.rp2{margin-top:8px}
+/* "Trip ของชุดนี้": the Trip the person is working on (a lane is scanned one Trip at a time). Typed once, it goes on EVERY Re-Print sheet of the go instead of the number the system worked out; it is cleared when the Re-Print list is emptied */
+.trow{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;font-weight:700;color:var(--pt)}
+.trow label{flex:none;white-space:nowrap}
+.panel .trow input[type=text]{width:78px;flex:none;height:34px;padding:0 8px;text-align:center;font-size:18px;font-weight:800;border-radius:10px;letter-spacing:0;text-shadow:none;box-shadow:none;background:var(--card);color:var(--ink);border:2px solid var(--pbd)}
+.panel .trow input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 3px color-mix(in srgb,var(--dot) 30%,transparent)}
+.trow .trhint{flex:1;min-width:0;font-weight:500;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow.on input{border-color:#12a150;background:color-mix(in srgb,#12a150 16%,var(--card))}
+.trow.on .trhint{color:#12a150;font-weight:700}
+.trow button{flex:none;width:30px;height:30px;padding:0;border-radius:9px;border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad);font-size:18px;line-height:1;font-weight:800;cursor:pointer}
+.panel.zoomed .trow{font-size:clamp(13px,1.9vh,17px);margin-bottom:clamp(4px,1vh,10px)}
+.panel.zoomed .trow input[type=text]{width:clamp(84px,7vw,112px);height:clamp(34px,5.4vh,46px);font-size:clamp(18px,2.7vh,26px);padding:0 10px;border-radius:12px}
+.panel.zoomed .trow .trhint{font-size:clamp(12px,1.7vh,15px)}
+@media (max-width:900px){ .trow{flex-wrap:wrap;row-gap:4px} .trow .trhint{order:3;flex:1 1 100%;white-space:normal;overflow:visible} }      /* (a phone: the sentence goes under the box instead of being cut) */
 /* the counter in the corner of the many-orders fields (3 and 4): how many orders have been scanned in this go. A rounded yellow chip with the number and the word "Order", set in from the edges so it never
    touches the border, dimmed while it is 0, pops when it goes up */
 .infield{position:relative;margin-top:8px}
@@ -1254,6 +1267,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
             <div class="langtabs" role="group" aria-label="ภาษา"><button class="langtab" type="button" data-lang="th"><span class="flag" data-flag="th"></span><b>TH</b></button><button class="langtab" type="button" data-lang="en"><span class="flag" data-flag="en"></span><b>EN</b></button><button class="langtab" type="button" data-lang="my"><span class="flag" data-flag="my"></span><b>MM</b></button></div>
             <div class="phead"><label for="reprintIn">Re-Print ใบปะหน้า</label><span class="pright"><span class="pcount" id="reprintCount">0</span><button class="pzoom" id="reprintZoom" type="button" title="ขยายเต็มหน้า" aria-label="ขยายเต็มหน้า" aria-pressed="false"><svg class="zin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><svg class="zout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/></svg><span class="zt">ย่อ</span></button></span></div>
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
+            <div class="trow" id="rpTripRow"><label for="rpTrip">Trip ของชุดนี้</label><input id="rpTrip" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="2" placeholder="เช่น 15" aria-label="Trip ของชุดนี้ — ใส่เลขแล้วใบปะหน้าทุกใบในชุดนี้ใช้เลขนี้"><span class="trhint" id="rpTripHint"></span><button id="rpTripClear" type="button" hidden aria-label="ล้างเลข Trip" title="ล้างเลข Trip">×</button></div>
             <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
             <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
             <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>Order</small></span></div>
@@ -3954,12 +3968,33 @@ function bulkDone() {                                 // the print button of the
 let previewOrder = null;
 const AUTO_PRINT_RE = /[AB]$/;
 const hooks = { printFrame: f => f.contentWindow.print() };               // (a hook, so a test can stand in for the real print dialog)
-function reprintRow(order) {                                               // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too
+function reprintRow(order, noTrip) {                                       // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too; trip = the "Trip ของชุดนี้" typed in the Re-Print box (wins over the system's)
   const d = derive().rows.find(r => r.order === order && !r.dup), rp = state.reprints.find(x => x.order === order) || {};
   const own = (rp.bulk || rp.picked) && rp.emp;                            // the picker named for this Re-Print go (picker window of any of the three fields) wins over the scan list's
   const emp = own ? rp.emp : d ? d.emp : (rp.emp || ''), name = own ? (rp.name || nameOfEmp(emp)) : ((d && d.name) || rp.name || nameOfEmp(emp));
-  return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null };
+  return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null, trip: noTrip ? '' : (state.rpTrip || '') };
 }
+const rpTripIn = $('rpTrip'), rpTripRow = $('rpTripRow'); let rpTripSeen = false;
+attachLayoutFix(rpTripIn, false);                                          // (a Thai keyboard layout: the digits are read from the physical keys)
+const normTrip = s => String(s || '').replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/[^0-9]/g, '').slice(0, 2);
+function paintRpTrip() {
+  const v = state.rpTrip || ''; if (document.activeElement !== rpTripIn) rpTripIn.value = v;
+  rpTripRow.classList.toggle('on', !!v); $('rpTripClear').hidden = !v;
+  $('rpTripHint').textContent = v ? T('ทุกใบในชุดนี้ใช้ Trip {0}', v) : T('ไม่ใส่ = ระบบหาให้เอง');
+}
+function syncRpTrip() {                                                    // the Trip belongs to the go that is on the list: when the list has been emptied (after it had orders) the Trip goes too, so it can never stay on the next go by mistake
+  if (state.rpTrip) { if (state.reprints.length) rpTripSeen = true; else if (rpTripSeen) { state.rpTrip = ''; rpTripSeen = false; save(); } }
+  paintRpTrip();
+}
+function rpTripChanged() { if (state.rpTrip && state.reprints.length) rpTripSeen = true; save(); paintRpTrip(); renderRpView(); if (!$('printView').hidden && /^(rp|bulk|bulk2)$/.test(pvMode)) pvDraw(); }
+let rpTripIdle = null; const rpTripBack = () => { clearTimeout(rpTripIdle); if (document.activeElement === rpTripIn) (lastRp || $('reprintIn')).focus(); };      // (the focus goes back to the scan field: a scan that arrives while the cursor is still in this little box must not be typed into it)
+rpTripIn.addEventListener('input', () => {
+  const v = normTrip(rpTripIn.value); rpTripIn.value = v; state.rpTrip = v; rpTripChanged();
+  clearTimeout(rpTripIdle); if (v.length >= 2) rpTripBack(); else if (v) rpTripIdle = setTimeout(rpTripBack, 3500);
+});
+rpTripIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); (lastRp || $('reprintIn')).focus(); } });
+rpTripIn.addEventListener('focus', () => { clearTimeout(rpTripIdle); rpTripIdle = setTimeout(rpTripBack, 6000); });
+$('rpTripClear').addEventListener('click', () => { state.rpTrip = ''; rpTripSeen = false; rpTripIn.value = ''; rpTripChanged(); rpTripIn.focus(); });
 function fitRpView() {
   const box = $('rpBox'), ws = [...box.querySelectorAll('.rpwrap')]; if (!ws.length) return;
   const cw = box.clientWidth - (box.scrollHeight > box.clientHeight + 1 ? 16 : 0), one = box.querySelectorAll('.rppg').length === 1;
@@ -4083,7 +4118,7 @@ function renderSide() {
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); if (a.bulk && !a.batched) sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.two ? 'หลายออเดอร์ · 1 Page / 2 Order' : 'หลายออเดอร์') + (a.batched ? ' · พิมพ์แล้ว' : '') : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
     li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); }); return li; });
-  renderRpView(); renderEmpBox();
+  syncRpTrip(); renderRpView(); renderEmpBox();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
   renderBulk();                                                              // the third and fourth fields: the counter in their corner, and the green / delete row under them while orders wait
@@ -4742,7 +4777,7 @@ function sheetHtml(r, r2) {                       // r2: undefined = the same or
   return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
-      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf, r.order))}</span>${(inf.rd || inf.sd) ? ` <span class="s-sd">${xesc(inf.rd || (window.O2OZone && window.O2OZone.sdThai ? window.O2OZone.sdThai(inf.sd) : inf.sd))}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
+      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(r.trip || tripFor(inf, r.order))}</span>${(inf.rd || inf.sd) ? ` <span class="s-sd">${xesc(inf.rd || (window.O2OZone && window.O2OZone.sdThai ? window.O2OZone.sdThai(inf.sd) : inf.sd))}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
       <div class="s-order"><div class="fit s-onum" data-fit="44">${xesc(r.order)}</div></div>
     </div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
@@ -4826,7 +4861,7 @@ let pvMode = 'scan';                                                         // 
 const pvRows = () => {
   if (pvMode === 'rp') return pvRp.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);      // Re-Print field 1 (one order, same on both slips) or field 2 (one page, two orders)
   if (pvMode === 'bulk' || pvMode === 'bulk2') return pvBulk.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);
-  if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order)); }
+  if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order, true)); }      // (the Trip typed in the Re-Print box is for Re-Print sheets only)
   const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => r.order && !r.dup && (b === 'all' || r.batch === +b));
 };
 function pvDraw() {
@@ -5224,6 +5259,12 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เสร็จสิ้น / ใส่ชื่อผู้จัด ({0} ใบ)', 'Finish / enter the picker ({0} sheets)', 'ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန် ({0} ရွက်)'],
   ['เสร็จสิ้น / ใส่ชื่อผู้จัด', 'Finish / enter the picker', 'ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန်'],
   ['ลบทั้งหมด', 'Delete all', 'အားလုံးဖျက်ရန်'],
+  ['Trip ของชุดนี้', 'Trip of this batch', 'ဤအစုအဝေး၏ Trip'],
+  ['เช่น 15', 'e.g. 15', 'ဥပမာ ၁၅'],
+  ['Trip ของชุดนี้ — ใส่เลขแล้วใบปะหน้าทุกใบในชุดนี้ใช้เลขนี้', 'Trip of this batch — type a number and every cover sheet of this batch uses it', 'ဤအစုအဝေး၏ Trip — နံပါတ်ထည့်လျှင် ဤအစုအဝေးရှိ အဖုံးစာရွက်အားလုံး အသုံးပြုမည်'],
+  ['ล้างเลข Trip', 'Clear the Trip', 'Trip ကို ရှင်းရန်'],
+  ['ทุกใบในชุดนี้ใช้ Trip {0}', 'Every sheet of this batch uses Trip {0}', 'ဤအစုအဝေးရှိ စာရွက်အားလုံး Trip {0} ကို သုံးမည်'],
+  ['ไม่ใส่ = ระบบหาให้เอง', 'blank = the system works it out', 'မထည့်ပါက = စနစ်က ရှာပေးမည်'],
   ['กลับไปใช้ช่องอื่น', 'Back to the other fields', 'အခြားအကွက်များသို့ ပြန်သွားရန်'],
   ['ช่อง 1 Page / 1 Order · 1 Page / 2 Order', 'Fields 1 Page / 1 Order · 1 Page / 2 Order', 'အကွက် ၁ စာမျက်နှာ / ၁ အော်ဒါ · ၁ စာမျက်နှာ / ၂ အော်ဒါ'],
   ['วิธีพิมพ์หลายออเดอร์ทีเดียว', 'How to print many orders at once', 'အော်ဒါများစွာ တစ်ခါတည်း ပုံနှိပ်နည်း'],
