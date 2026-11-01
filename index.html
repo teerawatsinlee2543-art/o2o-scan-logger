@@ -642,7 +642,7 @@ input.rp2{margin-top:8px}
 .panel .trow input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 3px color-mix(in srgb,var(--dot) 30%,transparent)}
 .trow .trhint{flex:1;min-width:0;font-weight:500;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow.on input{border-color:#12a150;background:color-mix(in srgb,#12a150 16%,var(--card))}
-.trow.on .trhint{color:#12a150;font-weight:700}
+.trow.on .trhint,.trow.auto .trhint{color:#12a150;font-weight:700}
 .trow button{flex:none;width:30px;height:30px;padding:0;border-radius:9px;border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad);font-size:18px;line-height:1;font-weight:800;cursor:pointer}
 .panel.zoomed .trow{font-size:clamp(13px,1.9vh,17px);margin-bottom:clamp(4px,1vh,10px)}
 .panel.zoomed .trow input[type=text]{width:clamp(84px,7vw,112px);height:clamp(34px,5.4vh,46px);font-size:clamp(18px,2.7vh,26px);padding:0 10px;border-radius:12px}
@@ -1204,6 +1204,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
             </div>
             <div class="row">
               <label><input id="optPrintGo" type="checkbox"> พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที</label>
+              <label><input id="optBatchTrip" type="checkbox"> ใบ Re-Print ที่ตารางโซนหา Trip ไม่ได้ ให้ใช้ Trip ตามใบอื่นในชุดเดียวกัน</label>
               <label><input id="optShare" type="checkbox"> ซิงก์สด: รายการสแกน / Assign / Re-Print สแกนที่เครื่องไหน ทุกจอเห็นเหมือนกัน (ล้างที่เครื่องหนึ่ง = หายทุกเครื่อง)</label>
             </div>
             <div class="row">
@@ -2015,7 +2016,7 @@ function render() {
   $('empty').hidden = d.rows.length > 0;
 
   $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
-  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optShare').checked = state.share !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optBatchTrip').checked = state.rpBatchAuto !== false; $('optShare').checked = state.share !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
   $('btnRestore').hidden = !hasBackup();
   // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
   const fin = !!state.finished;
@@ -2049,6 +2050,7 @@ $('optStrict').addEventListener('change', e => { state.requireRoster = e.target.
 $('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
 $('optAutoPrint').addEventListener('change', e => { state.autoPrint = e.target.checked; save(); });
 $('optPrintGo').addEventListener('change', e => { state.printGo = e.target.checked; save(); });
+$('optBatchTrip').addEventListener('change', e => { state.rpBatchAuto = e.target.checked; save(); renderRpView(); });
 $('optShare').addEventListener('change', e => { state.share = e.target.checked; save(); if (shareCfg) { shareLive(true); if (state.share) shareRun(); } });      // (switched off = this computer neither sends nor receives; switched on again = it catches up)
 $('optAssignPrint').addEventListener('change', e => { state.assignAutoPrint = e.target.checked; save(); render(); });
 $('optMargin').addEventListener('change', e => { state.margin = +e.target.value; save(); render(); });      // the white margin round the cover sheets (render() redraws an open preview)
@@ -3245,8 +3247,8 @@ function mentionsOf0(addr) {
   return out;
 }
 /* Order of asking — each step only when the one before found no zone name:
-   1. the soi of the address (ซ. / ซอย / ซ)      2. the road of the address (ถ. / ถนน / ถ)      3. everything else written in the address (communities, villages, roads written without ถ.)
-   4. the Sub District column      5. a big road named in the address / the District column (weak evidence).
+   1. the soi of the address (ซ. / ซอย / ซ)      2. the road of the address (ถ. / ถนน / ถ)      3. the Sub District column (when it is a zone of the table)      4. everything else written in the address (communities, villages, roads written without ถ.)
+   5. a big road named in the address / the District column (weak evidence).
    In steps 1 and 2 a big road (รามอินทรา, เสรีไทย, …) counts too: named as THE road or soi of the address it is exact, unlike in the free text. */
 const ADMIN_RE = new RegExp([fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต')].join('|'), 'g');
 const adminCleaner = o => { const sdk = nk(o.sd), dk = nk(o.d), zip = String(o.zip || ''); return t => { t = t.replace(ADMIN_RE, '|'); for (const x of [sdk, dk, zip]) if (x && x.length > 1) t = t.split(x).join('|'); return t; }; };      // the administrative words of the address (Bangkok, แขวง, เขต, its own sub-district / district / post code) are not road names
@@ -3256,8 +3258,8 @@ function matchOrder(o, M) {                                          // -> {trip
   const ms = mentionsOf(o.addr);
   for (const kind of ['ซ', 'ถ']) for (const m of ms) if (m.kind === kind && !m.numOnly) { const t = clean(fz(m.text)), w = hit(t, true) || hit(t, false) || fuzzyHit(t, M); if (w) return { trip: w.trip, how: kind === 'ซ' ? 'soi' : 'road' }; }      // (a road written as two roads, "ศรีนครินทร์-ร่มเกล้า": the one that is not a big road wins, as it does in the free text; a misspelled name is matched by edit distance last)
   const text = clean(fz(o.addr)) + enNamesOf(o.addr).map(n => '|' + fz(n)).join('');      // (+ the Thai names of roads written in English anywhere in the address)
+  if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };      // (the Sub District when it is a zone of the table comes BEFORE the free text: a community / village name somewhere in the address ("ร่มเกล้า" in a ทับช้าง address) is a weaker clue than the zone the order is in — only a soi / road named as such beats the sub-district)
   const w3 = hit(text, true); if (w3) return { trip: w3.trip, how: 'road' };
-  if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };
   const w5 = hit(text, false); if (w5) return { trip: w5.trip, how: 'weak' };
   if (M.kmap.has(dk)) return { trip: M.kmap.get(dk), how: 'weak' };
   return { trip: null, how: '' };
@@ -3968,19 +3970,33 @@ function bulkDone() {                                 // the print button of the
 let previewOrder = null;
 const AUTO_PRINT_RE = /[AB]$/;
 const hooks = { printFrame: f => f.contentWindow.print() };               // (a hook, so a test can stand in for the real print dialog)
-function reprintRow(order, noTrip) {                                       // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too; trip = the "Trip ของชุดนี้" typed in the Re-Print box (wins over the system's)
+/* The Trip of the go, read by itself: a lane is scanned one Trip at a time, so the orders of the go that the zone table places (road / soi / sub-district) say which Trip it is, and an order the table does NOT place
+   (no road in its address, a sub-district the table does not have) takes that Trip instead of the area's guess. Needs 2+ placed orders with 60 %+ of them on one Trip; an order the table places itself keeps its own
+   Trip; the Trip typed in the box wins over all of it. Settings can switch it off. */
+function rpBatchTrip(orders) {                                             // orders = the orders of a print (its own go); none given = the orders waiting on the list
+  if (state.rpBatchAuto === false) return '';
+  const m = new Map(); let n = 0;
+  for (const o of orders || state.reprints.filter(e => !e.batched).map(e => e.order)) { const z = ztGet(o); if (z == null) continue; m.set(z, (m.get(z) || 0) + 1); n++; }
+  if (n < 2) return '';
+  let b = null; for (const [t, c] of m) if (!b || c > b[1]) b = [t, c];
+  return b[1] / n >= 0.6 ? String(b[0]) : '';
+}
+const goRows = orders => { const t = rpBatchTrip(orders); return orders.map(o => reprintRow(o, false, t)); };      // the rows of a print / a go: the go's Trip is read from the orders of THAT go (never .map(reprintRow): the index would become its 2nd argument)
+function reprintRow(order, noTrip, goTrip) {                               // what sheetHtml needs: the picker and the batch / slot when the order is in the scan list too; trip = the "Trip ของชุดนี้" typed in the Re-Print box, else the go's Trip for an order the table does not place (wins over the system's own)
   const d = derive().rows.find(r => r.order === order && !r.dup), rp = state.reprints.find(x => x.order === order) || {};
   const own = (rp.bulk || rp.picked) && rp.emp;                            // the picker named for this Re-Print go (picker window of any of the three fields) wins over the scan list's
   const emp = own ? rp.emp : d ? d.emp : (rp.emp || ''), name = own ? (rp.name || nameOfEmp(emp)) : ((d && d.name) || rp.name || nameOfEmp(emp));
-  return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null, trip: noTrip ? '' : (state.rpTrip || '') };
+  let trip = noTrip ? '' : (state.rpTrip || '');
+  if (!trip && !noTrip && ztGet(order) === null) trip = goTrip !== undefined ? goTrip : rpBatchTrip();     // (null = worked out, the table does not place it; undefined = not worked out yet: nothing is guessed then)
+  return { order, emp, name, batch: d ? d.batch : null, slot: d ? d.slot : null, trip };
 }
 const rpTripIn = $('rpTrip'), rpTripRow = $('rpTripRow'); let rpTripSeen = false;
 attachLayoutFix(rpTripIn, false);                                          // (a Thai keyboard layout: the digits are read from the physical keys)
 const normTrip = s => String(s || '').replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/[^0-9]/g, '').slice(0, 2);
 function paintRpTrip() {
-  const v = state.rpTrip || ''; if (document.activeElement !== rpTripIn) rpTripIn.value = v;
-  rpTripRow.classList.toggle('on', !!v); $('rpTripClear').hidden = !v;
-  $('rpTripHint').textContent = v ? T('ทุกใบในชุดนี้ใช้ Trip {0}', v) : T('ไม่ใส่ = ระบบหาให้เอง');
+  const v = state.rpTrip || '', b = v ? '' : rpBatchTrip(); if (document.activeElement !== rpTripIn) rpTripIn.value = v;
+  rpTripRow.classList.toggle('on', !!v); rpTripRow.classList.toggle('auto', !!b); $('rpTripClear').hidden = !v;
+  $('rpTripHint').textContent = v ? T('ทุกใบในชุดนี้ใช้ Trip {0}', v) : b ? T('ใบที่ระบบไม่แน่ใจใช้ Trip {0} ตามใบอื่นในชุด', b) : T('ไม่ใส่ = ระบบหาให้เอง');
 }
 function syncRpTrip() {                                                    // the Trip belongs to the go that is on the list: when the list has been emptied (after it had orders) the Trip goes too, so it can never stay on the next go by mistake
   if (state.rpTrip) { if (state.reprints.length) rpTripSeen = true; else if (rpTripSeen) { state.rpTrip = ''; rpTripSeen = false; save(); } }
@@ -4016,6 +4032,7 @@ function rpPages() {
   return pg;
 }
 function renderRpView() {
+  paintRpTrip();                                                           // (the go's Trip may have changed: an order's data arrived, one was added / taken out)
   if (!document.querySelector('.panel.purple').classList.contains('zoomed')) return;
   const box = $('rpBox'), note = $('rpNote'), inList = x => state.reprints.some(r => r.order === x);
   if (pairWait && !inList(pairWait)) pairWait = null;                        // taken out of the list again
@@ -4066,7 +4083,7 @@ async function printOrder(order) {                                         // th
 }
 function autoPrintOrder(order) { if (IN_VIEWER) { $('rpNote').textContent = 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์'; return; } printSheets([reprintRow(order)]); }
 async function printPair(orders) {                                         // one page, two different orders (the second may be missing: then the bottom slip stays empty)
-  const rows = orders.map(reprintRow);
+  const rows = orders.map(o => reprintRow(o));
   if (orders.length < 2 && pairWait === orders[0]) pairWait = null;        // printed on its own: no longer waiting for a pair
   if (IN_VIEWER) {
     if (await download(new Blob([printFileHtml(sheetHtml(rows[0], rows[1] || null))], { type: 'text/html' }), `cover-sheet_${orders.join('_')}.html`)) toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง');
@@ -4074,7 +4091,7 @@ async function printPair(orders) {                                         // on
   }
   printSheets([rows]);
 }
-function autoPrintPair(orders) { if (IN_VIEWER) { $('rpNote').textContent = 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์'; return; } printSheets([orders.map(reprintRow)]); }
+function autoPrintPair(orders) { if (IN_VIEWER) { $('rpNote').textContent = 'หน้าเว็บนี้สั่งพิมพ์เองไม่ได้ — กด "พิมพ์ใบนี้" เพื่อบันทึกเป็นไฟล์พิมพ์'; return; } printSheets([orders.map(o => reprintRow(o))]); }
 function printPreview() { const p = rpSel; if (!p) return; if (p.pair) printPair(p.orders); else printOrder(p.orders[0]); }      // the page that is selected (the latest, or the one clicked)
 $('rpPrint').addEventListener('click', printPreview);                       // the green button, and a click on a sample sheet itself
 $('rpBox').addEventListener('click', e => {
@@ -4859,8 +4876,8 @@ ${interactive ? '<script>window.addEventListener(\'load\',function(){setTimeout(
 }
 let pvMode = 'scan';                                                         // 'scan' = the scan list in batches (the green box); 'assign' = the orders of the orange Assign list
 const pvRows = () => {
-  if (pvMode === 'rp') return pvRp.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);      // Re-Print field 1 (one order, same on both slips) or field 2 (one page, two orders)
-  if (pvMode === 'bulk' || pvMode === 'bulk2') return pvBulk.filter(o => state.reprints.some(x => x.order === o)).map(reprintRow);
+  if (pvMode === 'rp') return pvRp.filter(o => state.reprints.some(x => x.order === o)).map(o => reprintRow(o));      // Re-Print field 1 (one order, same on both slips) or field 2 (one page, two orders)
+  if (pvMode === 'bulk' || pvMode === 'bulk2') return goRows(pvBulk.filter(o => state.reprints.some(x => x.order === o)));
   if (pvMode === 'assign') { const seen = new Set(); return state.assigns.filter(a => a.order && !seen.has(a.order) && seen.add(a.order)).map(a => reprintRow(a.order, true)); }      // (the Trip typed in the Re-Print box is for Re-Print sheets only)
   const b = $('pvBatch').value, d = derive(); return d.rows.filter(r => r.order && !r.dup && (b === 'all' || r.batch === +b));
 };
@@ -5263,8 +5280,10 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เช่น 15', 'e.g. 15', 'ဥပမာ ၁၅'],
   ['Trip ของชุดนี้ — ใส่เลขแล้วใบปะหน้าทุกใบในชุดนี้ใช้เลขนี้', 'Trip of this batch — type a number and every cover sheet of this batch uses it', 'ဤအစုအဝေး၏ Trip — နံပါတ်ထည့်လျှင် ဤအစုအဝေးရှိ အဖုံးစာရွက်အားလုံး အသုံးပြုမည်'],
   ['ล้างเลข Trip', 'Clear the Trip', 'Trip ကို ရှင်းရန်'],
-  ['ทุกใบในชุดนี้ใช้ Trip {0}', 'Every sheet of this batch uses Trip {0}', 'ဤအစုအဝေးရှိ စာရွက်အားလုံး Trip {0} ကို သုံးမည်'],
+  ['ทุกใบในชุดนี้ใช้ Trip {0}', 'All sheets of this batch: Trip {0}', 'ဤအစုအဝေး စာရွက်အားလုံး Trip {0}'],
   ['ไม่ใส่ = ระบบหาให้เอง', 'blank = the system works it out', 'မထည့်ပါက = စနစ်က ရှာပေးမည်'],
+  ['ใบที่ระบบไม่แน่ใจใช้ Trip {0} ตามใบอื่นในชุด', 'Unsure orders use Trip {0} like the batch', 'မသေချာသောအော်ဒါများ Trip {0} (အစုအဝေးအတိုင်း)'],
+  ['ใบ Re-Print ที่ตารางโซนหา Trip ไม่ได้ ให้ใช้ Trip ตามใบอื่นในชุดเดียวกัน', 'A Re-Print order the zone table cannot place takes the Trip of the other orders of its batch', 'ဇုန်ဇယားက Trip မရှာနိုင်သော Re-Print အော်ဒါသည် တူညီသောအစုအဝေးရှိ အခြားအော်ဒါများ၏ Trip ကို သုံးမည်'],
   ['กลับไปใช้ช่องอื่น', 'Back to the other fields', 'အခြားအကွက်များသို့ ပြန်သွားရန်'],
   ['ช่อง 1 Page / 1 Order · 1 Page / 2 Order', 'Fields 1 Page / 1 Order · 1 Page / 2 Order', 'အကွက် ၁ စာမျက်နှာ / ၁ အော်ဒါ · ၁ စာမျက်နှာ / ၂ အော်ဒါ'],
   ['วิธีพิมพ์หลายออเดอร์ทีเดียว', 'How to print many orders at once', 'အော်ဒါများစွာ တစ်ခါတည်း ပုံနှိပ်နည်း'],
