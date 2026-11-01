@@ -1399,8 +1399,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <details class="zbox"><summary>รูปแบบไฟล์ที่รองรับ</summary>
         <p class="hint">แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว</p>
       </details>
-      <p class="hint zsync">ระบบอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง: เมื่อเปิดแท็บนี้ · ทุก 10 นาที · และทุกครั้งที่อัปเดตเส้นทางหรือแก้ตารางโซน — ไม่แก้ชีตหรือไฟล์</p>
-      <div class="row"><button id="btnSheet" class="primary" type="button">ซิงค์จากชีตตอนนี้</button></div>
+      <p class="hint zsync">ซิงค์จากชีตให้เองเบื้องหลัง ไม่ต้องกดอะไร: เมื่อเปิดโปรแกรม · ทุก 10 นาที · และทุกครั้งที่เปลี่ยนลิงก์ ไฟล์ หรือตารางโซน — ไม่แก้ชีตหรือไฟล์</p>
       <div id="srcMsg" class="msg"></div>
       <details class="zbox"><summary>ตารางโซน Trip 1-20 (พิมพ์จากรูป — ตรวจและแก้ได้)</summary>
         <p class="hint">1 บรรทัดต่อ 1 Trip: <code>เลข Trip [Tab] โซน / โซน / โซน</code> · ชื่อเรียกอื่นของโซนเดียวกันคั่นด้วย <code>|</code> · ชื่อในวงเล็บนับเป็นโซนเพิ่ม · ดี4 (รับหน้ากระจก) ไม่นำมาจับออเดอร์</p>
@@ -1409,8 +1408,6 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       </details>
       <details class="zbox" id="zSetBox"><summary>ตั้งค่า / ตรวจเอง</summary>
         <div class="zset">
-          <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
-          <label class="f"><input id="zAutoApply" type="checkbox" checked> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
           <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
           <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
           <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
@@ -1451,11 +1448,10 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 
     <div id="paneDb" hidden>
     <section class="dsec">
-      <p class="dtitle"><span class="dnum">ก</span>ลิงก์ Google Sheet <span class="rcount">อ่านอย่างเดียว</span></p>
-      <input id="dbLink" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ Google Sheet ที่แชร์แบบ &quot;ทุกคนที่มีลิงก์ดูได้&quot;">
+      <p class="dtitle"><span class="dnum">ก</span>ลิงก์ Google Sheet <span class="rcount">ทำงานเองทันที</span></p>
+      <input id="dbLink" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ Google Sheet ที่แชร์แบบ &quot;ทุกคนที่มีลิงก์ดูได้&quot; — วางแล้วเชื่อมต่อให้เอง">
       <p class="hint">โปรแกรมอ่านชีตอย่างเดียว ไม่แก้ ไม่ลบ ไม่เพิ่มอะไรในชีต — ส่งไปค้นหาเฉพาะเลขออเดอร์ที่สแกน แล้วเก็บผลไว้ในเบราว์เซอร์นี้. ใช้คอลัมน์ Order Number (เลขออเดอร์), Customer Name (ชื่อลูกค้า), Original Expected Date (วันที่), Original Expected Time (เวลา) และ Sub District (แขวง / เส้นถนน) — ค้นหาจากแท็บที่ลิงก์ชี้อยู่</p>
       <div class="row dact">
-        <button id="dbConnect" class="primary" type="button">เชื่อมต่อและทดสอบ</button>
         <button id="dbOff" type="button" class="danger" hidden>ตัดการเชื่อมต่อ</button>
       </div>
       <div id="dbStatus" class="preview" hidden></div>
@@ -3246,7 +3242,7 @@ async function loadFile(f) {
   say('กำลังอ่านไฟล์ …');
   try {
     setOrders(rowsToOrders(await fileToRows(f)), 'ไฟล์ ' + f.name);
-    if (S.orders.length) { runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }      // (an order file dropped in the settings box is checked at once, like the sheet)
+    if (S.orders.length) { runZones(); await applyRoutes(true); }      // (an order file dropped in the settings box is checked at once, like the sheet)
   } catch (e) { say(String(e.message || e), 'err'); }
 }
 $('zFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
@@ -3254,33 +3250,36 @@ const zDropBox = $('zDrop');
 ['dragenter', 'dragover'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => zDropBox.addEventListener(ev, e => { e.preventDefault(); zDropBox.classList.remove('over'); }));
 zDropBox.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
-/* Auto sync: the orders of the last 30 days (and the next 3) are read from the connected sheet (read only; the link never leaves this browser and is not in this file), the zone check runs on them, and
-   - when the Trip tab is opened (if the last sync is older than 2 minutes) and every 10 minutes while it stays open,
-   - optionally the result goes into the route table by itself ("ใส่ผลลงตารางเส้นทางให้เอง": only when something changes, backup + undo as always). */
-const LS_ZAUTO = 'o2o-zone-auto-v1';
-let zCfg = { auto: true, apply: true }; try { Object.assign(zCfg, JSON.parse(localStorage.getItem(LS_ZAUTO) || '{}')); } catch (_) {}
-$('zAuto').checked = !!zCfg.auto; $('zAutoApply').checked = !!zCfg.apply;
-const zSave = () => { zCfg = { auto: $('zAuto').checked, apply: $('zAutoApply').checked }; try { localStorage.setItem(LS_ZAUTO, JSON.stringify(zCfg)); } catch (_) {} };
-$('zAuto').addEventListener('change', () => { zSave(); if (zCfg.auto) syncSheet(false); });
-$('zAutoApply').addEventListener('change', () => { zSave(); if (zCfg.apply && Z.zt) applyRoutes(true); });
+/* Auto sync — nothing to press. The orders of the last 30 days (and the next 3) are read from the connected sheet (read only; the link never leaves this browser and is not in this file), the zone check runs on them and
+   the result goes into the route table (a route typed / imported by hand is never replaced; only when something changes; backup + undo as always). It runs by itself:
+   - a few seconds after the program starts, and then every 10 minutes while the page is open (the Trip tab does not have to be open),
+   - when the Trip tab is opened (if the last read is older than 2 minutes),
+   - at once when the sheet link is set or changed, when a route file is dropped, when the zone table is edited (1.5 s after the last key), and when another computer changes the link or the zone table.
+   A read that fails (offline, link not shared) is tried again after 2 minutes. The link and the zone table are shared with the other computers like the rest (see CLOUD_SETS: sheet, zones). */
+const AUTO_MS = 10 * 60 * 1000, LS_ZAT = 'o2o-zone-auto-at-v1';
 const sheetReady = () => { if (IN_VIEWER) return false; try { const c = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); return !!(c && c.id); } catch (_) { return false; } };
 const lastDays = (n, ahead) => { const out = [], now = new Date(); for (let k = -ahead; k < n; k++) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - k); out.push(`${String(d.getDate()).padStart(2, '0')}-${MON[d.getMonth()]}-${d.getFullYear()}`); } return out; };
-let zSyncing = false, zLastSync = 0;
+let zSyncing = false, zLastSync = 0, zFailAt = 0;
 async function syncSheet(manual) {
   if (zSyncing) return;
   if (!sheetReady()) { if (manual) say(IN_VIEWER ? 'หน้านี้เปิดใน Artifact — อ่านชีตไม่ได้ ใช้ไฟล์แทน' : 'ยังไม่ได้เชื่อมต่อชีต — เปิดแท็บ "ฐานข้อมูลออเดอร์" แล้วเชื่อมต่อก่อน', 'err'); return; }
   zSyncing = true; say('กำลังซิงค์จากชีต (อ่านอย่างเดียว) …');
   try {
-    const orders = await ordersFromSheet(lastDays(30, 3)); zLastSync = Date.now();
+    const orders = await ordersFromSheet(lastDays(30, 3)); zLastSync = Date.now(); zFailAt = 0; try { localStorage.setItem(LS_ZAT, String(zLastSync)); } catch (_) {}
     const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);      // (each piece between " · " has its own translation row)
-    if (orders.length) { $('zAll').checked = true; runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
+    if (orders.length) { $('zAll').checked = true; runZones(); await applyRoutes(true); }
     return true;
-  } catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
+  } catch (e) { zFailAt = Date.now(); const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
   finally { zSyncing = false; }
 }
-$('btnSheet').addEventListener('click', () => syncSheet(true));
-$('tabTrip').addEventListener('click', () => { if ($('zAuto').checked && Date.now() - zLastSync > 120000) syncSheet(false); });
+function autoRun(force) {      // the sync, when it is due (force: even if one was done a moment ago); a failed read waits 2 minutes before the next try
+  if (!sheetReady() || zSyncing) return;
+  if (zFailAt && Date.now() - zFailAt < 120000) return;
+  if (!force && Date.now() - zLastSync < AUTO_MS) return;
+  return syncSheet(false);
+}
+$('tabTrip').addEventListener('click', () => { if (!sheetReady()) syncSheet(true); else if (Date.now() - zLastSync > 120000) autoRun(true); });
 /* When the Trip / zone data is updated the check runs again by itself, on the orders already read from the sheet (or after reading them): no file is needed.
    - the routes of section ก were applied (event "o2o-routes-imported"): the imported Trips replace the lines of the same Trip numbers in the zone table (the other lines stay), then the check runs;
    - the zone table is edited: 1.5 s after the last key. */
@@ -3288,7 +3287,7 @@ let zChkT = null, zEditT = null;
 function autoCheck() {
   clearTimeout(zChkT);
   zChkT = setTimeout(async () => {
-    if (S.orders.length && (Date.now() - zLastSync < 600000 || !sheetReady())) { runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
+    if (S.orders.length && (Date.now() - zLastSync < 600000 || !sheetReady())) { runZones(); await applyRoutes(true); }
     else if (sheetReady()) await syncSheet(false);
   }, 400);
 }
@@ -3304,22 +3303,26 @@ function mergeZones(entries) {
   for (const [n, a] of [...by].sort((x, y) => x[0] - y[0])) if (!seen.has(n)) out.push(`${n}\t${[...new Set(a)].join(' / ')}`);
   return out.join('\n');
 }
+/* the zone table is shared with the other computers (CLOUD_SETS.zones): a change made here (a file merged in, a typed edit, "คืนค่า") is sent; a table that arrives from another computer is put in by setZoneText */
+const zoneChanged = () => cloudTouch('zones');
+const zoneIsDefault = () => $('zoneIn').value.trim() === DEFAULT_ZONES.trim();
+function setZoneText(t) {
+  const txt = typeof t === 'string' && t.trim() ? t : DEFAULT_ZONES;
+  $('zoneIn').value = txt; try { if (txt === DEFAULT_ZONES) localStorage.removeItem(LS_ZONES); else localStorage.setItem(LS_ZONES, txt); } catch (_) {}
+  autoCheck();
+}
 document.addEventListener('o2o-routes-imported', e => {
-  const t = mergeZones((e.detail && e.detail.entries) || []); if (t) { $('zoneIn').value = t; try { localStorage.setItem(LS_ZONES, t); } catch (_) {} }
+  const t = mergeZones((e.detail && e.detail.entries) || []); if (t) { $('zoneIn').value = t; try { localStorage.setItem(LS_ZONES, t); } catch (_) {} zoneChanged(); }
   autoCheck();
 });
-$('zoneIn').addEventListener('input', () => { clearTimeout(zEditT); zEditT = setTimeout(autoCheck, 1500); });
-setInterval(() => { if ($('zAuto').checked && $('paneTrip').offsetParent !== null && Date.now() - zLastSync > 600000) syncSheet(false); }, 60000);
-/* without opening any tab: a few seconds after the program starts, if the automatic fill is on and a sheet is connected, the sync + fill run once every 6 hours (the route table then reaches the other computers with the usual sync) */
-const LS_ZAT = 'o2o-zone-auto-at-v1';
-setTimeout(async () => {
-  if (!zCfg.auto || !zCfg.apply || !sheetReady()) return;
+$('zoneIn').addEventListener('input', () => { clearTimeout(zEditT); zEditT = setTimeout(() => { zoneChanged(); autoCheck(); }, 1500); });
+setInterval(() => { if (!document.hidden) autoRun(false); }, 60000);      // (every 10 minutes while the page is open, whichever tab is showing)
+setTimeout(() => {                                                          // (a few seconds after the program starts, unless the last read was a moment ago)
   let at = 0; try { at = +localStorage.getItem(LS_ZAT) || 0; } catch (_) {}
-  if (Date.now() - at < 6 * 3600 * 1000) return;
-  if (await syncSheet(false)) { try { localStorage.setItem(LS_ZAT, String(Date.now())); } catch (_) {} }
+  if (Date.now() - at > 120000) autoRun(true);
 }, 6000);
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
-$('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
+$('btnZoneReset').addEventListener('click', () => { setZoneText(null); zoneChanged(); });
 $('btnZone').addEventListener('click', runZones);
 if (IN_VIEWER || !sheetReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
@@ -3353,7 +3356,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, sdThai, tripOfOrder, zoneVer: () => zoneMatcher().v, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
@@ -3495,17 +3498,21 @@ function renderDb() {
   const on = sheetUsable();
   $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on); $('tabDbCnt').classList.toggle('live', on);   // green when connected, no colour when not
   $('dbOff').hidden = !sheetCfg; $('dbLink').value = $('dbLink').value || (sheetCfg ? sheetCfg.link : '');
-  $('dbConnect').disabled = IN_VIEWER; $('dbTestGo').disabled = !sheetUsable();
+  $('dbLink').disabled = IN_VIEWER; $('dbTestGo').disabled = !sheetUsable();
   if (IN_VIEWER) { $('dbStatus').hidden = false; $('dbStatus').innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; }
 }
 const DB_NAMES = { order: 'Order Number', name: 'Customer Name', date: 'Original Expected Date', time: 'Original Expected Time', sd: 'Sub District', d: 'District', zip: 'Post Code', addr: 'Shipping Address' };
-$('dbConnect').addEventListener('click', async () => {
-  const box = $('dbStatus'), link = $('dbLink').value.trim(); box.hidden = false;
-  if (!link) { box.innerHTML = `<span class="err">${T('วางลิงก์ Google Sheet ก่อน')}</span>`; return; }
-  $('dbConnect').disabled = true; box.innerHTML = T('กำลังเชื่อมต่อ …');
+/* The link connects BY ITSELF: pasting it (or typing it, after a short pause, or pressing Enter / leaving the box) tests it and saves it — there is no button. The same link is not tried twice.
+   Once connected, the order data is read in the background (Trip tab: autoRun) and the other computers receive the link with the usual sync. */
+let dbBusy = false;
+async function dbConnectNow() {
+  const box = $('dbStatus'), link = $('dbLink').value.trim();
+  if (IN_VIEWER || dbBusy || !link || (sheetCfg && sheetCfg.link === link)) return;
+  dbBusy = true; box.hidden = false; box.innerHTML = T('กำลังเชื่อมต่อ …');
   try {
     const { cfg, missing, nCols } = await connectSheet(link);
     sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} cloudTouch('sheet'); sheetIdx = null; refreshSheetIdx();
+    try { window.O2OZone.autoRun(true); } catch (_) {}
     const cols = Object.entries(DB_NAMES).map(([k, n]) => cfg.cols[k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', cfg.cols[k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
     box.innerHTML = `<div class="add">${T('เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', nCols)}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>` + (missing.length ? `<div class="chg">${T('ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า')}</div>` : '');
   } catch (e) {
@@ -3514,9 +3521,15 @@ $('dbConnect').addEventListener('click', async () => {
       : m === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : 'เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต';
     box.innerHTML = `<span class="err">${T(why)}</span>`;
   }
-  $('dbConnect').disabled = IN_VIEWER; renderDb(); render();
-});
-$('dbOff').addEventListener('click', () => { sheetCfg = null; sheetIdx = null; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+  dbBusy = false; renderDb(); render();
+}
+const dbLinkOk = s => /\/spreadsheets\/d\/[A-Za-z0-9_-]{20,}/.test(s);
+let dbLinkT = null;
+$('dbLink').addEventListener('paste', () => { clearTimeout(dbLinkT); dbLinkT = setTimeout(dbConnectNow, 80); });
+$('dbLink').addEventListener('input', () => { clearTimeout(dbLinkT); if (dbLinkOk($('dbLink').value)) dbLinkT = setTimeout(dbConnectNow, 900); });
+$('dbLink').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(dbLinkT); dbConnectNow(); } });
+$('dbLink').addEventListener('change', () => { clearTimeout(dbLinkT); dbConnectNow(); });
+$('dbOff').addEventListener('click', () => { sheetCfg = null; sheetIdx = null; $('dbLink').value = ''; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
 $('dbTestGo').addEventListener('click', async () => {
   const o = cleanScan($('dbTest').value), out = $('dbTestOut'); out.hidden = false;
   if (!ORD_RE.test(o)) { out.innerHTML = `<span class="err">${T('ใส่เลขออเดอร์ 11 ตัว')}</span>`; return; }
@@ -5275,6 +5288,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ชีตที่เชื่อมต่อไว้', 'The connected sheet', 'ချိတ်ဆက်ထားသော စာရွက်'],
   ['ซิงค์ {0}', 'synced {0}', 'ထပ်တူကူးချိန် {0}'],
   ['30 วันล่าสุด', 'last 30 days', 'နောက်ဆုံး ရက် ၃၀'],
+  ['วางลิงก์ Google Sheet ที่แชร์แบบ "ทุกคนที่มีลิงก์ดูได้" — วางแล้วเชื่อมต่อให้เอง', 'Paste a Google Sheet link shared as "anyone with the link can view" — it connects by itself once pasted', '"လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" ဟု မျှဝေထားသော Google Sheet လင့်ခ်ကို ထည့်ပါ — ထည့်သည်နှင့် ကိုယ်တိုင် ချိတ်ဆက်မည်'],
+  ['ซิงค์จากชีตให้เองเบื้องหลัง ไม่ต้องกดอะไร: เมื่อเปิดโปรแกรม · ทุก 10 นาที · และทุกครั้งที่เปลี่ยนลิงก์ ไฟล์ หรือตารางโซน — ไม่แก้ชีตหรือไฟล์', 'The sheet is read in the background by itself, nothing to press: when the program starts · every 10 minutes · and every time the link, a file or the zone table changes — the sheet and the files are never changed', 'စာရွက်ကို နောက်ကွယ်တွင် ကိုယ်တိုင်ဖတ်သည် ဘာမှမနှိပ်ရ: ပရိုဂရမ်စတင်သည့်အခါ · မိနစ် ၁၀ တိုင်း · လင့်ခ် ဖိုင် သို့မဟုတ် ဇုန်ဇယား ပြောင်းသည့်အခါတိုင်း — စာရွက်နှင့် ဖိုင်များကို မပြင်ပါ'],
 ];
 
 const exactMap = { en: new Map(), my: new Map() }, tplList = { en: [], my: [] }, byTh = { en: new Map(), my: new Map() };
@@ -5413,7 +5428,7 @@ $('btnTheme').addEventListener('click', () => {
 paintThemeBtn();
 
 /* ---------- the same data on every computer (Firestore over plain HTTPS, no extra script) ----------
-   Shared: the employee names with nickname + schedule ("people"), the Part-Time staff ("parttime"), the Trip route table ("trips") and the order-sheet link ("sheet"). The scan log,
+   Shared: the employee names with nickname + schedule ("people"), the Part-Time staff ("parttime"), the Trip route table ("trips"), the order-sheet link ("sheet") and the Trip zone table ("zones"). The scan log,
    the Assign / Re-Print lists and the settings stay on each computer. Each of the four is one document {json, by, at} named <prefix><set> (o2o_people, o2o_parttime, o2o_trips, o2o_sheet) in the collection of CLOUD_CONFIG — the team's Firestore (project makro-finder,
    collection makroFinder, the same one Makro Finder / Pallet / Shelf-Life use; documents of the other apps are never touched, only the four o2o_ ones).
    - an edit on a computer is sent about 1.5 s later; the others fetch it when their page is opened, when it is looked at again (after 20 s), and every 5 minutes
@@ -5437,6 +5452,8 @@ const CLOUD_SETS = {
               } },
   trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
   sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; sheetIdx = null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
+  zones:    { get: () => ({ text: window.O2OZone ? window.O2OZone.zoneText() : '' }), empty: () => !window.O2OZone || window.O2OZone.zoneIsDefault(),      // (the Trip zone table: a computer that still has the table from the picture sends nothing and takes the shared one)
+              set: v => { if (window.O2OZone) window.O2OZone.setZoneText(v && typeof v.text === 'string' ? v.text : null); } },
 };
 /* ---------- the scan lists live on every computer ----------
    Whatever is scanned on one computer shows on every screen: the scan list, the Assign list and the Re-Print list (what is typed in a field, the signed-in picker, the print page and the settings stay on each computer).
@@ -5606,10 +5623,11 @@ cloudQ = (() => {
     if (!cfg) return;
     if (busy) { again = true; return; }
     busy = true; st = { kind: 'busy', at: st.at }; paint();
-    let pulled = false, lost = false, failed = false;
-    try { for (const n of names) { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') pulled = true; if (r === 'lost') lost = true; } } catch (_) { failed = true; }
+    let pulled = false, lost = false, failed = false; const got = [];
+    try { for (const n of names) { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') { pulled = true; got.push(n); } if (r === 'lost') lost = true; } } catch (_) { failed = true; }
     busy = false; lastRun = Date.now(); st = { kind: failed ? 'err' : 'ok', at: Date.now() }; paint();
     if (pulled) { afterApply(); toast(lost ? 'ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)' : 'อัปเดตข้อมูลจากเครื่องอื่นแล้ว'); }
+    if (got.includes('sheet')) { try { window.O2OZone.autoRun(true); } catch (_) {} }      // (a link that arrived from another computer: read the orders at once, nobody has to open anything)
     if (again) { again = false; schedule(300); }
   }
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(run, ms); }
