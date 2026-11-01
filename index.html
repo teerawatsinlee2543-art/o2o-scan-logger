@@ -490,7 +490,8 @@ td.x{width:34px;text-align:center}
 .impprev ul{margin:4px 0 0;padding-left:18px;max-height:150px;overflow:auto}
 .prow button.go{color:#fff;border-color:transparent;background:linear-gradient(135deg,#2f9e5f,#238a50)}
 .prow button.go:hover:not(:disabled){background:linear-gradient(135deg,#34ad6b,#27995a);border-color:transparent}
-.phead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-bottom:6px}      /* (wraps instead of overflowing: a long Burmese title + the zoom button on a 320 px phone) */
+.phead{display:flex;align-items:center;justify-content:space-between;gap:4px 8px;margin-bottom:6px}
+@media (max-width:360px){ .phead{flex-wrap:wrap} }      /* (only on the smallest phones: a long Burmese title + the zoom button overflowed there; wider screens keep the one-row header they always had) */
 .phead label{display:flex;align-items:center;gap:8px;min-width:0;font-size:15px;font-weight:800;color:var(--pt)}
 .phead label::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot)}
 .pcount{min-width:24px;text-align:center;padding:0 10px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.7);border:1px solid var(--pbd);color:var(--pt);font-variant-numeric:tabular-nums}
@@ -3215,7 +3216,8 @@ function renderZones() {
     if (lr.length) h += `<h3 style="margin:16px 0 6px">ถนน/ซอยที่เรียนรู้ได้ — ควรเพิ่มเข้าตารางโซน</h3><p class="muted" style="margin:0 0 6px;font-size:14px">ถนน/ซอย/หมู่บ้านที่ออเดอร์ซึ่งเข้าโซนแล้วใช้ไปทาง Trip เดียวกันชัดเจน และพบในออเดอร์ที่อยู่นอกตาราง (เรียงตามจำนวนใบที่แก้ได้)</p><div class="tw"><table class="cmp zt"><tr><th>ถนน/ซอย</th><th>Trip</th><th>ออเดอร์นอกตารางที่แก้ได้</th><th>หลักฐาน</th></tr>${lr.map(e => `<tr><td style="text-align:left">${esc(e.road)}</td><td><b>${e.trip}</b></td><td>${e.n}</td><td>${e.ev} ใบที่เข้าโซนแล้ว · ${Math.round(e.share * 100)}% ไป Trip ${e.trip}</td></tr>`).join('')}</table></div>`;
   }
   h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
-  const el = $('zoneOut'); el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; renderTripTable();
+  const el = $('zoneOut'), wasOpen = [...el.querySelectorAll('details')].map(d => d.open);      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
+  el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach((d, i) => { if (wasOpen[i]) d.open = true; }); renderTripTable();
   el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
   $('zApplyTrip').onclick = applyRoutes;
@@ -5624,7 +5626,7 @@ cloudQ = (() => {
     if (busy) { again = true; return; }
     busy = true; st = { kind: 'busy', at: st.at }; paint();
     let pulled = false, lost = false, failed = false; const got = [];
-    try { for (const n of names) { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') { pulled = true; got.push(n); } if (r === 'lost') lost = true; } } catch (_) { failed = true; }
+    for (const n of names) { try { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') { pulled = true; got.push(n); } if (r === 'lost') lost = true; } catch (_) { failed = true; } }      // (each set on its own: one that cannot be read / written never stops the others)
     busy = false; lastRun = Date.now(); st = { kind: failed ? 'err' : 'ok', at: Date.now() }; paint();
     if (pulled) { afterApply(); toast(lost ? 'ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)' : 'อัปเดตข้อมูลจากเครื่องอื่นแล้ว'); }
     if (got.includes('sheet')) { try { window.O2OZone.autoRun(true); } catch (_) {} }      // (a link that arrived from another computer: read the orders at once, nobody has to open anything)
