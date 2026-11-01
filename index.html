@@ -555,8 +555,8 @@ input.aw{margin-bottom:6px}
 .twin > .panel.purple:not(.zoomed), .tcol > .panel.orange:not(.zoomed){display:flex;flex-direction:column}
 .tcol > .panel.orange:not(.zoomed){flex:1 1 auto}
 .twin > .panel.purple:not(.zoomed) > .pleft{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}      /* (the purple box keeps its content in .pleft) */
-.twin > .panel.purple:not(.zoomed) > .pleft > .plist, .tcol > .panel.orange:not(.zoomed) > .plist{flex:1 1 auto;min-height:0}
-.twin > .panel.purple:not(.zoomed) > .pleft > .plist + .prow, .tcol > .panel.orange:not(.zoomed) > .plist + .prow{margin-top:auto}      /* (a list is as tall as its cap allows; whatever is left stays between the list and the buttons, which sit on the bottom edge) */
+.twin > .panel.purple:not(.zoomed) > .pleft > .plist, .tcol > .panel.orange:not(.zoomed) > .plist{flex:1 1 auto;min-height:0;margin-bottom:10px}
+.twin > .panel.purple:not(.zoomed) > .pleft > .plist + .prow, .tcol > .panel.orange:not(.zoomed) > .plist + .prow{margin-block:auto}      /* (a list is as tall as its cap allows; the buttons sit in the middle of the space between the list and the bottom edge of the box: 10 px of air above them like the 10 px under them, and whatever is left over is shared by the two) */
 .plist li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:2px 8px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--line);font-size:13px}
 .plist li:last-child{border-bottom:0}
 .plist li:nth-child(even){background:color-mix(in srgb,var(--soft) 55%,var(--card))}
