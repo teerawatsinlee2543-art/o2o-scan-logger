@@ -541,6 +541,13 @@ input.aw{margin-bottom:6px}
 .pmsg.bad:not(:empty){background:#fde3e3;color:#b42318}
 .pmsg.warn:not(:empty)::before{content:"! "}
 .pmsg.bad:not(:empty)::before{content:"✕ "}
+/* an order scanned twice: a loud red box (it shakes, then glows 3 times), and the row of the list that is already there is marked red (it blinks) */
+.pmsg.warn.dup:not(:empty){margin-top:8px;padding:8px 14px;border:2px solid #fff;border-radius:13px;background:linear-gradient(135deg,#d92d33,#f0555a);color:#fff;font-size:16px;font-weight:800;line-height:1.35;box-shadow:0 4px 14px rgba(201,42,47,.45);animation:shake .55s,dupglow 1s ease-in-out .55s 3}
+.pmsg.warn.dup:not(:empty)::before{content:"⚠\FE0E ";font-size:1.15em}
+.panel.zoomed .pmsg.warn.dup:not(:empty){font-size:clamp(17px,2.8vh,21px)}
+@keyframes dupglow{0%,100%{box-shadow:0 4px 14px rgba(201,42,47,.45)}50%{box-shadow:0 0 0 5px rgba(240,85,90,.4),0 4px 20px rgba(201,42,47,.75)}}
+@keyframes dupblink{0%,100%{box-shadow:inset 5px 0 0 #e5484d,inset 0 0 0 200px rgba(229,72,77,0)}50%{box-shadow:inset 5px 0 0 #e5484d,inset 0 0 0 200px rgba(229,72,77,.55)}}
+@media (prefers-reduced-motion:reduce){.pmsg.warn.dup:not(:empty),.plist li.dupflash{animation:none}}
 .phint{margin:4px 2px 8px;font-size:12px;color:var(--pt);opacity:.85}
 .plist{list-style:none;margin:0;padding:0;max-height:112px;overflow:auto;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--pbd)}
 /* the Assign box (left column, under the green box) and the Re-Print box always end on the same line, whichever of the two lists is empty or full: both boxes are columns, the one that is shorter
@@ -554,6 +561,9 @@ input.aw{margin-bottom:6px}
 .plist li:last-child{border-bottom:0}
 .plist li:nth-child(even){background:color-mix(in srgb,var(--soft) 55%,var(--card))}
 .plist li.sel,.plist li.sel:nth-child(even){background:color-mix(in srgb,var(--dot) 18%,var(--card));box-shadow:inset 3px 0 0 var(--dot)}
+.plist li.dup,.plist li.dup:nth-child(even){background:color-mix(in srgb,#e5484d 16%,var(--card));box-shadow:inset 5px 0 0 #e5484d}      /* the entry that the last duplicate scan ran into (stays until the next scan) */
+.plist li.dup .o{color:var(--bad)}
+.plist li.dupflash{animation:dupblink .75s ease-in-out 4}
 .plist .t{color:var(--muted);font-variant-numeric:tabular-nums}
 .plist .o{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .plist .e{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;min-width:0}
@@ -957,10 +967,25 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .rlist{max-height:min(58vh,520px);margin-top:10px}      /* the saved roster: tall enough to see many people at once (it scrolls inside) */
 .rlist td.sched{font-size:13px;color:var(--muted);max-width:210px}
 
-.askdlg{width:min(420px,92vw);padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.askdlg::backdrop{background:rgba(16,24,40,.55)}
-.askdlg p{margin:0 0 16px;font-size:15px;line-height:1.55;white-space:pre-line}
-.askdlg .row{justify-content:flex-end}
+/* the yes / no question: a round icon, the question big (the lines after the first one smaller and grey), two roomy buttons; a question that deletes or clears something (.danger) is red */
+.askdlg{--ac:var(--accent);--ac2:var(--accent2);--acsh:rgba(11,92,173,.3);width:min(500px,92vw);padding:0;border:1px solid var(--line);border-top:6px solid var(--ac);border-radius:20px;background:var(--card);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.42);overflow:hidden}
+.askdlg.danger{--ac:#d92d33;--ac2:#f0555a;--acsh:rgba(201,42,47,.32)}
+.askdlg[open]{animation:bdpop .18s ease-out}
+.askdlg::backdrop{background:rgba(16,24,40,.55);backdrop-filter:blur(3px)}
+.askdlg .askbody{display:flex;align-items:center;gap:18px;padding:26px 28px 20px}
+.askdlg .askico{flex:none;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;color:#fff;background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 6px 16px var(--acsh)}
+.askdlg .askico svg{width:30px;height:30px}
+.askdlg .askico .aw,.askdlg.danger .askico .aq{display:none}
+.askdlg.danger .askico .aw{display:block}
+.askdlg .asktxt{min-width:0}
+.askdlg p{margin:0;font-size:19px;line-height:1.45;font-weight:700;white-space:pre-line}
+.askdlg p.asksub{margin-top:8px;font-size:15px;line-height:1.5;font-weight:400;color:var(--muted)}
+.askdlg .row{justify-content:flex-end;gap:12px;padding:6px 28px 24px}
+.askdlg .row button{min-width:118px;padding:12px 26px;border-radius:13px;font-size:17px;font-weight:800}
+.askdlg #askYes{background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 5px 14px var(--acsh)}
+.askdlg #askNo{border-width:2px;border-color:color-mix(in srgb,var(--ac) 55%,var(--line));color:var(--ac)}
+@media (max-width:420px){.askdlg .askbody{gap:14px;padding:22px 20px 16px}.askdlg .askico{width:48px;height:48px}.askdlg .askico svg{width:25px;height:25px}.askdlg p{font-size:17px}.askdlg .row{padding:4px 20px 20px;gap:10px}.askdlg .row button{flex:1;min-width:0;padding:12px 8px;font-size:16px}}
+@media (prefers-reduced-motion:reduce){.askdlg[open]{animation:none}}
 dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-radius:24px;background:linear-gradient(160deg,#e5393d,#b3141a);color:#fff;box-shadow:0 0 0 6px #c62828,0 30px 90px rgba(120,0,0,.65);overflow:hidden}      /* the red "no such order" alert */
 .nodatadlg::backdrop{background:rgba(110,0,0,.62);backdrop-filter:blur(2px)}
 .nodatadlg .ndbox{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 26px 24px;text-align:center}
@@ -1305,7 +1330,13 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 </div>
 
 <dialog id="askDlg" class="askdlg" aria-labelledby="askMsg">
-  <p id="askMsg"></p>
+  <div class="askbody">
+    <span class="askico" aria-hidden="true">
+      <svg class="aq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9.2a3.1 3.1 0 1 1 4.7 2.6c-1 .65-1.7 1.2-1.7 2.4"/><circle cx="12" cy="17.7" r=".7" fill="currentColor"/></svg>
+      <svg class="aw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 2.9 19.6h18.2z"/><path d="M12 10v4.4"/><circle cx="12" cy="17" r=".7" fill="currentColor"/></svg>
+    </span>
+    <div class="asktxt"><p id="askMsg"></p><p id="askSub" class="asksub" hidden></p></div>
+  </div>
   <div class="row"><button id="askYes" class="primary" type="button">ตกลง</button><button id="askNo" type="button">ยกเลิก</button></div>
 </dialog>
 <dialog id="nodataDlg" class="nodatadlg" role="alertdialog" aria-labelledby="ndTitle" aria-describedby="ndMsg">
@@ -1693,7 +1724,9 @@ function feedback(kind, big, small) {
 /* In-page yes/no question (the browser's confirm() is blocked on the claude.ai web copy). Resolves true on "ตกลง". The text is translated here. */
 function ask(msg) {
   return new Promise(resolve => {
-    const dlg = $('askDlg'); $('askMsg').textContent = trText(String(msg));
+    const dlg = $('askDlg'), nl = trText(String(msg)).split('\n'), sub = nl.slice(1).join('\n').trim();
+    $('askMsg').textContent = nl[0]; $('askSub').textContent = sub; $('askSub').hidden = !sub;      // the first line is the question, the rest is the small print under it
+    dlg.classList.toggle('danger', /^(ลบ|ล้าง)/.test(String(msg)));                                // a question about deleting / clearing: red icon and red "ตกลง"
     const done = v => { dlg.removeEventListener('close', onClose); dlg.close(); resolve(v); };
     const onClose = () => resolve(false);                       // Esc
     $('askYes').onclick = () => done(true); $('askNo').onclick = () => done(false);
@@ -3828,7 +3861,27 @@ $('dbTest').addEventListener('keydown', e => { if (e.key === 'Enter') $('dbTestG
 const ASSIGN_KIND = { fill: 'ใส่พนักงานให้ออเดอร์ที่สแกนไว้', change: 'เปลี่ยนพนักงาน', new: 'เพิ่มออเดอร์ใหม่เข้ารายการสแกน' };
 const assignIn = $('assignIn'), reprintIn = $('reprintIn'), reprintIn2 = $('reprintIn2'), reprintIn3 = $('reprintIn3'), reprintIn4 = $('reprintIn4');
 const cleanScan = raw => { const v = String(raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().toUpperCase(); return ORD_RE.test(v) ? v : (extractOrder(v) || v); };
-function sideMsg(which, kind, text) { const m = $(which + 'Msg'); m.className = 'pmsg ' + kind; m.textContent = text; }
+const dupMark = { assign: '', reprint: '' };                                // the order of each list that the last duplicate scan ran into (its row is marked red until the next message)
+function sideMsg(which, kind, text) {
+  const m = $(which + 'Msg');
+  if (/\bdup\b/.test(kind)) { m.className = 'pmsg'; void m.offsetWidth; }    // (the box shakes again on every duplicate, also two in a row)
+  else if (dupMark[which]) { dupMark[which] = ''; markDupRows(); }
+  m.className = 'pmsg ' + kind; m.textContent = text;
+}
+function markDupRows() {                                                    // red mark on the (first) row of the list that holds the order in dupMark
+  [['assign', 'assignList'], ['reprint', 'reprintList']].forEach(([w, id]) => {
+    let hit = false;
+    [...$(id).children].forEach(li => { const on = !hit && !!dupMark[w] && li.dataset.order === dupMark[w]; if (on) hit = true; li.classList.toggle('dup', on); });
+  });
+}
+/* An order scanned a second time: the double beep, the loud red message, and the list jumps to the entry that is already there (centred in the list, blinking, marked red until the next scan). */
+function dupAlert(which, order, text) {
+  sfx.dup(); dupMark[which] = order; sideMsg(which, 'warn dup', text); markDupRows();
+  const li = $(which + 'List').querySelector('li.dup'); if (!li) return;     // (the list shows the newest 150: an older entry is not drawn)
+  const ul = li.parentNode;
+  ul.scrollTop += li.getBoundingClientRect().top - ul.getBoundingClientRect().top - (ul.clientHeight - li.offsetHeight) / 2;
+  li.classList.remove('dupflash'); void li.offsetWidth; li.classList.add('dupflash');
+}
 const empLabel = (e, n) => e + (n ? ' ' + n : '');
 
 /* Assign: the order goes to the employee who is signed in. Already scanned -> the employee is filled in (or changed after a confirm);
@@ -3842,7 +3895,10 @@ async function assignOrder(raw) {
   const emp = state.emp, name = nameOfEmp(emp), rows = state.rows.filter(r => r.order === v);
   let kind, prev = null, rowTs = null;
   if (!rows.length) { rowTs = Date.now(); state.rows.push({ ts: rowTs, emp, name, order: v }); kind = 'new'; }
-  else if (rows.every(r => r.emp === emp)) { sfx.dup(); return sideMsg('assign', 'warn', `${v} Assign ให้ ${empLabel(emp, name)} อยู่แล้ว`); }
+  else if (rows.every(r => r.emp === emp)) {
+    const was = [...state.assigns].reverse().find(a => a.order === v);
+    return dupAlert('assign', v, `ซ้ำ! ${v} Assign ให้ ${empLabel(emp, name)} อยู่แล้ว` + (was ? ` (เมื่อ ${fmtTime(was.ts)})` : ''));
+  }
   else {
     const other = rows.find(r => r.emp && r.emp !== emp);
     if (other) {
@@ -3870,11 +3926,12 @@ function undoAssign(i) {
 }
 
 /* Re-Print: just a list of orders whose cover sheet has to be printed again (no employee needed; the signed-in one is noted if there is one) */
+const rpDupText = x => `ซ้ำ! ${x.order} อยู่ในรายการ Re-Print แล้ว (สแกนไว้ ${fmtTime(x.ts)})`;
 function reprintOrder(raw) {
   const v = cleanScan(raw); if (!v) return;
   if (rpEmpScan.isBadge(v)) return rpEmpScan(v, true);                     // an employee badge scanned into an order field: it is the picker
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
-  if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
+  const had = state.reprints.find(x => x.order === v); if (had) return dupAlert('reprint', v, rpDupText(had));
   const emp = state.mode === 'none' ? '' : (state.emp || '');
   state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp) });
   const auto = state.autoPrint !== false && AUTO_PRINT_RE.test(v);         // an 11-character order ending in A or B goes on to the picker window at once, then to the print page
@@ -3894,7 +3951,7 @@ function reprintOrder2(raw) {
   const v = cleanScan(raw); if (!v) return;
   if (rpEmpScan.isBadge(v)) return rpEmpScan(v, true);
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
-  if (state.reprints.some(x => x.order === v)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
+  const had = state.reprints.find(x => x.order === v); if (had) return dupAlert('reprint', v, rpDupText(had));
   const emp = state.mode === 'none' ? '' : (state.emp || ''), autoOn = state.autoPrint !== false;
   state.reprints.push({ ts: Date.now(), order: v, emp, name: nameOfEmp(emp), pair: true });
   save(); sfx.ok();
@@ -3921,7 +3978,7 @@ function reprintBulk(raw, two) {
   if (rpEmpScan.isBadge(v)) return bulkPending(two).length ? bulkFinish(v, two) : rpEmpScan(v, true);
   if (!ORD_RE.test(v)) { sfx.bad(); return sideMsg('reprint', 'bad', `รูปแบบไม่ถูกต้อง "${v.slice(0, 24)}" — ต้องเป็นเลขออเดอร์ 11 ตัว`); }
   const old = state.reprints.find(x => x.order === v);
-  if (old && !(old.bulk && old.batched)) { sfx.dup(); return sideMsg('reprint', 'warn', `${v} อยู่ในรายการ Re-Print แล้ว`); }
+  if (old && !(old.bulk && old.batched)) return dupAlert('reprint', v, rpDupText(old));
   if (old) state.reprints.splice(state.reprints.indexOf(old), 1);          // printed in an earlier go: scanning it again puts it into this one
   state.reprints.push(two ? { ts: Date.now(), order: v, emp: '', name: '', bulk: true, two: true } : { ts: Date.now(), order: v, emp: '', name: '', bulk: true });
   const list = bulkPending(two), n = list.length;
@@ -4080,6 +4137,7 @@ function setTotalBox(el, n) {                                              // "�
 function sideItem(x, onDelete, delTitle, extra) {
   const li = document.createElement('li');
   const t = document.createElement('span'); t.className = 't'; t.textContent = fmtTime(x.ts);
+  li.dataset.order = x.order;
   const o = document.createElement('span'); o.className = 'o'; o.textContent = x.order;
   const e = document.createElement('span'); e.className = 'e'; e.textContent = x.emp ? empLabel(x.emp, x.name) : ''; e.title = e.textContent;
   const b = document.createElement('button'); b.type = 'button'; b.innerHTML = X_SVG; b.title = delTitle; b.setAttribute('aria-label', delTitle); b.disabled = !!(extra && extra.locked);
@@ -4104,7 +4162,7 @@ function renderSide() {
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); if (a.bulk && !a.batched) sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.two ? 'หลายออเดอร์ · 1 Page / 2 Order' : 'หลายออเดอร์') + (a.batched ? ' · พิมพ์แล้ว' : '') : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
     li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); }); return li; });
-  renderRpView(); renderEmpBox();
+  markDupRows(); renderRpView(); renderEmpBox();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
   renderBulk();                                                              // the third and fourth fields: the counter in their corner, and the green / delete row under them while orders wait
@@ -5295,10 +5353,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ต้องเป็นเลขออเดอร์ 11 ตัว', 'it must be an 11-character order number', 'အော်ဒါနံပါတ် 11 လုံး ဖြစ်ရမည်'],
   ['ยังไม่มีพนักงาน', 'No employee yet', 'ဝန်ထမ်း မရှိသေးပါ'],
   ['สแกนบัตรพนักงานที่ช่อง 1 ก่อน', 'scan the employee badge in field 1 first', 'ကွက် 1 တွင် ဝန်ထမ်းကတ်ကို ဦးစွာ စကင်န်ဖတ်ပါ'],
-  ['{0} Assign ให้ {1} อยู่แล้ว', '{0} is already assigned to {1}', '{0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည်'],
+  ['ซ้ำ! {0} Assign ให้ {1} อยู่แล้ว (เมื่อ {2})', 'DUPLICATE! {0} is already assigned to {1} (at {2})', 'ထပ်နေသည်! {0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည် ({2})'],
+  ['ซ้ำ! {0} Assign ให้ {1} อยู่แล้ว', 'DUPLICATE! {0} is already assigned to {1}', 'ထပ်နေသည်! {0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည်'],
   ['ออเดอร์ {0} Assign ให้ {1} อยู่แล้ว\nเปลี่ยนเป็น {2} ?', 'Order {0} is already assigned to {1}.\nChange it to {2}?', 'အော်ဒါ {0} ကို {1} သို့ Assign လုပ်ပြီးဖြစ်သည်။\n{2} သို့ ပြောင်းမလား?'],
   ['ยกเลิก Assign {0}', 'Assign {0} cancelled', '{0} ၏ Assign ကို ပယ်ဖျက်ပြီးပါပြီ'],
-  ['{0} อยู่ในรายการ Re-Print แล้ว', '{0} is already in the Re-Print list', '{0} သည် Re-Print စာရင်းထဲတွင် ရှိပြီးဖြစ်သည်'],
+  ['ซ้ำ! {0} อยู่ในรายการ Re-Print แล้ว (สแกนไว้ {1})', 'DUPLICATE! {0} is already in the Re-Print list (scanned at {1})', 'ထပ်နေသည်! {0} သည် Re-Print စာရင်းထဲတွင် ရှိပြီးဖြစ်သည် ({1} တွင် စကင်န်ဖတ်ပြီး)'],
   ['ยังไม่มีรายการ', 'No entries yet', 'စာရင်း မရှိသေးပါ'],
   ['กด "กลับไปสแกนต่อ" เพื่อ Assign เพิ่ม', 'press "Resume scanning" to assign more', 'Assign ထပ်လုပ်လိုပါက "စကင်န်ဆက်ဖတ်ရန် ပြန်သွားရန်" ကိုနှိပ်ပါ'],
   ['จะ Assign ให้ {0}', 'Will assign to {0}', '{0} သို့ Assign လုပ်မည်'],
