@@ -3382,7 +3382,7 @@ function extendedTable() {
   return Z.zt.trips.map(t => t.special || !by.has(t.num) ? t.line : t.line + ' / [เพิ่ม] ' + by.get(t.num).join(' / ')).join('\n');
 }
 function setOrders(orders, src) {
-  S.orders = orders; S.src = src; S.byNo = new Map(orders.map(o => [o.no, o])); S.at = Date.now(); S.fromSheet = false;
+  S.orders = orders; S.src = src; S.byNo = new Map(); for (const o of orders) if (!S.byNo.has(o.no)) S.byNo.set(o.no, o); S.at = Date.now(); S.fromSheet = false;      // (an order that is on two rows: the first, as a question to the sheet answers)
   const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
   const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
   $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
@@ -3440,7 +3440,7 @@ function autoCheck(now) {      // now: a deliberate edit (a zone box of the per-
     if (S.orders.length && (Date.now() - zLastSync < 600000 || !sheetReady())) { runZones(); await applyRoutes(true); }
     else if (sheetReady()) await syncSheet(false);
   };
-  if (now) go(); else zChkT = setTimeout(go, 400);
+  if (now) setTimeout(go, 0); else zChkT = setTimeout(go, 400);      // (now = on the next tick, not inside the blur: a click from one zone box into another has not moved the focus yet, and a table rebuilt right then would lose that click)
 }
 function mergeZones(entries) {
   const by = new Map();
@@ -3468,10 +3468,7 @@ document.addEventListener('o2o-routes-imported', e => {
 });
 $('zoneIn').addEventListener('input', () => { clearTimeout(zEditT); zEditT = setTimeout(() => { zoneChanged(); autoCheck(); }, 1500); });
 setInterval(() => { if (!document.hidden) autoRun(false); }, 60000);      // (every 10 minutes while the page is open, whichever tab is showing)
-setTimeout(() => {                                                          // (a few seconds after the program starts, unless the last read was a moment ago)
-  let at = 0; try { at = +localStorage.getItem(LS_ZAT) || 0; } catch (_) {}
-  if (Date.now() - at > 120000) autoRun(true);
-}, 1500);      // (was 6 s: the bulk read is what makes the next scans instant, so it starts as soon as the page is up)
+setTimeout(() => autoRun(true), 1500);      // (a moment after the program starts — always: the bulk read is kept in memory only, so a page that was just reloaded has none, and it is what makes the next scans instant. Was 6 s, and skipped when the last read was under 2 minutes ago)
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { setZoneText(null); zoneChanged(); });
 $('btnZone').addEventListener('click', runZones);
