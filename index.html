@@ -3112,7 +3112,7 @@ function buildMatcher(zt) {
   for (const t of zt.trips) if (!t.special) for (const z of t.zones) for (const nm of z.names) {
     const k = nk(nm); if (k.length < 2) continue;
     if (kmap.has(k)) { if (kmap.get(k) !== t.num) dups.push(`"${nm}" อยู่ทั้ง Trip ${kmap.get(k)} และ ${t.num} (ใช้ Trip ${kmap.get(k)})`); continue; }
-    kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k) });
+    kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k), nm: nm.trim() });      // (nm = the name as the table writes it: the cover slip prints it when the address names no road)
   }
   kws.sort((a, b) => b.k.length - a.k.length);
   return { kws, kmap, dups };
@@ -3141,6 +3141,29 @@ function matchOrder(o, M) {                                          // -> {trip
   const w5 = hit(text, false); if (w5) return { trip: w5.trip, how: 'weak' };
   if (M.kmap.has(dk)) return { trip: M.kmap.get(dk), how: 'weak' };
   return { trip: null, how: '' };
+}
+/* The road the order is on — what the cover slip prints where the Sub District used to be, so the drivers can put the orders of one road on one route. It is read from the Shipping Address the same way the Trip is
+   (soi first, then the road): "ถ.เสรีไทย ซ.89" / "ถ.รามอินทรา" / "ซ.คลองเก้า7"; a soi named after its road is written once ("ซ.เสรีไทย 89" on "ถ.เสรีไทย" -> "ถ.เสรีไทย ซ.89"). An address that names no road or soi
+   gets the zone-table name found in it (a road written without ถ., a community); '' = nothing found (the slip then prints the Sub District), undefined = there is no address to read.
+   Only this short label is kept (with the order's data), never the address. */
+const roadCap = s => s.length > 28 ? s.slice(0, 27).trim() + '…' : s;      // (the slip shrinks a long label to fit its cell: past ~28 letters it would be too small to read)
+function roadLabel(x) { const r = roadLabel0(x); return r ? roadCap(r) : r; }
+function roadLabel0(x) {
+  const addr = String(x.addr || ''); if (!addr.trim()) return undefined;
+  const LET = /[ก-๙A-Za-z]/, tidy = t => t.replace(/\s+/g, ' ').replace(/[.,;:\-\/]+$/, '').trim();
+  const ms = mentionsOf(addr), road = ms.find(m => m.kind === 'ถ' && LET.test(m.text)), soi = ms.find(m => m.kind === 'ซ' && LET.test(m.text));
+  if (road || soi) {
+    if (road && soi) {
+      const same = nk(soi.text).includes(nk(road.text)), num = /\d/.test(soi.text) ? tidy(soi.text.replace(/^\D+/, '')) : '';
+      return 'ถ.' + tidy(road.text) + (same ? (num ? ' ซ.' + num : '') : ' ซ.' + tidy(soi.text));
+    }
+    return road ? 'ถ.' + tidy(road.text) : 'ซ.' + tidy(soi.text);
+  }
+  const z = zoneMatcher(), sdk = nk(x.sd), dk = nk(x.d), clean = t => { for (const y of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(x.zip || '')]) if (y && y.length > 1) t = t.split(y).join('|'); return t; };
+  const text = clean(fz(addr)); let w = null;
+  for (const k of z.M.kws) if (!k.weak && text.includes(k.k)) { w = k; break; }
+  if (!w) for (const k of z.M.kws) if (text.includes(k.k)) { w = k; break; }
+  return w ? w.nm : '';
 }
 const Z = { groups: new Map(), zt: null, rows: [], day: '' };
 const roadBase = r => String(r).replace(/^(ถ\.|ซ\.)/, '').replace(/[0-9\-\/].*$/, '');
@@ -3458,7 +3481,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
@@ -3538,6 +3561,10 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
         if (JSON.stringify(nxt) !== JSON.stringify(cur)) { orderInfo[o] = nxt; changed = dirty = true; }
         const t = window.O2OZone && window.O2OZone.tripOfOrder ? window.O2OZone.tripOfOrder(v) : undefined;      // the Trip by the zone table and the address of this order; the address itself goes no further than this line
         if (t !== undefined && ztPut(o, t)) changed = true;
+        if (window.O2OZone && window.O2OZone.roadOf && sheetCfg.cols.addr && orderInfo[o]) {      // and the road / soi of the address (a short label like "ถ.เสรีไทย ซ.89", printed on the slip instead of the Sub District; '' = none found, also when the address cell is empty, so it is not asked again and again)
+          const rd = window.O2OZone.roadOf(v) || '';
+          if (orderInfo[o].rd !== rd) { orderInfo[o].rd = rd; changed = dirty = true; }
+        }
       }
     } catch (_) { break; }                       // offline / not shared / blocked: the sheet is just skipped, scanning goes on
   }
@@ -3548,7 +3575,7 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
    "ไม่มีเลขออเดอร์ อยู่ในระบบ — รบกวนติดต่อที่ Admin Counter". Only when the sheet really answered (a lookup that failed — offline, not shared — is not a miss), so a bad connection never cries wolf;
    with no sheet connected (or on the claude.ai copy, which cannot reach it) nothing can be checked and nothing is raised. Several orders scanned while the pop-up is open are added to its list. */
 const hasInfo = o => !!(orderInfo[o] && (orderInfo[o].name || orderInfo[o].time));
-const infoNeeded = o => !hasInfo(o) || (!!ztVer() && ztGet(o) === undefined);      // the sheet is asked for an order that has no data yet, or whose Trip (by its address) is not worked out under the current zone table
+const infoNeeded = o => !hasInfo(o) || (!!ztVer() && ztGet(o) === undefined) || (!!(sheetCfg && sheetCfg.cols && sheetCfg.cols.addr) && orderInfo[o].rd === undefined);      // the sheet is asked for an order that has no data yet, or whose Trip (by its address) is not worked out under the current zone table, or whose road (for the slip) is not read yet
 const ndDlg = $('nodataDlg'), ndOrders = [];
 let ndT = null;
 function noDataAlert(list) {
@@ -4569,7 +4596,7 @@ function sheetHtml(r, r2) {                       // r2: undefined = the same or
   return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
-      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf, r.order))}</span>${inf.sd ? ` <span class="s-sd">${xesc(window.O2OZone && window.O2OZone.sdThai ? window.O2OZone.sdThai(inf.sd) : inf.sd)}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
+      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf, r.order))}</span>${(inf.rd || inf.sd) ? ` <span class="s-sd">${xesc(inf.rd || (window.O2OZone && window.O2OZone.sdThai ? window.O2OZone.sdThai(inf.sd) : inf.sd))}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
       <div class="s-order"><div class="fit s-onum" data-fit="44">${xesc(r.order)}</div></div>
     </div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
