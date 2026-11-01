@@ -642,9 +642,9 @@ input.rp2{margin-top:8px}
 .panel.zoomed .infield .cnt small{display:inline;font-size:clamp(11px,.95vw,14px)}      /* ("Order" is well under half the size of the number) */
 .panel.zoomed .infield .cnt.big small{display:none}
 @media (max-width:420px){ .panel.zoomed .infield .cnt small{display:none} .infield input[type=text]{padding-right:62px} .panel.zoomed .infield input[type=text]{padding-right:84px} }      /* a phone: the counter is just the number, so the hint has more room */
-.infield{container-type:inline-size}      /* (the hint of the many-orders fields shrinks with the width of its field, down to 11px, so on a phone it is cut off later) */
-.infield input[type=text]::placeholder{font-size:clamp(11px,4.3cqw,13.5px)}
-.panel.zoomed .infield input[type=text]::placeholder{font-size:clamp(11px,4.1cqw,clamp(17px,2vw,26px))}
+/* the hint (placeholder) of every field is fitted to its box by initPhFit() (JS): it measures the text in the current language and, when it is wider than the box, sets --phfs (down to 10px) — a Burmese hint is much
+   longer than the Thai / English one, so a fixed size (or one that only follows the box width) cut it off with "…" after a language change */
+input[data-phfit]::placeholder{font-size:var(--phfs)!important}
 @keyframes cntpop{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
 .infield .cnt.pop{animation:cntpop .32s ease-out}
 @media (prefers-reduced-motion:reduce){.infield .cnt.pop{animation:none}}
@@ -4840,7 +4840,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เก็บแล้วพิมพ์ทีเดียว', 'collected, printed in one go', 'စုပြီး တစ်ခါတည်း ပုံနှိပ်မည်'],
   ['ไม่พิมพ์ทันที (ลงท้ายไม่ใช่ A / B)', 'does not print at once (does not end in A / B)', 'ချက်ချင်း မပုံနှိပ် (A / B ဖြင့် မဆုံးပါ)'],
   ['พิมพ์แล้ว', 'printed', 'ပုံနှိပ်ပြီး'],
-  ['รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)', 'waiting for the 2nd order number (1 Page / 2 Order)', 'ဒုတိယအော်ဒါနံပါတ်ကို စောင့်နေသည် (1 Page / 2 Order)'],
+  ['รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)', 'waiting for the 2nd order number (1 Page / 2 Order)', 'ဒုတိယအော်ဒါနံပါတ်ကို စောင့်နေသည် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน', 'A picker is needed first — type a name / scan the badge in the field above', 'ဦးစွာ ပစ္စည်းကောက်သူ လိုအပ်သည် — အပေါ်အကွက်တွင် အမည်ရိုက် / ကတ်စကင်ဖတ်ပါ'],
   ['ก', 'A', 'က'],
   ['ข', 'B', 'ခ'],
@@ -4948,8 +4948,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['สแกนหลายออเดอร์ (พิมพ์ทีเดียว)', 'Scan many orders (print at once)', 'အော်ဒါများစွာ စကင်န်ဖတ်ပါ (တစ်ခါတည်း)'],
-  ['สแกนหลายออเดอร์ (1 Page / 2 Order)', 'Scan many orders (1 Page / 2 Order)', 'အော်ဒါများစွာ စကင်န်ဖတ်ပါ (1 Page / 2 Order)'],
-  ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)', 'Re-Print cover sheet: order number (many orders, 1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ၊ 1 Page / 2 Order)'],
+  ['สแกนหลายออเดอร์ (1 Page / 2 Order)', 'Scan many orders (1 Page / 2 Order)', 'အော်ဒါများစွာ စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
+  ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)', 'Re-Print cover sheet: order number (many orders, 1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ၊ ၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['✓ {0} · รอพิมพ์ {1} ออเดอร์ ({2} หน้า) — สแกนต่อได้ หรือกดปุ่มเขียว', '✓ {0} · {1} orders waiting ({2} pages) — keep scanning or press the green button', '✓ {0} · ပုံနှိပ်ရန် အော်ဒါ {1} ခု ({2} မျက်နှာ) စောင့်နေသည် — ဆက်စကင်န်ဖတ်ပါ သို့မဟုတ် အစိမ်းရောင်ခလုတ်ကို နှိပ်ပါ'],
   ['ตัวอย่างใบปะหน้า — {0} ออเดอร์ · {1} หน้า (หน้าละ 2 ออเดอร์)', 'Cover sheet preview — {0} orders · {1} pages (2 orders per page)', 'အဖုံးစာရွက် နမူနာ — အော်ဒါ {0} ခု · {1} မျက်နှာ (တစ်မျက်နှာလျှင် အော်ဒါ ၂ ခု)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)', 'Re-Print cover sheet: order number (many orders, print at once)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ တစ်ခါတည်း ပုံနှိပ်ရန်)'],
@@ -5421,6 +5421,37 @@ function initLang() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLangMenu(); });
 }
 
+/* ---------- the hint of every text field always fits its box, in every language ----------
+   A Burmese hint is much longer than the Thai / English one, so after a language change it was cut off with "…" (e.g. "အော်ဒါများစွာ စကင်န်ဖတ်ပါ (1 Page / 2 …" in the many-orders field).
+   For each text input that is on screen: measure the hint (canvas, same font / weight / letter-spacing as the ::placeholder) against the room inside the box; when it is wider, shrink it in proportion
+   (CSS var --phfs, never below 10px — beyond that the "…" is still there rather than unreadable type). Re-done when the hint text changes (language switch, a T() text), when a box changes size
+   (window, full-page view, a pop-up opening) and once the fonts have loaded. */
+function initPhFit() {
+  const cv = document.createElement('canvas').getContext('2d'), FLOOR = 10;
+  let raf = 0;
+  const ro = window.ResizeObserver ? new ResizeObserver(() => schedule()) : null;
+  function fitAll() {
+    raf = 0;
+    const els = [...document.querySelectorAll('input[placeholder]')].filter(e => e.type === 'text' || e.type === 'search');
+    els.forEach(e => { if (ro) ro.observe(e); e.removeAttribute('data-phfit'); });      // first the natural size is read for all of them…
+    const jobs = els.map(e => {
+      if (!e.placeholder || e.clientWidth < 20) return null;
+      const cs = getComputedStyle(e), ph = getComputedStyle(e, '::placeholder'), nat = parseFloat(ph.fontSize);
+      if (!(nat > 0)) return null;
+      cv.font = `${ph.fontStyle} ${ph.fontWeight} ${nat}px ${ph.fontFamily}`;
+      cv.letterSpacing = ph.letterSpacing === 'normal' ? '0px' : ph.letterSpacing;
+      const need = cv.measureText(e.placeholder).width, room = e.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 3;
+      return need > room && room > 0 ? { e, size: Math.max(FLOOR, nat * room / need) } : null;
+    });
+    jobs.forEach(j => { if (j) { j.e.style.setProperty('--phfs', j.size.toFixed(2) + 'px'); j.e.setAttribute('data-phfit', ''); } });      // …then the too-long ones get their smaller size
+  }
+  function schedule() { if (!raf) raf = requestAnimationFrame(fitAll); }
+  new MutationObserver(schedule).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['placeholder'] });      // (not childList: a scan re-renders the lists, and scanning never waits for this)
+  window.addEventListener('resize', schedule);
+  if (document.fonts) { document.fonts.ready.then(schedule); document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', schedule); }
+  fitAll();
+}
+
 /* ---------- theme: follows the OS, the moon/sun button overrides it ---------- */
 const LS_THEME = 'o2o-theme';
 const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
@@ -5671,6 +5702,7 @@ else if (state.mode === 'none') feedback('idle', 'พร้อมสแกน', 
 else if (state.emp) feedback('idle', 'พร้อมสแกน', `พนักงาน ${state.emp} — สแกนเลขออเดอร์ได้เลย`);
 render();
 initLang();                                  // last: translates what render() just put on the page, then watches for new text
+initPhFit();                                 // then every field's hint is fitted to its box (after the translation, so it measures the final text)
 focusNext();
 })();
 </script>
