@@ -2865,11 +2865,16 @@ const SD_EN = { 'Min Buri': 'มีนบุรี', 'Saen Saep': 'แสนแ�
   'Anusawari': 'อนุสาวรีย์', 'Tha Raeng': 'ท่าแร้ง', 'Sai Mai': 'สายไหม', 'O Ngoen': 'ออเงิน', 'Khlong Thanon': 'คลองถนน', 'Lat Krabang': 'ลาดกระบัง', 'Khlong Song Ton Nun': 'คลองสองต้นนุ่น', 'Khlong Sam Prawet': 'คลองสามประเวศ',
   'Lam Pla Thio': 'ลำปลาทิว', 'Thap Yao': 'ทับยาว', 'Khum Thong': 'ขุมทอง', 'Lam Phak Chi': 'ลำผักชี', 'Nong Chok': 'หนองจอก', 'Krathum Rai': 'กระทุ่มราย', 'Khlong Sip': 'คลองสิบ', 'Khlong Sip Song': 'คลองสิบสอง',
   'Khok Faet': 'โคกแฝด', 'Khu Fang Nuea': 'คู้ฝั่งเหนือ', 'Lam Toiting': 'ลำต้อยติ่ง', 'Chorakhe Bua': 'จรเข้บัว', 'Lat Phrao': 'ลาดพร้าว', 'Khlong Chan': 'คลองจั่น', 'Hua Mak': 'หัวหมาก', 'Bueng Kham Phroi': 'บึงคำพร้อย',
-  'Lam Luk Ka': 'ลำลูกกา', 'Khu Khot': 'คูคต', 'Wang Thonglang': 'วังทองหลาง' };
+  'Lam Luk Ka': 'ลำลูกกา', 'Khu Khot': 'คูคต', 'Wang Thonglang': 'วังทองหลาง',
+  // more areas around the service area, in case the Call Center sheet writes them in English too
+  'Bang Khen': 'บางเขน', 'Lak Si': 'หลักสี่', 'Don Mueang': 'ดอนเมือง', 'Chatuchak': 'จตุจักร', 'Bang Kapi': 'บางกะปิ', 'Chan Kasem': 'จันทรเกษม', 'Talat Bang Khen': 'ตลาดบางเขน', 'Suan Luang': 'สวนหลวง', 'Dok Mai': 'ดอกไม้',
+  'Prawet': 'ประเวศ', 'On Nut': 'อ่อนนุช', 'Phatthanakan': 'พัฒนาการ', 'Wiang': 'เวียง', 'Din Thong': 'ดินทอง', 'Thung Wat Don': 'ทุ่งวัดดอน', 'Tha Lo': 'ท่าล้อ', 'Lat Sawai': 'ลาดสวาย', 'Lat Yao': 'ลาดยาว', 'Chom Phon': 'จอมพล',
+  'Phlapphla': 'พลับพลา', 'Saphan Song': 'สะพานสอง', 'Si Kan': 'สีกัน', 'Sanam Bin': 'สนามบิน', 'Thung Song Hong': 'ทุ่งสองห้อง', 'Nong Bon': 'หนองบอน', 'Bang Na': 'บางนา' };
 const mapOf = o => new Map(Object.entries(o).map(([e, t]) => [norm(e), t]));
 const D_MAP = mapOf(D_EN), SD_MAP = mapOf(SD_EN);
 const canonD = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(เขต|อำเภอ)\s*/, '') : (D_MAP.get(norm(t)) || t); };
 const canonSd = s => { const t = String(s == null ? '' : s).trim(); if (!t) return ''; return THAI.test(t) ? t.replace(/^(แขวง|ตำบล)\s*/, '') : (SD_MAP.get(norm(t)) || t); };
+const sdThai = s => canonSd(s) || s;      // the cover sheet is read in Thai: "O Ngoen" -> "ออเงิน" (a name that is not in the table, or is already Thai, stays as it is)
 
 /* districts that touch each other (Bangkok north-east and neighbours): the "how near" of two areas that have no coordinates */
 const EDGES = [['มีนบุรี', 'คลองสามวา'], ['มีนบุรี', 'หนองจอก'], ['มีนบุรี', 'ลาดกระบัง'], ['มีนบุรี', 'สะพานสูง'], ['มีนบุรี', 'คันนายาว'], ['คลองสามวา', 'สายไหม'], ['คลองสามวา', 'คันนายาว'], ['คลองสามวา', 'หนองจอก'],
@@ -3272,7 +3277,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, sdThai, Z, S };
 
 })();
 
@@ -4350,7 +4355,7 @@ function sheetHtml(r, r2) {                       // r2: undefined = the same or
   return `<div class="slip">
     <div class="s-head">
       <div class="s-qr">${qrSvg(r.order, 0)}</div>
-      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf))}</span>${inf.sd ? ` <span class="s-sd">${xesc(inf.sd)}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
+      <div class="s-tt"><div class="fit" data-fit="46"><span class="s-tp">${(trip => trip ? (/^trip/i.test(trip) ? '' : 'Trip ') + xesc(trip) : 'Trip <span class="s-tu"></span>')(tripFor(inf))}</span>${inf.sd ? ` <span class="s-sd">${xesc(window.O2OZone && window.O2OZone.sdThai ? window.O2OZone.sdThai(inf.sd) : inf.sd)}</span>` : ''}</div>${r.batch ? `<span class="s-ref">ชุดที่ ${r.batch}<br>ใบที่ ${r.slot}</span>` : ''}</div>
       <div class="s-order"><div class="fit s-onum" data-fit="44">${xesc(r.order)}</div></div>
     </div>
     <div class="s-name"><div class="fit" data-fit="44">${xesc(nm)}</div></div>
@@ -4709,6 +4714,100 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ไม่แสดง {0} ใบที่ไม่มีข้อมูลในชีต', 'Not shown: {0} with no data in the sheet', 'Sheet တွင် ဒေတာမရှိသော {0} ခု မပြပါ'],
   ['ไม่มีใบที่แสดงได้ — ออเดอร์ที่ไม่มีข้อมูลในชีตไม่แสดงในตัวอย่าง', 'Nothing to show — orders with no data in the sheet are left out of the preview', 'ပြစရာမရှိ — Sheet တွင် ဒေတာမရှိသော အော်ဒါများကို နမူနာတွင် မပြပါ'],
   ['พบข้อมูลออเดอร์นี้ในชีตแล้ว', 'This order was found in the sheet after all', 'ဤအော်ဒါကို Sheet ထဲတွင် တွေ့ပါပြီ'],
+  ['Assign ให้ {0}', 'Assign to {0}', '{0} သို့ Assign လုပ်မည်'],
+  ['พิมพ์ทันที', 'prints at once', 'ချက်ချင်း ပုံနှိပ်မည်'],
+  ['เก็บแล้วพิมพ์ทีเดียว', 'collected, printed in one go', 'စုပြီး တစ်ခါတည်း ပုံနှိပ်မည်'],
+  ['ไม่พิมพ์ทันที (ลงท้ายไม่ใช่ A / B)', 'does not print at once (does not end in A / B)', 'ချက်ချင်း မပုံနှိပ် (A / B ဖြင့် မဆုံးပါ)'],
+  ['พิมพ์แล้ว', 'printed', 'ပုံနှိပ်ပြီး'],
+  ['รอเลขออเดอร์ที่ 2 (1 Page / 2 Order)', 'waiting for the 2nd order number (1 Page / 2 Order)', 'ဒုတိယအော်ဒါနံပါတ်ကို စောင့်နေသည် (1 Page / 2 Order)'],
+  ['ต้องมีผู้จัดก่อน — ใส่ชื่อ/สแกนรหัสพนักงานช่องบน', 'A picker is needed first — type a name / scan the badge in the field above', 'ဦးစွာ ပစ္စည်းကောက်သူ လိုအပ်သည် — အပေါ်အကွက်တွင် အမည်ရိုက် / ကတ်စကင်ဖတ်ပါ'],
+  ['ก', 'A', 'က'],
+  ['ข', 'B', 'ခ'],
+  ['ค', 'C', 'ဂ'],
+  ['เลข {0}', 'No. {0}', 'နံပါတ် {0}'],
+  ['ให้คนนี้เป็นผู้จัด', 'Make this person the picker', 'ဤသူကို ပစ္စည်းကောက်သူအဖြစ် သတ်မှတ်ပါ'],
+  ['ลบ', 'Delete', 'ဖျက်ရန်'],
+  ['เอาออกจากรายการ', 'Remove from the list', 'စာရင်းမှ ဖယ်ရန်'],
+  ['พิมพ์ชื่อก่อน เช่น วา', 'Type a name first, e.g. Wa', 'အမည်ကို ဦးစွာရိုက်ပါ ဥပမာ ဝါ'],
+  ['✓ {0} → เลข {1}', '✓ {0} → No. {1}', '✓ {0} → နံပါတ် {1}'],
+  ['สแกนบาร์โค้ดนี้ = ชื่อ {0}', 'scanning this barcode = the name {0}', 'ဤဘားကုဒ်ကို စကင်ဖတ်လျှင် = အမည် {0}'],
+  ['✓ ผู้จัด {0}', '✓ Picker {0}', '✓ ပစ္စည်းကောက်သူ {0}'],
+  ['ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้', 'Locked — scan an employee barcode or type a nickname first, then the print page opens', 'လော့ခ်ထားသည် — ဝန်ထမ်းဘားကုဒ် စကင်ဖတ် သို့မဟုတ် အမည်ပြောင် ရိုက်မှ ပုံနှိပ်စာမျက်နှာသို့ သွားနိုင်မည်'],
+  ['ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)', 'Picker: type a name or scan the employee code (8 digits, only the last 4 are read)', 'ပစ္စည်းကောက်သူ: အမည်ရိုက် သို့မဟုတ် ဝန်ထမ်းကုဒ် စကင်ဖတ်ပါ (၈ လုံး နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
+  ['พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)', 'Print Part-Time employee barcodes', 'ယာယီ (Part-Time) ဝန်ထမ်း ဘားကုဒ် ပုံနှိပ်ရန်'],
+  ['ชื่อพนักงานชั่วคราว', 'Temporary employee name', 'ယာယီဝန်ထမ်း အမည်'],
+  ['ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น', 'Picker: scan an employee barcode (8 digits, only the last 4 are read) or type a nickname', 'ပစ္စည်းကောက်သူ: ဝန်ထမ်းဘားကုဒ် စကင်ဖတ်ပါ (၈ လုံး နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်) သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ'],
+  ['ตรวจโซน Trip 1-20 กับออเดอร์จริง', 'Check the Trip 1-20 zones against real orders', 'Trip 1-20 ဇုန်များကို အစစ်အမှန် အော်ဒါများနှင့် စစ်ဆေးခြင်း'],
+  ['ไม่ต้องนำไฟล์เข้า', 'No file to import', 'ဖိုင် ထည့်သွင်းရန် မလို'],
+  ['— โปรแกรมอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง แล้วตรวจโซน Trip 1-20 ให้อัตโนมัติ: เปิดแท็บนี้ · ทุก 10 นาที · และ', '— the program reads the orders from the connected sheet by itself and checks the Trip 1-20 zones automatically: when this tab is opened · every 10 minutes · and', '— ပရိုဂရမ်သည် ချိတ်ဆက်ထားသော စာရွက်မှ အော်ဒါများကို ကိုယ်တိုင်ဖတ်ပြီး Trip 1-20 ဇုန်များကို အလိုအလျောက် စစ်ဆေးသည် — ဤတက်ဘ်ကို ဖွင့်သည့်အခါ · မိနစ် ၁၀ တိုင်း · နှင့်'],
+  ['ทุกครั้งที่คุณอัปเดตเส้นทาง Trip (ก) หรือแก้ตารางโซนด้านล่าง', 'every time you update the Trip routes (A) or edit the zone table below', 'Trip လမ်းကြောင်း (က) ကို အပ်ဒိတ်လုပ်သည့်အခါ သို့မဟုတ် အောက်ပါဇုန်ဇယားကို ပြင်သည့်အခါတိုင်း'],
+  ['ดูว่าออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — ผลเข้าตารางเส้นทางเอง (เส้นทางที่นำเข้าเองไม่ถูกทับ) ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น', 'It shows which orders are outside the zones, puts them on the Trip that is reached first (driving time from Google Maps / OpenStreetMap) and learns which road / soi goes to which Trip — the result goes into the route table by itself (routes you imported yourself are not overwritten); the cover sheet prints the Trip by sub-district · nothing in the sheet or the file is changed, the data stays in this browser only', 'ဇုန်ပြင်ပရှိ အော်ဒါများကို ပြပြီး အရင်ရောက်နိုင်သော Trip သို့ စီစဉ်ပေးသည် (Google Maps / OpenStreetMap မှ မောင်းချိန်) ထို့ပြင် မည်သည့်လမ်း / ဆွိုင်သည် မည်သည့် Trip သို့ သွားသည်ကို သင်ယူသည် — ရလဒ်သည် လမ်းကြောင်းဇယားထဲသို့ ကိုယ်တိုင်ဝင်သည် (သင်ကိုယ်တိုင် ထည့်သွင်းထားသော လမ်းကြောင်းများ မပျက်) အဖုံးစာရွက်သည် ရပ်ကွက်အလိုက် Trip ကို ပုံနှိပ်သည် · စာရွက်/ဖိုင်ကို မပြင်ပါ ဒေတာသည် ဤဘရောက်ဇာထဲတွင်သာ ရှိသည်'],
+  ['ซิงค์จากชีตตอนนี้', 'Sync from the sheet now', 'စာရွက်မှ ယခု ထပ်တူကူးရန်'],
+  ['ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)', 'Sync automatically (fetched when this tab is opened · every 10 minutes while it is open)', 'အလိုအလျောက် ထပ်တူကူးရန် (ဤတက်ဘ်ဖွင့်သည့်အခါ ဆွဲယူသည် · ဖွင့်ထားစဉ် မိနစ် ၁၀ တိုင်း)'],
+  ['ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)', 'Put the result into the route table at every sync (no confirmation needed · can be undone)', 'ထပ်တူကူးတိုင်း ရလဒ်ကို လမ်းကြောင်းဇယားထဲ ကိုယ်တိုင်ထည့်သည် (အတည်ပြုရန်မလို · ပြန်ရုပ်သိမ်း၍ရ)'],
+  ['อ่านชีตไม่ได้ (เช่นเปิดใน Artifact)? ใช้ไฟล์ออเดอร์แทน', 'Cannot read the sheet (e.g. opened in an Artifact)? Use an order file instead', 'စာရွက်ကို မဖတ်နိုင်ပါသလား (ဥပမာ Artifact တွင်ဖွင့်ထား)? အော်ဒါဖိုင်ကို အစားသုံးပါ'],
+  ['ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์', 'Drag the order file (Call Center) here / click to choose a file', 'အော်ဒါဖိုင် (Call Center) ကို ဤနေရာသို့ ဆွဲချပါ / ဖိုင်ရွေးရန် နှိပ်ပါ'],
+  ['วันที่จะตรวจ', 'Day to check', 'စစ်ဆေးမည့်ရက်'],
+  ['ตารางโซน Trip 1-20 (พิมพ์จากรูป — ตรวจและแก้ได้)', 'Trip 1-20 zone table (typed from the picture — check and edit)', 'Trip 1-20 ဇုန်ဇယား (ပုံမှ ရိုက်ထည့်ထား — စစ်ပြီး ပြင်နိုင်သည်)'],
+  ['1 บรรทัดต่อ 1 Trip:', '1 line per Trip:', 'Trip တစ်ခုလျှင် တစ်ကြောင်း:'],
+  ['เลข Trip [Tab] โซน / โซน / โซน', 'Trip number [Tab] zone / zone / zone', 'Trip နံပါတ် [Tab] ဇုန် / ဇုန် / ဇုန်'],
+  ['· ชื่อเรียกอื่นของโซนเดียวกันคั่นด้วย', '· other names of the same zone are separated with', '· ဇုန်တူ အခြားအမည်များကို ခြားရန်'],
+  ['· ชื่อในวงเล็บนับเป็นโซนเพิ่ม · ดี4 (รับหน้ากระจก) ไม่นำมาจับออเดอร์', '· a name in brackets counts as an extra zone · D4 (picked at the glass front) is not used to match orders', '· ကွင်းထဲရှိအမည်ကို ထပ်ဇုန်အဖြစ် ရေတွက်သည် · D4 (မှန်ရှေ့ယူ) ကို အော်ဒါတိုက်ဆိုင်ရန် မသုံးပါ'],
+  ['คืนค่าตารางจากรูป', 'Restore the table from the picture', 'ပုံမှ ဇယားကို ပြန်ထားရန်'],
+  ['ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)', 'Use every day of the file (unticked = only the chosen day)', 'ဖိုင်ထဲရှိ ရက်အားလုံးကို သုံးရန် (မအမှတ်ပါက = ရွေးထားသောရက်သာ)'],
+  ['ใช้ชื่อถนน/ซอยช่วยตัดสิน', 'Use road / soi names to help decide', 'လမ်း / ဆွိုင် အမည်ကို ဆုံးဖြတ်ရာတွင် သုံးရန်'],
+  ['ตรวจโซน', 'Check zones', 'ဇုန်စစ်ရန်'],
+  ['อ่านได้ {0} ออเดอร์ จาก {1} วัน ({2})', 'Read {0} orders from {1} days ({2})', '{1} ရက်မှ အော်ဒါ {0} ခု ဖတ်ရှုရသည် ({2})'],
+  ['ไม่พบออเดอร์ในข้อมูลที่อ่าน', 'No orders found in the data that was read', 'ဖတ်ထားသော ဒေတာထဲတွင် အော်ဒါ မတွေ့ပါ'],
+  ['กำลังอ่านไฟล์ …', 'Reading the file …', 'ဖိုင်ကို ဖတ်နေသည် …'],
+  ['กำลังซิงค์จากชีต (อ่านอย่างเดียว) …', 'Syncing from the sheet (read only) …', 'စာရွက်မှ ထပ်တူကူးနေသည် (ဖတ်ရုံသာ) …'],
+  ['หน้านี้เปิดใน Artifact — อ่านชีตไม่ได้ ใช้ไฟล์แทน', 'This page is open in an Artifact — the sheet cannot be read, use a file instead', 'ဤစာမျက်နှာသည် Artifact တွင် ဖွင့်ထားသည် — စာရွက်ကို မဖတ်နိုင် ဖိုင်ကို အစားသုံးပါ'],
+  ['ยังไม่ได้เชื่อมต่อชีต — เปิดแท็บ "ฐานข้อมูลออเดอร์" แล้วเชื่อมต่อก่อน', 'The sheet is not connected yet — open the "Order database" tab and connect it first', 'စာရွက် မချိတ်ဆက်ရသေးပါ — "အော်ဒါဒေတာဘေ့စ်" တက်ဘ်ကို ဖွင့်ပြီး ဦးစွာ ချိတ်ဆက်ပါ'],
+  ['อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"', 'The sheet cannot be read — it must be shared as "anyone with the link can view"', 'စာရွက်ကို မဖတ်နိုင်ပါ — "လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" အဖြစ် မျှဝေရမည်'],
+  ['ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต', 'Cannot reach the sheet — check the internet', 'စာရွက်သို့ မချိတ်နိုင်ပါ — အင်တာနက်ကို စစ်ပါ'],
+  ['ยังไม่มีโซนของ Trip ในตาราง', 'There is no Trip zone in the table yet', 'ဇယားထဲတွင် Trip ဇုန် မရှိသေးပါ'],
+  ['ตรวจ {0} ออเดอร์ (ทุกวันในไฟล์)', 'Checked {0} orders (every day of the file)', 'အော်ဒါ {0} ခု စစ်ပြီး (ဖိုင်ထဲရှိ ရက်အားလုံး)'],
+  ['ตรวจ {0} ออเดอร์ ({1})', 'Checked {0} orders ({1})', 'အော်ဒါ {0} ခု စစ်ပြီး ({1})'],
+  ['ข้ามบรรทัดที่อ่านไม่ได้ {0} บรรทัด', 'skipped {0} lines that could not be read', 'ဖတ်၍မရသော စာကြောင်း {0} ကြောင်း ကျော်ခဲ့သည်'],
+  ['ออเดอร์ที่ตรวจ', 'Orders checked', 'စစ်ဆေးသော အော်ဒါ'],
+  ['เข้าโซนในตารางแล้ว', 'Already in a zone of the table', 'ဇယားထဲ ဇုန်တစ်ခုတွင် ပါပြီး'],
+  ['อยู่นอกโซน', 'Outside the zones', 'ဇုန်ပြင်ပ'],
+  ['แขวงที่อยู่นอกโซน', 'Sub-districts outside the zones', 'ဇုန်ပြင်ပရှိ ရပ်ကွက်များ'],
+  ['ตัดสินด้วยถนน/ซอย', 'Decided by road / soi', 'လမ်း / ဆွိုင်ဖြင့် ဆုံးဖြတ်'],
+  ['เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ {0} ใบ', 'In a zone by the road / community name in the address: {0}', 'လိပ်စာထဲရှိ လမ်း / အသိုင်းအဝိုင်းအမည်ဖြင့် ဇုန်ဝင်: {0}'],
+  ['ด้วยแขวง {0} ใบ', 'by sub-district: {0}', 'ရပ်ကွက်ဖြင့်: {0}'],
+  ['ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) {0} ใบ', 'by main road / district (weak evidence): {0}', 'လမ်းမကြီး / ခရိုင်ဖြင့် (သက်သေအားနည်း): {0}'],
+  ['ระดับถนน/ซอย:', 'Road / soi level:', 'လမ်း / ဆွိုင်အဆင့်:'],
+  ['ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน', 'orders that are already in a zone tell which road / soi / village goes to which Trip', 'ဇုန်ထဲရှိပြီးသော အော်ဒါများက မည်သည့်လမ်း / ဆွိုင် / ကျေးရွာ သည် မည်သည့် Trip သို့ သွားသည်ကို ပြောပြသည်'],
+  ['ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง', 'if the address of an order outside the table has a road with clear evidence (at least 2 orders and 60% going the same way) the road decides order by order, before the sub-district / route is looked at', 'ဇယားပြင်ပရှိ အော်ဒါ၏ လိပ်စာတွင် သက်သေရှင်းလင်းသော လမ်းရှိပါက (အနည်းဆုံး အော်ဒါ ၂ ခုနှင့် ၆၀% တူညီသောဘက်သို့) ရပ်ကွက် / လမ်းကြောင်းမကြည့်မီ လမ်းဖြင့် အော်ဒါတစ်ခုချင်း ဆုံးဖြတ်သည်'],
+  ['ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว {0} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย)', 'back-test: {0} orders that are already in a zone have a road with enough evidence (the order itself is taken out of the evidence before guessing)', 'နောက်ပြန်စမ်းသပ်: ဇုန်ထဲရှိပြီးသော အော်ဒါ {0} ခုတွင် သက်သေလုံလောက်သော လမ်းရှိသည် (ခန့်မှန်းမီ အော်ဒါကိုယ်တိုင်ကို သက်သေမှ ဖယ်ထုတ်သည်)'],
+  ['ทายตรงกับตาราง', 'the guess matches the table', 'ခန့်မှန်းချက်သည် ဇယားနှင့် ကိုက်ညီသည်'],
+  ['(วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)', '(this measures how consistent the roads are, not correctness in the real world)', '(လမ်းများ ညီညွတ်မှုကို တိုင်းတာခြင်းဖြစ်ပြီး လက်တွေ့ကမ္ဘာတွင် မှန်ကန်မှုကို မဟုတ်ပါ)'],
+  ['แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)', 'Orders per Trip (by the table + suggested additions)', 'Trip တစ်ခုစီတွင် အော်ဒါ မည်မျှ (ဇယားအရ + အကြံပြုထပ်တိုး)'],
+  ['โซนในตาราง', 'Zones in the table', 'ဇယားထဲရှိ ဇုန်များ'],
+  ['ออเดอร์เข้าโซน', 'Orders in the zone', 'ဇုန်ထဲဝင်သော အော်ဒါ'],
+  ['เพิ่มจากที่แนะนำ', 'Added by suggestion', 'အကြံပြုချက်ဖြင့် ထပ်တိုး'],
+  ['รวม', 'Total', 'စုစုပေါင်း'],
+  ['ไม่นำมาจับออเดอร์', 'not used to match orders', 'အော်ဒါတိုက်ဆိုင်ရန် မသုံးပါ'],
+  ['แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด', 'Sub-districts outside the zones → nearest Trip', 'ဇုန်ပြင်ပရှိ ရပ်ကွက်များ → အနီးဆုံး Trip'],
+  ['แขวง', 'Sub-district', 'ရပ်ကွက်'],
+  ['เขต', 'District', 'ခရိုင်'],
+  ['ใบ', 'Orders', 'အော်ဒါ'],
+  ['ตามถนน/ซอย', 'By road / soi', 'လမ်း / ဆွိုင်အရ'],
+  ['ที่เหลือ → Trip', 'The rest → Trip', 'ကျန်ရှိသည် → Trip'],
+  ['มั่นใจ', 'Confidence', 'ယုံကြည်မှု'],
+  ['ถนน/ซอยที่พบ', 'Roads / sois found', 'တွေ့သော လမ်း / ဆွိုင်'],
+  ['เหตุผล', 'Reason', 'အကြောင်းပြချက်'],
+  ['แสดง 200 แขวงแรกจาก {0}', 'Showing the first 200 of {0} sub-districts', '{0} ရပ်ကွက်အနက် ပထမ ၂၀၀ ကို ပြသည်'],
+  ['ทุกออเดอร์อยู่ในโซนของตารางแล้ว', 'Every order is already in a zone of the table', 'အော်ဒါအားလုံး ဇယားထဲရှိ ဇုန်တစ်ခုတွင် ပါပြီး'],
+  ['ใช้ผลนี้เป็นเส้นทาง Trip', 'Use this result as the Trip routes', 'ဤရလဒ်ကို Trip လမ်းကြောင်းအဖြစ် သုံးရန်'],
+  ['คัดลอกตารางโซนที่เติมแล้ว', 'Copy the filled zone table', 'ဖြည့်ပြီး ဇုန်ဇယားကို ကူးယူရန်'],
+  ['ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)', 'Download the order numbers outside the zones (CSV)', 'ဇုန်ပြင်ပရှိ အော်ဒါနံပါတ်များ ဒေါင်းလုဒ် (CSV)'],
+  ['ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)', 'Download all orders with their Trip (CSV)', 'အော်ဒါအားလုံးကို Trip နှင့်အတူ ဒေါင်းလုဒ် (CSV)'],
+  ['คัดลอกแล้ว ✓', 'Copied ✓', 'ကူးယူပြီး ✓'],
+  ['คัดลอกไม่ได้ในเบราว์เซอร์นี้', 'Cannot copy in this browser', 'ဤဘရောက်ဇာတွင် ကူး၍မရပါ'],
+  ['ยังไม่มีแขวงที่จัด Trip ได้', 'No sub-district can be put on a Trip yet', 'Trip သို့ စီစဉ်နိုင်သော ရပ်ကွက် မရှိသေးပါ'],
+  ['หาโซนใกล้เคียงไม่ได้ — เลือก Trip เอง', 'No nearby zone found — choose the Trip yourself', 'အနီးဇုန် မတွေ့ပါ — Trip ကို ကိုယ်တိုင်ရွေးပါ'],
   ['ลบ {0} ออกจากรายการ', 'Remove {0} from the list', '{0} ကို စာရင်းမှ ဖယ်ရန်'],
   ['ยังไม่มีเลขที่พบในรายชื่อ — ใส่เลขพนักงานประจำก่อน', 'No number found in the list yet — enter regular-employee numbers first', 'စာရင်းတွင် တွေ့သောနံပါတ် မရှိသေးပါ — ပုံမှန်ဝန်ထမ်းနံပါတ်များ အရင်ထည့်ပါ'],
   ['✓ พิมพ์บัตร {0} ใบแล้ว — ใส่ชุดต่อไปได้เลย', '✓ {0} cards sent to print — you can enter the next batch', '✓ ကတ် {0} ခု ပုံနှိပ်ပြီး — နောက်အစုကို ထည့်နိုင်ပြီ'],
