@@ -981,28 +981,42 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90}
 .toast.show{opacity:.96}
 /* the zone check inside the Trip tab (section ค): result tables and chips, scoped to the section */
-#zoneSec .msg{margin-top:10px;font-weight:600}
-#zoneSec .msg.err{color:var(--bad)} #zoneSec .msg.ok{color:var(--ok)}
-#zoneSec label.f{display:flex;align-items:center;gap:8px}
-#zoneSec .zbox{margin-top:12px} #zoneSec .zbox summary{cursor:pointer;font-weight:700}
-#zoneSec textarea{width:100%;min-height:260px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
-#zoneSec .sum{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
-#zoneSec .chip{padding:8px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
-#zoneSec .chip b{font-size:20px;display:block;line-height:1.2}
-#zoneSec .chip small{color:var(--muted)}
-#zoneSec .muted{color:var(--muted)}
-#zoneSec .tag{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);margin-right:4px}
-#zoneSec .tag.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
-#zoneSec .tag.ok{color:var(--ok)}
-#zoneSec .cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
-#zoneSec .cmp th,#zoneSec .cmp td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
-#zoneSec .cmp th:first-child,#zoneSec .cmp td:first-child{text-align:left}
-#zoneSec .tw{overflow-x:auto}
-#zoneSec .zt td{vertical-align:top}
-#zoneSec .zt th:nth-child(2),#zoneSec .zt td:nth-child(2){text-align:left}
-#zoneSec .zt select{max-width:110px}
-#zoneSec .note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn);font-size:14px}
-#zoneSec h3{margin:16px 0 6px;font-size:16px}
+#paneTrip .msg{margin-top:10px;font-weight:600}
+#paneTrip .msg.err{color:var(--bad)} #paneTrip .msg.ok{color:var(--ok)}
+#paneTrip label.f{display:flex;align-items:center;gap:8px}
+#paneTrip .zbox{margin-top:12px} #paneTrip .zbox summary{cursor:pointer;font-weight:700}
+#paneTrip textarea{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:13px} #paneTrip #zoneIn{min-height:260px} #paneTrip #tPaste{min-height:0;margin-top:10px}
+#paneTrip .sum{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+#paneTrip .chip{padding:8px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+#paneTrip .chip b{font-size:20px;display:block;line-height:1.2}
+#paneTrip .chip small{color:var(--muted)}
+#paneTrip .muted{color:var(--muted)}
+#paneTrip .tag{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);margin-right:4px}
+#paneTrip .tag.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+#paneTrip .tag.ok{color:var(--ok)}
+#paneTrip .cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+#paneTrip .cmp th,#paneTrip .cmp td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+#paneTrip .cmp th:first-child,#paneTrip .cmp td:first-child{text-align:left}
+#paneTrip .tw{overflow-x:auto}
+#paneTrip .zt td{vertical-align:top}
+#paneTrip .zt th:nth-child(2),#paneTrip .zt td:nth-child(2){text-align:left}
+#paneTrip .zt select{max-width:110px}
+#paneTrip .note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--warnbg);color:var(--warn);font-size:14px}
+#paneTrip h3{margin:16px 0 6px;font-size:16px}
+/* the Trip tab is two boxes: ก = drop the file (everything after it runs by itself), ข = what came out; side by side when the window is wide (the dialog widens for this tab), stacked otherwise */
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.tgrid .dsec{margin-bottom:0}
+#rosterDlg.wide{width:min(1280px,96vw)}
+@media (min-width:1100px){ #rosterDlg.wide .tgrid{grid-template-columns:minmax(0,5fr) minmax(0,6fr)} }
+#paneTrip .zset{display:grid;gap:8px;margin-top:10px}
+#paneTrip .zsync{margin:12px 2px 8px}
+#paneTrip details.zbox>summary .rcount{margin-left:8px}
+#paneTrip details.zbox details.zbox{margin-top:10px}
+#paneTrip .zbox .rsearch{margin-top:10px}
+#paneTrip #tDone{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+#paneTrip #tDone small{flex-basis:100%;color:var(--muted);font-weight:400}
+#paneTrip #tDone small.chg{color:var(--warn);font-weight:700}
+#paneTrip #zEmpty{padding:22px 12px}
 </style>
 </head>
 <body>
@@ -1349,70 +1363,70 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
     </div>
 
     <div id="paneTrip" hidden>
-    <section class="dsec">
-      <p class="dtitle"><span class="dnum">ก</span>อัปเดตจากไฟล์</p>
+    <div class="tgrid">
+    <section class="dsec" id="tcolA">
+      <p class="dtitle"><span class="dnum">ก</span>อัปเดตจากไฟล์ <span class="rcount">ทำงานเองทันที</span></p>
       <label class="drop" id="tDrop" for="tFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
-        <b>ลากไฟล์เส้นทางการแบ่ง Trip มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b>
-        <small>.xlsx · .csv · .tsv · .txt · .pdf · รูปภาพ</small>
+        <b>ลากไฟล์หรือรูปตาราง Trip มาวางที่นี่ — ระบบอัปเดตและตรวจให้เอง</b>
+        <small>.xlsx · .csv · .tsv · .txt · .pdf · รูปภาพ · หรือกดเพื่อเลือกไฟล์</small>
       </label>
       <input id="tFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp,.bmp,image/*">
-      <textarea id="tPaste" rows="4" spellcheck="false" placeholder="หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่"></textarea>
-      <p class="hint">รองรับ 2 แบบ: แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว — ใบปะหน้าจะใส่ Trip ให้ตามที่อยู่ของแต่ละออเดอร์ (ต้องนำเข้าไฟล์ Call Center ที่มีคอลัมน์ที่อยู่ในกล่องเขียว)</p>
+      <textarea id="tPaste" rows="3" spellcheck="false" placeholder="หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่ (วางแล้วทำงานเอง)"></textarea>
       <div id="tPreview" class="preview" hidden></div>
-      <div class="row dact">
-        <button id="tApply" class="primary" type="button" disabled>อัปเดตเส้นทาง Trip</button>
-        <button id="tUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button>
-      </div>
-    </section>
-    <section class="dsec">
-      <p class="dtitle"><span class="dnum">ข</span>เส้นทางปัจจุบัน <span id="tCount" class="rcount"></span></p>
-      <input id="tSearch" class="rsearch" type="search" placeholder="ค้นหาพื้นที่หรือ Trip">
-      <div class="tablewrap rlist">
-        <table>
-          <thead><tr><th>พื้นที่</th><th>Trip</th></tr></thead>
-          <tbody id="tBody"></tbody>
-        </table>
-        <div class="empty" id="tEmpty">ยังไม่มีเส้นทาง</div>
-      </div>
-      <div class="row dfoot">
-        <button id="tExport" type="button">ส่งออกเส้นทาง (.xlsx)</button>
-        <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
-      </div>
-    </section>
-    <section class="dsec" id="zoneSec">
-      <p class="dtitle"><span class="dnum">ค</span>ตรวจโซน Trip 1-20 กับออเดอร์จริง <span class="rcount">อ่านอย่างเดียว</span></p>
-      <p class="hint"><b>ไม่ต้องนำไฟล์เข้า</b> — โปรแกรมอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง แล้วตรวจโซน Trip 1-20 ให้อัตโนมัติ: เปิดแท็บนี้ · ทุก 10 นาที · และ <b>ทุกครั้งที่คุณอัปเดตเส้นทาง Trip (ก) หรือแก้ตารางโซนด้านล่าง</b> ดูว่าออเดอร์ไหนอยู่นอกโซน แล้วจัดให้อยู่ Trip ที่ขับไปถึงก่อน (เวลาขับจาก Google Maps / OpenStreetMap) และเรียนรู้ว่าถนน/ซอยไหนไป Trip ไหน — ผลเข้าตารางเส้นทางเอง (เส้นทางที่นำเข้าเองไม่ถูกทับ) ใบปะหน้าจะพิมพ์ Trip ตามแขวง · ไม่แก้ชีตหรือไฟล์ ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</p>
-      <div class="row">
-        <button id="btnSheet" class="primary" type="button">ซิงค์จากชีตตอนนี้</button>
-        <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
-      </div>
-      <div class="row" style="margin-top:4px">
-        <label class="f"><input id="zAutoApply" type="checkbox" checked> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
-      </div>
-      <details class="zbox"><summary>อ่านชีตไม่ได้ (เช่นเปิดใน Artifact)? ใช้ไฟล์ออเดอร์แทน</summary>
-        <label class="drop" id="zDrop" for="zFile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
-          <b>ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์</b>
-          <small>.xlsx · .csv · .tsv · .txt</small>
-        </label>
-        <input id="zFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+      <div id="tDone" class="msg ok" hidden></div>
+      <div class="row dact"><button id="tUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button></div>
+      <details class="zbox"><summary>รูปแบบไฟล์ที่รองรับ</summary>
+        <p class="hint">แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว</p>
       </details>
+      <p class="hint zsync">ระบบอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง: เมื่อเปิดแท็บนี้ · ทุก 10 นาที · และทุกครั้งที่อัปเดตเส้นทางหรือแก้ตารางโซน — ไม่แก้ชีตหรือไฟล์</p>
+      <div class="row"><button id="btnSheet" class="primary" type="button">ซิงค์จากชีตตอนนี้</button></div>
       <div id="srcMsg" class="msg"></div>
-      <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
       <details class="zbox"><summary>ตารางโซน Trip 1-20 (พิมพ์จากรูป — ตรวจและแก้ได้)</summary>
         <p class="hint">1 บรรทัดต่อ 1 Trip: <code>เลข Trip [Tab] โซน / โซน / โซน</code> · ชื่อเรียกอื่นของโซนเดียวกันคั่นด้วย <code>|</code> · ชื่อในวงเล็บนับเป็นโซนเพิ่ม · ดี4 (รับหน้ากระจก) ไม่นำมาจับออเดอร์</p>
         <textarea id="zoneIn" spellcheck="false"></textarea>
         <div class="row" style="margin-top:6px"><button id="btnZoneReset" type="button">คืนค่าตารางจากรูป</button></div>
       </details>
-      <div class="row" style="margin-top:10px">
-        <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
-        <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
-        <button id="btnZone" class="primary" type="button" disabled>ตรวจโซน</button>
-      </div>
-      <div id="zoneMsg" class="msg"></div>
-      <div id="zoneOut" hidden></div>
+      <details class="zbox" id="zSetBox"><summary>ตั้งค่า / ตรวจเอง</summary>
+        <div class="zset">
+          <label class="f"><input id="zAuto" type="checkbox" checked> ซิงค์อัตโนมัติ (เปิดแท็บนี้แล้วดึงเอง · ทุก 10 นาทีขณะเปิดอยู่)</label>
+          <label class="f"><input id="zAutoApply" type="checkbox" checked> ใส่ผลลงตารางเส้นทางให้เองทุกครั้งที่ซิงค์ (ไม่ต้องกดยืนยัน · ย้อนกลับได้)</label>
+          <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
+          <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
+          <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
+          <div class="row"><button id="btnZone" type="button" disabled>ตรวจโซน</button></div>
+        </div>
+        <details class="zbox"><summary>อ่านชีตไม่ได้ (เช่นเปิดใน Artifact)? ใช้ไฟล์ออเดอร์แทน</summary>
+          <label class="drop" id="zDrop" for="zFile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 8"/><path d="M12 12v8m0-8-3 3m3-3 3 3"/></svg>
+            <b>ลากไฟล์ออเดอร์ (Call Center) มาวางที่นี่ / กดเพื่อเลือกไฟล์</b>
+            <small>.xlsx · .csv · .tsv · .txt</small>
+          </label>
+          <input id="zFile" class="vh" type="file" accept=".xlsx,.csv,.tsv,.txt">
+        </details>
+      </details>
     </section>
+    <section class="dsec" id="zoneSec">
+      <p class="dtitle"><span class="dnum">ข</span>ผลตรวจโซนและเส้นทาง <span class="rcount">อ่านอย่างเดียว</span></p>
+      <div id="zoneMsg" class="msg"></div>
+      <div id="zEmpty" class="empty">ยังไม่มีผลตรวจ — วางไฟล์ในช่อง ก หรือกด "ซิงค์จากชีตตอนนี้"</div>
+      <div id="zoneOut" hidden></div>
+      <details class="zbox"><summary>เส้นทางที่ใบปะหน้าใช้ <span id="tCount" class="rcount"></span></summary>
+        <input id="tSearch" class="rsearch" type="search" placeholder="ค้นหาพื้นที่หรือ Trip">
+        <div class="tablewrap rlist">
+          <table>
+            <thead><tr><th>พื้นที่</th><th>Trip</th></tr></thead>
+            <tbody id="tBody"></tbody>
+          </table>
+          <div class="empty" id="tEmpty">ยังไม่มีเส้นทาง</div>
+        </div>
+        <div class="row dfoot">
+          <button id="tExport" type="button">ส่งออกเส้นทาง (.xlsx)</button>
+          <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
+        </div>
+      </details>
+    </section>
+    </div>
     </div>
 
     <div id="paneDb" hidden>
@@ -2733,7 +2747,7 @@ $('rExport').addEventListener('click', () => {
 /* ---------- เส้นทางการแบ่ง Trip (Update Data, tab 2): which area goes on which Trip ----------
    A table {areaKey: {a: area as written, t: Trip}} imported from a file. An order's Trip is found from its address (sub-district, post code, district, province)
    when the Call Center file imported in the green box has those columns; a "Trip Id" in that file wins. The Trip is printed on the cover sheet. */
-const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup';
+const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup', LS_ZONES_BAK = 'o2o-lane-zones-v1-backup';
 let tripMap = {};
 try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') tripMap = r; } catch (_) {}
 const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} cloudTouch('trips'); };
@@ -2790,21 +2804,27 @@ function buildTripPending(rows, src) {
   return { src, layout, entries, trips, conflicts };
 }
 let tPending = null;
+/* A file / picture / pasted table of routes is applied AT ONCE (no button): what was read is shown under the drop box and "ย้อนกลับครั้งล่าสุด" brings the old table back; the zone check then runs by itself (event o2o-routes-imported) */
 function refreshTripPreview() {
-  const box = $('tPreview'), btn = $('tApply');
-  btn.disabled = true; btn.textContent = T('อัปเดตเส้นทาง Trip');
+  const box = $('tPreview');
   if (!tPending) { box.hidden = true; return; }
-  box.hidden = false;
+  box.hidden = false; $('tDone').hidden = true;
   if (tPending.error) { box.innerHTML = `<span class="err">${xesc(T(tPending.error))}</span>`; return; }
-  const p = tPending, L = p.layout, q = s => `"${xesc(s)}"`;
+  applyTripPending();
+}
+function applyTripPending() {
+  const p = tPending; if (!p || p.error) return;
+  resetTrip();                                                          // (the box is emptied; the answer stays in #tDone below)
   const src = p.src.startsWith('ไฟล์ ') ? T('ไฟล์ {0}', xesc(p.src.slice(5))) : T(p.src);
-  const how = L.how === 'wide' ? T('แบบหัวคอลัมน์เป็นชื่อ Trip ({0} Trip)', L.n)
-    : L.how === 'long' ? T('แบบแถวละพื้นที่: Trip ← {0} · พื้นที่ ← {1}', q(L.tripLabel), L.areaLabels.map(q).join(', ')) : T('ไม่มีหัวตาราง: คอลัมน์ 1 = พื้นที่, คอลัมน์ 2 = Trip');
-  let html = `<div>${T('อ่านได้ {0} พื้นที่ ใน {1} Trip จาก {2}', '<b>' + p.entries.size + '</b>', p.trips.size, src)}<br><small>${how}</small></div>` +
-    `<details><summary>${T('ตัวอย่างพื้นที่')}</summary><ul>` + [...p.entries.values()].slice(0, 40).map(e => `<li>${xesc(e.a)} → ${xesc(e.t)}</li>`).join('') + (p.entries.size > 40 ? `<li>… +${p.entries.size - 40}</li>` : '') + '</ul></details>';
-  if (p.conflicts) html += `<div class="chg">${T('พื้นที่เดียวกันอยู่คนละ Trip {0} แห่ง — ใช้แถวล่างสุด', p.conflicts)}</div>`;
-  box.innerHTML = html; btn.disabled = false;
-  btn.textContent = T('อัปเดตเส้นทาง Trip ({0} พื้นที่ / {1} Trip)', p.entries.size, p.trips.size);
+  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); localStorage.setItem(LS_ZONES_BAK, $('zoneIn').value); } catch (_) {}      // (the zone table is merged with the file too: undo brings both back)
+  tripMap = {}; for (const [k, e] of p.entries) tripMap[k] = e;
+  saveTrip();
+  const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  const done = $('tDone'); done.hidden = false;
+  done.innerHTML = `<span>✓</span><span>${T('อัปเดตเส้นทางแล้ว: {0} พื้นที่ / {1} Trip', p.entries.size, p.trips.size)} · ${src} · ${hm}</span>` + (p.conflicts ? `<small class="chg">${T('พื้นที่เดียวกันอยู่คนละ Trip {0} แห่ง — ใช้แถวล่างสุด', p.conflicts)}</small>` : '');
+  toast(T('อัปเดตเส้นทางแล้ว: {0} พื้นที่ / {1} Trip', p.entries.size, p.trips.size));
+  renderTrip(); render();
+  try { document.dispatchEvent(new CustomEvent('o2o-routes-imported', { detail: { entries: [...p.entries.values()] } })); } catch (_) {}      // (the zone check runs again by itself)
 }
 function renderTrip() {
   const q = $('tSearch').value.trim().toLowerCase();
@@ -2817,9 +2837,10 @@ function renderTrip() {
   let hasBak = false; try { hasBak = !!localStorage.getItem(LS_TRIP_BAK); } catch (_) {}
   $('tUndo').hidden = !hasBak; $('tClear').disabled = !Object.keys(tripMap).length; $('tExport').disabled = !Object.keys(tripMap).length;
 }
-function resetTrip() { tPending = null; $('tFile').value = ''; $('tPaste').value = ''; refreshTripPreview(); }
+function resetTrip() { tPending = null; $('tFile').value = ''; $('tPaste').value = ''; $('tDone').hidden = true; refreshTripPreview(); }
 function showTab(which) {
   const panes = { emp: ['paneEmp', 'tabEmp'], trip: ['paneTrip', 'tabTrip'], db: ['paneDb', 'tabDb'] };
+  rosterDlg.classList.toggle('wide', which === 'trip');                  // (the Trip tab has two boxes side by side: the dialog is wider for it)
   for (const [k, [p, t]] of Object.entries(panes)) { $(p).hidden = k !== which; $(t).classList.toggle('on', k === which); $(t).setAttribute('aria-selected', String(k === which)); }
   if (which === 'trip') renderTrip();
   if (which === 'db') renderDb();
@@ -2837,21 +2858,19 @@ const tDropBox = $('tDrop');
 ['dragleave', 'drop'].forEach(ev => tDropBox.addEventListener(ev, e => { e.preventDefault(); tDropBox.classList.remove('over'); }));
 tDropBox.addEventListener('drop', e => { const files = e.dataTransfer && e.dataTransfer.files; if (files && files.length) { $('tFile').files = files; $('tFile').dispatchEvent(new Event('change', { bubbles: true })); } });
 let tPasteT = null;
-$('tPaste').addEventListener('input', () => {
-  clearTimeout(tPasteT);
-  tPasteT = setTimeout(() => { const t = $('tPaste').value; tPending = t.trim() ? buildTripPending(parseDelimited(t), 'ข้อความที่วาง') : null; refreshTripPreview(); }, 250);
-});
-$('tApply').addEventListener('click', () => {
-  const p = tPending; if (!p || p.error) return;
-  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
-  tripMap = {}; for (const [k, e] of p.entries) tripMap[k] = e;
-  saveTrip(); toast(`อัปเดตเส้นทางแล้ว: ${p.entries.size} พื้นที่ / ${p.trips.size} Trip`);
-  resetTrip(); renderTrip(); render();
-  try { document.dispatchEvent(new CustomEvent('o2o-routes-imported', { detail: { entries: [...p.entries.values()] } })); } catch (_) {}      // (section ค checks the zones again by itself)
-});
+const tPasteRun = () => { const t = $('tPaste').value; tPending = t.trim() ? buildTripPending(parseDelimited(t), 'ข้อความที่วาง') : null; refreshTripPreview(); };
+$('tPaste').addEventListener('paste', () => { clearTimeout(tPasteT); tPasteT = setTimeout(tPasteRun, 60); });      // a paste is applied at once
+$('tPaste').addEventListener('input', e => { if (e.inputType === 'insertFromPaste') return; clearTimeout(tPasteT); tPasteT = setTimeout(tPasteRun, 2000); });      // (typed text waits for a 2 s pause so a half-typed table is not applied)
 $('tUndo').addEventListener('click', () => {
-  try { const r = JSON.parse(localStorage.getItem(LS_TRIP_BAK) || 'null'); if (r && typeof r === 'object') { tripMap = r; saveTrip(); localStorage.removeItem(LS_TRIP_BAK); toast('ย้อนกลับแล้ว'); } } catch (_) {}
-  renderTrip(); render();
+  try {
+    const r = JSON.parse(localStorage.getItem(LS_TRIP_BAK) || 'null');
+    if (r && typeof r === 'object') {
+      tripMap = r; saveTrip(); localStorage.removeItem(LS_TRIP_BAK); toast('ย้อนกลับแล้ว');
+      const z = localStorage.getItem(LS_ZONES_BAK);                       // the zone table of that moment comes back too, and the check runs again on it
+      if (z != null) { $('zoneIn').value = z; localStorage.setItem('o2o-lane-zones-v1', z); localStorage.removeItem(LS_ZONES_BAK); $('zoneIn').dispatchEvent(new Event('input')); }
+    }
+  } catch (_) {}
+  $('tDone').hidden = true; renderTrip(); render();
 });
 $('tSearch').addEventListener('input', renderTrip);
 $('tClear').addEventListener('click', async () => {
@@ -3167,9 +3186,11 @@ function renderZones() {
     <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div>${Z.useRoad ? `<div class="chip"><b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small></div>` : ''}</div>
     <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
   if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
-  if ([...groups.values()].some(g => g.link)) h += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
-  if (Z.useRoad) h += `<p class="note"><b>ระดับถนน/ซอย:</b> ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน — ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง · ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว ${Z.back.ev.toLocaleString()} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย) — ทายตรงกับตาราง <b>${pct(Z.back.ok, Z.back.ev)}%</b> (วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)</p>`;
+  let detail = '';      // (the long explanations, the outside-zone areas, the learned roads and the downloads go under one folded line: the first thing seen is the numbers and the Trips)
+  if ([...groups.values()].some(g => g.link)) detail += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
+  if (Z.useRoad) detail += `<p class="note"><b>ระดับถนน/ซอย:</b> ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน — ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง · ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว ${Z.back.ev.toLocaleString()} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย) — ทายตรงกับตาราง <b>${pct(Z.back.ok, Z.back.ev)}%</b> (วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)</p>`;
   h += '<h3 style="margin:14px 0 6px">แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)</h3><div id="ztTrips" class="tw"></div>';
+  h += '<details class="zbox"><summary>รายละเอียด: แขวงนอกโซน · ถนน/ซอยที่เรียนรู้ · ดาวน์โหลด</summary>' + detail;
   h += `<h3 style="margin:16px 0 6px">แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด</h3><div class="tw"><table class="cmp zt"><tr><th>แขวง</th><th>เขต</th><th>ใบ</th><th>ตามถนน/ซอย</th><th>ที่เหลือ → Trip</th><th>มั่นใจ</th><th>ถนน/ซอยที่พบ</th><th>เหตุผล</th></tr>`;
   rows.slice(0, 200).forEach(g => { h += `<tr><td>${esc(g.sd)}</td><td>${esc(g.d)}</td><td>${g.n}</td><td style="text-align:left;font-size:13px">${esc(roadSplit(g))}</td><td><select data-g="${esc(g.sd + '|' + g.d)}">${opts(g.pick)}</select></td><td><span class="tag ${g.conf === 'สูง' ? 'ok' : g.conf === 'ต่ำ' || g.conf === '—' ? 'warn' : ''}">${g.conf}</span></td><td style="text-align:left;font-size:13px">${esc([...g.roads].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ('+ c + ')' + roadHint(r)).join('  ·  '))}</td><td style="text-align:left;font-size:14px">${esc(g.why)}${g.link ? ` <a href="${g.link}" target="_blank" rel="noopener">ดูเส้นทางใน Google Maps</a>` : ''}</td></tr>`; });
   h += '</table></div>' + (rows.length > 200 ? `<p class="muted">แสดง 200 แขวงแรกจาก ${rows.length}</p>` : '') + (rows.length ? '' : '<p class="ok">ทุกออเดอร์อยู่ในโซนของตารางแล้ว</p>');
@@ -3178,8 +3199,8 @@ function renderZones() {
     const lr = [...rm.values()].sort((a, b) => b.n - a.n).slice(0, 40);
     if (lr.length) h += `<h3 style="margin:16px 0 6px">ถนน/ซอยที่เรียนรู้ได้ — ควรเพิ่มเข้าตารางโซน</h3><p class="muted" style="margin:0 0 6px;font-size:14px">ถนน/ซอย/หมู่บ้านที่ออเดอร์ซึ่งเข้าโซนแล้วใช้ไปทาง Trip เดียวกันชัดเจน และพบในออเดอร์ที่อยู่นอกตาราง (เรียงตามจำนวนใบที่แก้ได้)</p><div class="tw"><table class="cmp zt"><tr><th>ถนน/ซอย</th><th>Trip</th><th>ออเดอร์นอกตารางที่แก้ได้</th><th>หลักฐาน</th></tr>${lr.map(e => `<tr><td style="text-align:left">${esc(e.road)}</td><td><b>${e.trip}</b></td><td>${e.n}</td><td>${e.ev} ใบที่เข้าโซนแล้ว · ${Math.round(e.share * 100)}% ไป Trip ${e.trip}</td></tr>`).join('')}</table></div>`;
   }
-  h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div>';
-  const el = $('zoneOut'); el.hidden = false; el.innerHTML = h; renderTripTable();
+  h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
+  const el = $('zoneOut'); el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; renderTripTable();
   el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
   $('zApplyTrip').onclick = applyRoutes;
@@ -3200,11 +3221,14 @@ function setOrders(orders, src) {
   const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
   const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
   $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
-  $('btnZone').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน (${src})` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
+  $('btnZone').disabled = !list.length; say(list.length ? `อ่านได้ ${orders.length.toLocaleString()} ออเดอร์ จาก ${list.length} วัน · ${src}` : 'ไม่พบออเดอร์ในข้อมูลที่อ่าน', list.length ? 'ok' : 'err');
 }
 async function loadFile(f) {
   say('กำลังอ่านไฟล์ …');
-  try { setOrders(rowsToOrders(await fileToRows(f)), f.name); } catch (e) { say(String(e.message || e), 'err'); }
+  try {
+    setOrders(rowsToOrders(await fileToRows(f)), 'ไฟล์ ' + f.name);
+    if (S.orders.length) { runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }      // (an order file dropped in the settings box is checked at once, like the sheet)
+  } catch (e) { say(String(e.message || e), 'err'); }
 }
 $('zFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
 const zDropBox = $('zDrop');
@@ -3230,7 +3254,7 @@ async function syncSheet(manual) {
   try {
     const orders = await ordersFromSheet(lastDays(30, 3)); zLastSync = Date.now();
     const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);
+    setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);      // (each piece between " · " has its own translation row)
     if (orders.length) { $('zAll').checked = true; runZones(); if ($('zAutoApply').checked) await applyRoutes(true); }
     return true;
   } catch (e) { const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
@@ -3278,6 +3302,7 @@ setTimeout(async () => {
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { $('zoneIn').value = DEFAULT_ZONES; try { localStorage.removeItem(LS_ZONES); } catch (_) {} });
 $('btnZone').addEventListener('click', runZones);
+if (IN_VIEWER || !sheetReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
 /* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
    the English spellings of those sub-districts get the same Trip. It is added to the table above (the same area written the same way is replaced, the rest stays) and "ย้อนกลับครั้งล่าสุด" brings the old table back. */
@@ -3305,7 +3330,7 @@ async function applyRoutes(silent) {
   const hand = k => silent && tripMap[k] && !tripMap[k].z, changed = [...entries].filter(([k, e]) => !hand(k) && (!tripMap[k] || tripMap[k].t !== e.t || !!tripMap[k].am !== !!e.am)).length;      // (a route typed / imported by hand is never replaced by the automatic fill)
   if (silent && !changed) return;      // (auto mode: nothing to do when the table already says the same)
   if (!silent && !await ask(`ใช้ผลนี้เป็นเส้นทาง Trip?\n${bySd.size} แขวง (รวมชื่อภาษาอังกฤษ ${entries.size} พื้นที่) ใน ${tripsN} Trip — เพิ่มหรือแก้ ${changed} พื้นที่\nแขวงที่ซ้ำกับเส้นทางเดิมจะถูกแทนที่ ที่ไม่ซ้ำยังอยู่ (เส้นทางเดิม ${old} พื้นที่)\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
-  try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
+  if (!silent) { try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {} }      // (the automatic fill is made again at every sync, so it does not take the place of the backup that "ย้อนกลับครั้งล่าสุด" brings back: the table as it was before the last file / button)
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
@@ -5214,6 +5239,23 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', '{0} orders have no customer name / date / round yet — import the Call Center file in the green box to fill them in', 'အော်ဒါ {0} ခုတွင် ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ် မရှိသေးပါ — အစိမ်းရောင်အကွက်တွင် Call Center ဖိုင်ကို ထည့်သွင်း၍ ဖြည့်ပါ'],
   ['ทั้งหมด ({0} ใบ)', 'All ({0} sheets)', 'အားလုံး ({0} ရွက်)'],
   ['มีข้อมูลใบปะหน้า {0} ออเดอร์ (ชื่อลูกค้า / วันที่ / รอบส่ง)', 'Cover-sheet data found for {0} orders (customer name / date / round)', 'အော်ဒါ {0} ခုအတွက် အဖုံးစာရွက်အချက်အလက် တွေ့သည် (ဖောက်သည်အမည် / ရက်စွဲ / အကြိမ်)'],
+  ['ทำงานเองทันที', 'Runs by itself', 'ချက်ချင်း ကိုယ်တိုင် လုပ်ဆောင်သည်'],
+  ['ลากไฟล์หรือรูปตาราง Trip มาวางที่นี่ — ระบบอัปเดตและตรวจให้เอง', 'Drop the Trip table file or picture here — it is updated and checked by itself', 'Trip ဇယားဖိုင် သို့မဟုတ် ပုံကို ဤနေရာသို့ ချပါ — အလိုအလျောက် အပ်ဒိတ်လုပ်ပြီး စစ်ဆေးပေးမည်'],
+  ['หรือกดเพื่อเลือกไฟล์', 'or click to choose a file', 'သို့မဟုတ် ဖိုင်ရွေးရန် နှိပ်ပါ'],
+  ['หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่ (วางแล้วทำงานเอง)', 'Or copy the route table from Excel and paste it here (it runs as soon as it is pasted)', 'သို့မဟုတ် Excel မှ လမ်းကြောင်းဇယားကို ကူးယူပြီး ဤနေရာတွင် ကူးထည့်ပါ (ကူးထည့်သည်နှင့် ကိုယ်တိုင် လုပ်ဆောင်သည်)'],
+  ['รูปแบบไฟล์ที่รองรับ', 'Supported file layouts', 'ပံ့ပိုးသော ဖိုင်ပုံစံများ'],
+  ['แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว', 'One area per row (a Trip / route column and an area column such as district, sub-district, amphoe, tambon, province, post code) or the column headings are the Trip names with the areas listed under them', 'တစ်တန်းလျှင် ဧရိယာတစ်ခု (Trip / လမ်းကြောင်းကော်လံနှင့် ခရိုင်၊ ရပ်ကွက်၊ ပြည်နယ်၊ စာတိုက်ကုဒ် စသည့် ဧရိယာကော်လံ) သို့မဟုတ် ကော်လံခေါင်းစဉ်များသည် Trip အမည်များဖြစ်ပြီး ဧရိယာများကို အောက်တွင် စာရင်းပြုစုထားသည်'],
+  ['ระบบอ่านออเดอร์จากชีตที่เชื่อมต่อไว้เอง: เมื่อเปิดแท็บนี้ · ทุก 10 นาที · และทุกครั้งที่อัปเดตเส้นทางหรือแก้ตารางโซน — ไม่แก้ชีตหรือไฟล์', 'The program reads the orders from the connected sheet by itself: when this tab is opened · every 10 minutes · and every time the routes are updated or the zone table is edited — the sheet and the files are never changed', 'ပရိုဂရမ်သည် ချိတ်ဆက်ထားသော စာရွက်မှ အော်ဒါများကို ကိုယ်တိုင်ဖတ်သည်: ဤတက်ဘ်ကို ဖွင့်သည့်အခါ · မိနစ် ၁၀ တိုင်း · လမ်းကြောင်းများ အပ်ဒိတ်လုပ်သည့်အခါ သို့မဟုတ် ဇုန်ဇယားကို ပြင်သည့်အခါတိုင်း — စာရွက်နှင့် ဖိုင်များကို မပြင်ပါ'],
+  ['ตั้งค่า / ตรวจเอง', 'Settings / check by hand', 'ဆက်တင် / ကိုယ်တိုင်စစ်ရန်'],
+  ['ผลตรวจโซนและเส้นทาง', 'Zone check and routes', 'ဇုန်စစ်ဆေးမှုနှင့် လမ်းကြောင်းများ'],
+  ['ยังไม่มีผลตรวจ — วางไฟล์ในช่อง ก หรือกด "ซิงค์จากชีตตอนนี้"', 'No result yet — drop a file in box A or press "Sync from the sheet now"', 'စစ်ဆေးမှုရလဒ် မရှိသေးပါ — က အကွက်တွင် ဖိုင်ချပါ သို့မဟုတ် "စာရွက်မှ ယခု ထပ်တူကူးရန်" ကို နှိပ်ပါ'],
+  ['เส้นทางที่ใบปะหน้าใช้', 'Routes the cover sheet uses', 'အဖုံးစာရွက်သုံးသော လမ်းကြောင်းများ'],
+  ['อัปเดตเส้นทางแล้ว: {0} พื้นที่ / {1} Trip', 'Routes updated: {0} areas / {1} Trips', 'လမ်းကြောင်း အပ်ဒိတ်ပြီး: ဧရိယာ {0} ခု / Trip {1} ခု'],
+  ['รายละเอียด: แขวงนอกโซน · ถนน/ซอยที่เรียนรู้ · ดาวน์โหลด', 'Details: areas outside the zones · learned roads / sois · downloads', 'အသေးစိတ်: ဇုန်ပြင်ပ ရပ်ကွက်များ · သင်ယူထားသော လမ်း / ဆွိုင် · ဒေါင်းလုဒ်'],
+  ['อ่านได้ {0} ออเดอร์ จาก {1} วัน', 'Read {0} orders from {1} days', '{1} ရက်မှ အော်ဒါ {0} ခု ဖတ်ရှုရသည်'],
+  ['ชีตที่เชื่อมต่อไว้', 'The connected sheet', 'ချိတ်ဆက်ထားသော စာရွက်'],
+  ['ซิงค์ {0}', 'synced {0}', 'ထပ်တူကူးချိန် {0}'],
+  ['30 วันล่าสุด', 'last 30 days', 'နောက်ဆုံး ရက် ၃၀'],
 ];
 
 const exactMap = { en: new Map(), my: new Map() }, tplList = { en: [], my: [] }, byTh = { en: new Map(), my: new Map() };
