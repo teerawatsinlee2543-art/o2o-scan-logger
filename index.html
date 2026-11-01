@@ -408,7 +408,7 @@ td.x{width:34px;text-align:center}
 :root[data-theme="dark"] .fb.warn{border-color:var(--amber);box-shadow:0 0 22px color-mix(in srgb,var(--amber) 22%,transparent)}
 :root[data-theme="dark"] button.finish:not(:disabled){color:#04200f;box-shadow:0 0 24px color-mix(in srgb,var(--ok) 50%,transparent)}
 :root[data-theme="dark"] button.primary:not(:disabled){box-shadow:0 0 22px color-mix(in srgb,var(--accent) 45%,transparent)}
-:root[data-theme="dark"] .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 12px 34px var(--glow)}
+:root[data-theme="dark"] .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 6px 13px var(--glow)}      /* (the glow stays inside the 14px gap between the boxes: the wide 34px one washed over the border of the box next to it) */
 :root[data-theme="dark"] .panel.green{--g1:#123e28;--g2:#0b2b1b;--pt:#86ffbc;--pbd:#2fb472;--glow:rgba(54,200,120,.28)}
 :root[data-theme="dark"] .panel.purple{--g1:#2d2250;--g2:#1c1538;--pt:#d2c3ff;--pbd:#8466f5;--glow:rgba(139,108,226,.34)}
 :root[data-theme="dark"] .panel .phead label{text-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent)}
@@ -423,7 +423,11 @@ td.x{width:34px;text-align:center}
 :root[data-theme="dark"] .panel .idrop:hover,:root[data-theme="dark"] .panel .idrop.over{background:rgba(255,255,255,.16)}
 :root[data-theme="dark"] .panel .impbox{background:linear-gradient(135deg,#1c4a32,#123422);color:#a6f0c6;--pt:#a6f0c6;--pbd:#2fb472;--ok:#3de08c;--warn:#ffc83d}
 :root[data-theme="dark"] .panel .impprev{background:rgba(255,255,255,.08);color:#eef1f6}
-:root[data-theme="dark"] .panel button.mini:disabled{opacity:.75}
+:root[data-theme="dark"] .panel .prow button:not(.go){background:rgba(255,255,255,.1);color:var(--pt);border-color:var(--pbd)}      /* (the buttons under the boxes: the light-theme white fill made pale type on pale glass in the dark theme) */
+:root[data-theme="dark"] .panel .prow button.danger:not(.go){color:var(--bad)}
+:root[data-theme="dark"] .panel .prow button:not(.go):hover:not(:disabled){background:rgba(255,255,255,.22);border-color:var(--pt)}
+:root[data-theme="dark"] .panel button.mini:disabled{opacity:.7}
+:root[data-theme="dark"] .panel .prow button.go:disabled{opacity:.62}
 :root[data-theme="dark"] .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
 :root[data-theme="dark"] #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
 :root[data-theme="dark"] #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
@@ -445,7 +449,7 @@ td.x{width:34px;text-align:center}
   :root:not([data-theme="light"]) .fb.warn{border-color:var(--amber);box-shadow:0 0 22px color-mix(in srgb,var(--amber) 22%,transparent)}
   :root:not([data-theme="light"]) button.finish:not(:disabled){color:#04200f;box-shadow:0 0 24px color-mix(in srgb,var(--ok) 50%,transparent)}
   :root:not([data-theme="light"]) button.primary:not(:disabled){box-shadow:0 0 22px color-mix(in srgb,var(--accent) 45%,transparent)}
-  :root:not([data-theme="light"]) .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 12px 34px var(--glow)}
+  :root:not([data-theme="light"]) .panel{--g1:#3d2410;--g2:#2a1708;--pt:#ffc491;--pbd:#c4742c;--glow:rgba(255,150,60,.28);--card:#0f131b;--ink:#eef1f6;--muted:#9aa5b8;--line:#2b3344;--soft:#1b2230;--bad:#ff7b72;--ok:#3de08c;--warn:#ffc83d;border-color:color-mix(in srgb,var(--dot) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 22%,transparent),0 6px 13px var(--glow)}
   :root:not([data-theme="light"]) .panel.green{--g1:#123e28;--g2:#0b2b1b;--pt:#86ffbc;--pbd:#2fb472;--glow:rgba(54,200,120,.28)}
   :root:not([data-theme="light"]) .panel.purple{--g1:#2d2250;--g2:#1c1538;--pt:#d2c3ff;--pbd:#8466f5;--glow:rgba(139,108,226,.34)}
   :root:not([data-theme="light"]) .panel .phead label{text-shadow:0 0 16px color-mix(in srgb,var(--dot) 60%,transparent)}
@@ -460,7 +464,11 @@ td.x{width:34px;text-align:center}
   :root:not([data-theme="light"]) .panel .idrop:hover,:root:not([data-theme="light"]) .panel .idrop.over{background:rgba(255,255,255,.16)}
   :root:not([data-theme="light"]) .panel .impbox{background:linear-gradient(135deg,#1c4a32,#123422);color:#a6f0c6;--pt:#a6f0c6;--pbd:#2fb472;--ok:#3de08c;--warn:#ffc83d}
   :root:not([data-theme="light"]) .panel .impprev{background:rgba(255,255,255,.08);color:#eef1f6}
-  :root:not([data-theme="light"]) .panel button.mini:disabled{opacity:.75}
+  :root:not([data-theme="light"]) .panel .prow button:not(.go){background:rgba(255,255,255,.1);color:var(--pt);border-color:var(--pbd)}
+  :root:not([data-theme="light"]) .panel .prow button.danger:not(.go){color:var(--bad)}
+  :root:not([data-theme="light"]) .panel .prow button:not(.go):hover:not(:disabled){background:rgba(255,255,255,.22);border-color:var(--pt)}
+  :root:not([data-theme="light"]) .panel button.mini:disabled{opacity:.7}
+  :root:not([data-theme="light"]) .panel .prow button.go:disabled{opacity:.62}
   :root:not([data-theme="light"]) .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
   :root:not([data-theme="light"]) #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
   :root:not([data-theme="light"]) #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
