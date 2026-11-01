@@ -1443,6 +1443,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
         <div class="zset">
           <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
           <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
+          <label class="f"><input id="zGuess" type="checkbox" checked> เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน (มี ? ท้ายเลข)</label>
           <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
           <div class="row"><button id="btnZone" type="button" disabled>ตรวจโซน</button></div>
         </div>
@@ -2825,7 +2826,8 @@ function tripFor(inf, order) {
   const z = order ? ztGet(order) : undefined;
   if (z != null) return String(z);                                    // the zone table, by the order's own address
   for (const v of [inf.sd, inf.zip, inf.d, inf.pv]) { if (!v) continue; const e = tripMap[normArea(v)]; if (e && !e.am) return e.t; }      // the most specific area first; an automatic entry marked "am" (the area is split over several Trips) is skipped: a blank is better than a wrong Trip
-  return '';
+  const g = order && window.O2OZone && window.O2OZone.guessOf ? window.O2OZone.guessOf(order) : null;      // last: the system's guess from the same road / the same delivery route / the same area — marked "?" so nobody takes it for a sure number
+  return g ? g.trip + '?' : '';
 }
 const splitAreas = s => String(s == null ? '' : s).split(/[,;\n\/|]+/).map(x => x.trim()).filter(Boolean);
 function buildTripPending(rows, src) {
@@ -3028,7 +3030,7 @@ function waveOf(t) {
   const h = +m[1]; return h < 8 ? '05:00-08:00' : h < 12 ? '08:00-12:00' : h < 16 ? '12:00-16:00' : h < 20 ? '16:00-20:00' : 'อื่น ๆ';
 }
 const WAVES = ['05:00-08:00', '08:00-12:00', '12:00-16:00', '16:00-20:00', 'อื่น ๆ'];
-const KEYS = { no: ['ordernumber'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'], addr: ['shippingaddress'], zip: ['postcode'] };
+const KEYS = { no: ['ordernumber'], name: ['customername'], date: ['originalexpecteddate'], time: ['originalexpectedtime'], sd: ['subdistrict'], d: ['district'], status: ['orderstatus'], trip: ['tripid'], dtype: ['deliverytype'], addr: ['shippingaddress'], zip: ['postcode'] };
 function rowsToOrders(rows) {
   const hi = rows.findIndex(r => r.some(c => normH(c) === 'ordernumber')); if (hi < 0) throw new Error('ไม่พบหัวคอลัมน์ "Order Number" — ต้องเป็นไฟล์ออเดอร์ของ Call Center');
   const head = rows[hi].map(normH), at = k => head.map((h, i) => KEYS[k].includes(h) ? i : -1).filter(i => i >= 0), I = {}; for (const k of Object.keys(KEYS)) I[k] = at(k);
@@ -3037,7 +3039,8 @@ function rowsToOrders(rows) {
   const out = [];
   for (let i = hi + 1; i < rows.length; i++) {
     const r = rows[i], no = get(r, 'no'); if (!no) continue;
-    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype'), addr: get(r, 'addr'), zip: get(r, 'zip') });
+    const t = get(r, 'time'); out.push({ no, date: firstDate(get(r, 'date')), wave: waveOf(t), sd: canonSd(get(r, 'sd')), d: canonD(get(r, 'd')), status: get(r, 'status'), trip: get(r, 'trip'), dtype: get(r, 'dtype'), addr: get(r, 'addr'), zip: get(r, 'zip'),
+      raw: { name: get(r, 'name'), date: get(r, 'date'), time: t, sd: get(r, 'sd'), d: get(r, 'd') } });      // (raw = the cells as the sheet has them: a scanned order is answered from the bulk read with the very same text a per-order question would give — memory only)
   }
   return out;
 }
@@ -3056,7 +3059,7 @@ async function ordersFromSheet(dateTexts) {
   const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
   const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
   if (!cols.no || !cols.date || !(cols.sd || cols.d)) throw new Error('ชีตไม่มีคอลัมน์ Order Number / Original Expected Date / Sub District');
-  const want = ['no', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), where = [].concat(dateTexts).map(d => `${cols.date} contains '${String(d).replace(/'/g, "''")}'`).join(' or ');
+  const want = ['no', 'name', 'date', 'time', 'sd', 'd', 'status', 'trip', 'dtype', 'addr', 'zip'].filter(k => cols[k]), where = [].concat(dateTexts).map(d => `${cols.date} contains '${String(d).replace(/'/g, "''")}'`).join(' or ');
   const text = await gviz(cfg, `select ${want.map(k => cols[k]).join(', ')} where ${where}`);
   const rows = parseDelimited(text); if (!rows.length) return [];
   const fake = [want.map(k => KEYS[k][0])].concat(rows.slice(1));           // (the first row of the answer is the column labels)
@@ -3165,6 +3168,29 @@ function roadLabel0(x) {
   if (!w) for (const k of z.M.kws) if (text.includes(k.k)) { w = k; break; }
   return w ? w.nm : '';
 }
+/* An order outside the zone table has no Trip to print. A GUESS is made for it from the orders that ARE in a zone (measured on the real sheet by hiding each road's own table entry: guessing a road the table does not know is
+   right about half of the time when the evidence agrees, so it is only given then, and the slip marks it with "?" — never as a plain number):
+     - the other orders on the same ROAD (weight 3)  - the orders on the same real delivery route of the day, the TMS "Trip Id" of the sheet = nearby stops (2)  - the orders of the same sub-district (1)
+   each source votes with the share of its orders per Trip; the best Trip needs 60 % of all the votes. OpenStreetMap road positions were tried too (nearest zone road): right only 22-29 % — the Trip table is a plan, not a map. */
+const LS_ZGUESS = 'o2o-zguess-v1';
+const zGuessOn = () => { const e = $('zGuess'); return !e || e.checked; };
+function roadKeyOf(o) { const ms = mentionsOf(o.addr), r = ms.find(m => m.kind === 'ถ') || ms[0], k = r ? nk(r.text).replace(/\d.*$/, '') : ''; return k.length >= 3 ? k : ''; }
+function buildGuess(orders) {
+  const rk = new Map(), tms = new Map(), sd = new Map(), add = (m, k, t) => { if (!k) return; const e = m.get(k) || m.set(k, new Map()).get(k); e.set(t, (e.get(t) || 0) + 1); };
+  for (const o of orders) if (o.zt != null) { o._rk = roadKeyOf(o); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
+  const out = new Map();
+  for (const o of orders) {
+    if (o.zt != null) continue;
+    const comb = new Map(), take = (m, k, w) => { const e = k && m.get(k); if (!e) return; let tot = 0; for (const n of e.values()) tot += n; for (const [t, n] of e) comb.set(t, (comb.get(t) || 0) + w * n / tot); };
+    take(rk, roadKeyOf(o), 3); take(tms, o.trip, 2); take(sd, o.sd + '|' + o.d, 1);
+    if (!comb.size) continue;
+    let best = null, sum = 0; for (const [t, n] of comb) { sum += n; if (!best || n > best[1]) best = [t, n]; }
+    const share = best[1] / sum; if (share >= 0.6) out.set(o.no, { trip: best[0], share });
+  }
+  return out;
+}
+const guessOf = no => (Z.guess && zGuessOn() ? Z.guess.get(no) || null : null);
+const localRec = no => { if (!S.fromSheet || Date.now() - S.at > 11 * 60 * 1000) return null; const o = S.byNo && S.byNo.get(no); return o && o.raw ? { raw: o.raw, zip: o.zip, addr: o.addr } : null; };      // (the bulk read of the last minutes answers a scanned order at once: no question to the sheet)
 const Z = { groups: new Map(), zt: null, rows: [], day: '' };
 const roadBase = r => String(r).replace(/^(ถ\.|ซ\.)/, '').replace(/[0-9\-\/].*$/, '');
 function roadHint(r) { const v = Z.roadVotes && Z.roadVotes.get(roadBase(r)); if (!v || !v.size) return ''; let b = null; for (const [t, n] of v) if (!b || n > b[1]) b = [t, n]; return ' → Trip ' + b[0]; }
@@ -3249,7 +3275,7 @@ function runZones() {
   for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
   const useRoad = $('zRoad').checked; for (const o of out) o.rd = useRoad ? roadVerdict(o, roadVotes, null) : null;      // street level: a road / soi that the orders already in a zone use decides the order by itself
   let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
-  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr) });
+  Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr), guess: buildGuess(orders) });
   renderZones(); msg.className = 'msg ok'; msg.textContent = `ตรวจ ${orders.length.toLocaleString()} ออเดอร์ (${Z.day})${M.dups.length ? ' · ' + M.dups.join(' · ') : ''}${zt.errs.length ? ' · ข้ามบรรทัดที่อ่านไม่ได้ ' + zt.errs.length + ' บรรทัด' : ''}`;
 }
 const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
@@ -3265,7 +3291,7 @@ const zEditing = () => { const a = document.activeElement; return !!(a && a.clos
 let zRenderLater = false;
 function zSaveZoneText(text) {
   $('zoneIn').value = text; try { localStorage.setItem(LS_ZONES, text); } catch (_) {}
-  zoneChanged(); autoCheck(); toast('บันทึกตารางโซนแล้ว');
+  zoneChanged(); autoCheck(true); toast('บันทึกตารางโซนแล้ว');
 }
 function zTripAt(li) { const t = Z.zt && Z.zt.trips.find(x => x.li === li), lines = $('zoneIn').value.split(/\r?\n/); return t && lines[li] != null && lines[li].trim() === t.line ? { t, lines } : null; }
 function zCommitCell(el) {
@@ -3356,7 +3382,7 @@ function extendedTable() {
   return Z.zt.trips.map(t => t.special || !by.has(t.num) ? t.line : t.line + ' / [เพิ่ม] ' + by.get(t.num).join(' / ')).join('\n');
 }
 function setOrders(orders, src) {
-  S.orders = orders; S.src = src;
+  S.orders = orders; S.src = src; S.byNo = new Map(orders.map(o => [o.no, o])); S.at = Date.now(); S.fromSheet = false;
   const days = new Map(); for (const o of orders) if (o.date) days.set(o.date, (days.get(o.date) || 0) + 1);
   const list = [...days].sort((a, b) => dateNum(b[0]) - dateNum(a[0]));
   $('daySel').innerHTML = list.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} — ${n} ออเดอร์</option>`).join(''); $('dayPick').hidden = !list.length;
@@ -3391,7 +3417,7 @@ async function syncSheet(manual) {
   try {
     const orders = await ordersFromSheet(lastDays(30, 3)); zLastSync = Date.now(); zFailAt = 0; try { localStorage.setItem(LS_ZAT, String(zLastSync)); } catch (_) {}
     const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`);      // (each piece between " · " has its own translation row)
+    setOrders(orders, `ชีตที่เชื่อมต่อไว้ · ซิงค์ ${hm} · 30 วันล่าสุด`); S.fromSheet = true;      // (each piece between " · " has its own translation row)
     if (orders.length) { $('zAll').checked = true; runZones(); await applyRoutes(true); }
     return true;
   } catch (e) { zFailAt = Date.now(); const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
@@ -3408,12 +3434,13 @@ $('tabTrip').addEventListener('click', () => { if (!sheetReady()) syncSheet(true
    - the routes of section ก were applied (event "o2o-routes-imported"): the imported Trips replace the lines of the same Trip numbers in the zone table (the other lines stay), then the check runs;
    - the zone table is edited: 1.5 s after the last key. */
 let zChkT = null, zEditT = null;
-function autoCheck() {
+function autoCheck(now) {      // now: a deliberate edit (a zone box of the per-Trip table) is checked at once; a typed edit of the long text / an imported file waits 0.4 s for the next key
   clearTimeout(zChkT);
-  zChkT = setTimeout(async () => {
+  const go = async () => {
     if (S.orders.length && (Date.now() - zLastSync < 600000 || !sheetReady())) { runZones(); await applyRoutes(true); }
     else if (sheetReady()) await syncSheet(false);
-  }, 400);
+  };
+  if (now) go(); else zChkT = setTimeout(go, 400);
 }
 function mergeZones(entries) {
   const by = new Map();
@@ -3444,13 +3471,15 @@ setInterval(() => { if (!document.hidden) autoRun(false); }, 60000);      // (ev
 setTimeout(() => {                                                          // (a few seconds after the program starts, unless the last read was a moment ago)
   let at = 0; try { at = +localStorage.getItem(LS_ZAT) || 0; } catch (_) {}
   if (Date.now() - at > 120000) autoRun(true);
-}, 6000);
+}, 1500);      // (was 6 s: the bulk read is what makes the next scans instant, so it starts as soon as the page is up)
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { setZoneText(null); zoneChanged(); });
 $('btnZone').addEventListener('click', runZones);
 $('zoneOut').addEventListener('focusout', () => setTimeout(() => { if (zRenderLater && !zEditing()) { zRenderLater = false; if (Z.zt) renderZones(); } }, 0));      // (a check that finished while a zone box was being typed in is shown now)
 if (IN_VIEWER || !sheetReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
+try { if (localStorage.getItem(LS_ZGUESS) === '0') $('zGuess').checked = false; } catch (_) {}
+$('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGUESS, $('zGuess').checked ? '1' : '0'); } catch (_) {} toast($('zGuess').checked ? 'เปิดเลข Trip ที่ระบบเดา (มี ? ท้ายเลข)' : 'ปิดเลข Trip ที่ระบบเดา'); });
 /* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
    the English spellings of those sub-districts get the same Trip. It is added to the table above (the same area written the same way is replaced, the rest stays) and "ย้อนกลับครั้งล่าสุด" brings the old table back. */
 /* One order at a time (the cover sheet): the same zone-table text and the same matching as the list above, so a slip says what the list counts.
@@ -3481,7 +3510,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
@@ -3550,22 +3579,31 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
   if (!sheetUsable()) return false;
   const now = Date.now(), need = [...new Set(orders)].filter(o => ORD_RE.test(o) && infoNeeded(o) && !(sheetMiss.get(o) > now - 60000));
   let changed = false, dirty = false;
-  for (let i = 0; i < need.length; i += 25) {
-    const chunk = need.slice(i, i + 25);
+  const take = (o, v) => {
+    if (sheetIdx) sheetIdx.add(o);                // (it is in the sheet after all: the index of the sheet learns it)
+    const cur = orderInfo[o] || {}, nxt = Object.assign({}, cur, Object.fromEntries(Object.entries(v).filter(([k, x]) => x && !ZT_KEYS.includes(k))));
+    if (JSON.stringify(nxt) !== JSON.stringify(cur)) { orderInfo[o] = nxt; changed = dirty = true; }
+    const t = window.O2OZone && window.O2OZone.tripOfOrder ? window.O2OZone.tripOfOrder(v) : undefined;      // the Trip by the zone table and the address of this order; the address itself goes no further than this line
+    if (t !== undefined && ztPut(o, t)) changed = true;
+    if (window.O2OZone && window.O2OZone.roadOf && sheetCfg.cols.addr && orderInfo[o]) {      // and the road / soi of the address (a short label like "ถ.เสรีไทย ซ.89", printed on the slip instead of the Sub District; '' = none found, also when the address cell is empty, so it is not asked again and again)
+      const rd = window.O2OZone.roadOf(v) || '';
+      if (orderInfo[o].rd !== rd) { orderInfo[o].rd = rd; changed = dirty = true; }
+    }
+  };
+  /* First the bulk read of the last minutes (Update Data → Trip, every 10 minutes): an order in it is answered from memory at once, with the very text a question to the sheet would give — no ~1.3 s wait per scan.
+     Only the orders it does not have (new since that read) are asked of the sheet, as before. */
+  const rest = [];
+  for (const o of need) {
+    const r = window.O2OZone && window.O2OZone.localRec ? window.O2OZone.localRec(o) : null;
+    if (!r) { rest.push(o); continue; }
+    const tr = s => String(s || '').trim();
+    take(o, { name: tr(r.raw.name), date: rangeOne(tr(r.raw.date)), time: tr(r.raw.time), sd: tr(r.raw.sd), d: tr(r.raw.d), zip: tr(r.zip), addr: tr(r.addr) });
+  }
+  for (let i = 0; i < rest.length; i += 25) {
+    const chunk = rest.slice(i, i + 25);
     try {
       const got = await sheetLookup(chunk);
-      for (const o of chunk) {
-        const v = got.get(o); if (!v) { sheetMiss.set(o, Date.now()); continue; }
-        if (sheetIdx) sheetIdx.add(o);                // (it is in the sheet after all: the index of the sheet learns it)
-        const cur = orderInfo[o] || {}, nxt = Object.assign({}, cur, Object.fromEntries(Object.entries(v).filter(([k, x]) => x && !ZT_KEYS.includes(k))));
-        if (JSON.stringify(nxt) !== JSON.stringify(cur)) { orderInfo[o] = nxt; changed = dirty = true; }
-        const t = window.O2OZone && window.O2OZone.tripOfOrder ? window.O2OZone.tripOfOrder(v) : undefined;      // the Trip by the zone table and the address of this order; the address itself goes no further than this line
-        if (t !== undefined && ztPut(o, t)) changed = true;
-        if (window.O2OZone && window.O2OZone.roadOf && sheetCfg.cols.addr && orderInfo[o]) {      // and the road / soi of the address (a short label like "ถ.เสรีไทย ซ.89", printed on the slip instead of the Sub District; '' = none found, also when the address cell is empty, so it is not asked again and again)
-          const rd = window.O2OZone.roadOf(v) || '';
-          if (orderInfo[o].rd !== rd) { orderInfo[o].rd = rd; changed = dirty = true; }
-        }
-      }
+      for (const o of chunk) { const v = got.get(o); if (!v) { sheetMiss.set(o, Date.now()); continue; } take(o, v); }
     } catch (_) { break; }                       // offline / not shared / blocked: the sheet is just skipped, scanning goes on
   }
   if (dirty) saveInfo();
