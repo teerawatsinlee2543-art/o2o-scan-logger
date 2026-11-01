@@ -1,0 +1,16 @@
+{
+  "name": "O2O Scan Logger",
+  "short_name": "O2O Scan",
+  "description": "สแกนพนักงาน → สแกนออเดอร์ → ส่งออก Excel เข้าใบปะหน้า",
+  "lang": "th",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b82f3a",
+  "icons": [
+    { "src": "app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
