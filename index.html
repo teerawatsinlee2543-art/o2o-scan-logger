@@ -3113,14 +3113,16 @@ function parseZones(text) {
   return { trips, errs };
 }
 function buildMatcher(zt) {
-  const kws = [], kmap = new Map(), dups = [];
+  const kws = [], kmap = new Map(), dups = [], people = [];
   for (const t of zt.trips) if (!t.special) for (const z of t.zones) for (const nm of z.names) {
     const k = nk(nm); if (k.length < 2) continue;
+    const words = nm.trim().split(/\s+/).map(fz).filter(Boolean);      // a zone written as two or more words with no digits ("พี่แดง ศุภลักษณ์") can be a CUSTOMER: the Customer Name column is looked at too (see matchOrder); a road with a number ("สุขาภิบาล 5") never is
+    if (words.length >= 2 && !/\d/.test(nm) && words.join('').length >= 6 && !people.some(p => p.key === words.join(' '))) people.push({ words, key: words.join(' '), trip: t.num, nm: nm.trim() });
     if (kmap.has(k)) { if (kmap.get(k) !== t.num) dups.push(`"${nm}" อยู่ทั้ง Trip ${kmap.get(k)} และ ${t.num} (ใช้ Trip ${kmap.get(k)})`); continue; }
     kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k), nm: nm.trim() });      // (nm = the name as the table writes it: the cover slip prints it when the address names no road)
   }
   kws.sort((a, b) => b.k.length - a.k.length);
-  return { kws, kmap, dups, fzk: kws.filter(w => !/\d/.test(w.k) && w.k.length >= 6), cn: new Map(), fh: new Map() };      // (fzk = the names a misspelling can be matched to: letters only, 6+; cn / fh = memos of canonName / fuzzyHit)
+  return { kws, kmap, dups, people, fzk: kws.filter(w => !/\d/.test(w.k) && w.k.length >= 6), cn: new Map(), fh: new Map() };      // (fzk = the names a misspelling can be matched to: letters only, 6+; cn / fh = memos of canonName / fuzzyHit)
 }
 /* ===== Reading the road and the soi out of the Shipping Address ===== (the Trip of an order and the road printed on its slip both come from here)
    - the prefixes ซ. / ซอย / ซ and ถ. / ถนน / ถ, and in English Soi / Alley / Lane and Thanon / Road / Rd;
@@ -3240,6 +3242,9 @@ const ADMIN_RE = new RegExp([fz('กรุงเทพมหานคร'), fz('
 const adminCleaner = o => { const sdk = nk(o.sd), dk = nk(o.d), zip = String(o.zip || ''); return t => { t = t.replace(ADMIN_RE, '|'); for (const x of [sdk, dk, zip]) if (x && x.length > 1) t = t.split(x).join('|'); return t; }; };      // the administrative words of the address (Bangkok, แขวง, เขต, its own sub-district / district / post code) are not road names
 function matchOrder(o, M) {                                          // -> {trip, how} ; how: soi / road (a zone name in the soi, the road or elsewhere in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
   const sdk = nk(o.sd), dk = nk(o.d), clean = adminCleaner(o);
+  if (M.people.length) {      // 0. a zone that is a CUSTOMER's name ("Trip 20 = พี่แดง ศุภลักษณ์"): every word of it in the Customer Name — the first thing asked, nothing else is read for that customer
+    const cn = fz(o.name != null ? o.name : (o.raw && o.raw.name) || ''); if (cn) for (const p of M.people) if (p.words.every(w => cn.includes(w))) return { trip: p.trip, how: 'name' };
+  }
   const hit = (txt, strongOnly) => { for (const w of M.kws) if ((!strongOnly || !w.weak) && txt.includes(w.k)) return w; return null; };
   const ms = mentionsOf(o.addr);
   for (const kind of ['ซ', 'ถ']) for (const m of ms) if (m.kind === kind && !m.numOnly) { const t = clean(fz(m.text)), w = hit(t, true) || hit(t, false) || fuzzyHit(t, M); if (w) return { trip: w.trip, how: kind === 'ซ' ? 'soi' : 'road' }; }      // (a road written as two roads, "ศรีนครินทร์-ร่มเกล้า": the one that is not a big road wins, as it does in the free text; a misspelled name is matched by edit distance last)
@@ -3290,7 +3295,7 @@ function roadKeyOf(o, M) {      // the road of the order in its canonical spelli
 }
 function buildGuess(orders, M) {
   const rk = new Map(), tms = new Map(), sd = new Map(), add = (m, k, t) => { if (!k) return; const e = m.get(k) || m.set(k, new Map()).get(k); e.set(t, (e.get(t) || 0) + 1); };
-  for (const o of orders) if (o.zt != null) { o._rk = roadKeyOf(o, M); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
+  for (const o of orders) if (o.zt != null && o.zhow !== 'name') { o._rk = roadKeyOf(o, M); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
   const out = new Map();
   for (const o of orders) {
     if (o.zt != null) continue;
@@ -3373,21 +3378,22 @@ function runZones() {
   const day = $('daySel').value, useAll = $('zAll').checked;
   const orders = S.orders.filter(o => (useAll || o.date === day) && !/cancel|return/i.test(o.status));
   geo = new Map();
-  const how = { soi: 0, road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
+  const how = { name: 0, soi: 0, road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
   for (const o of orders) {
     const r = matchOrder(o, M); o.zt = r.trip; o.zhow = r.how;
     if (r.trip == null) { how.none++; out.push(o); continue; }
     how[r.how]++; byTrip.set(r.trip, (byTrip.get(r.trip) || 0) + 1);
+    if (r.how === 'name') continue;      // (a customer's Trip says nothing about where his address is: it adds no road / area evidence)
     if (r.how !== 'weak') for (const e of evKeys(o)) { const v = roadVotes.get(e.key) || roadVotes.set(e.key, new Map()).get(e.key); v.set(r.trip, (v.get(r.trip) || 0) + 1); }
     const k = o.sd + '|' + o.d; (stat.sd.get(k) || stat.sd.set(k, new Map()).get(k)).set(r.trip, ((stat.sd.get(k).get(r.trip)) || 0) + 1);
     (stat.d.get(o.d) || stat.d.set(o.d, new Map()).get(o.d)).set(r.trip, ((stat.d.get(o.d).get(r.trip)) || 0) + 1);
   }
   const areaKeys = new Set(orders.map(o => o.sd)); let withGeo = 0; for (const k of areaKeys) if (geo.has(k)) withGeo++; const geoOK = geo.size > 0 && withGeo / Math.max(1, areaKeys.size) >= 0.9;
-  const cent = new Map(); if (geoOK) { const acc = new Map(); for (const o of orders) if (o.zt != null && geo.has(o.sd)) { const p = geo.get(o.sd), a = acc.get(o.zt) || [0, 0, 0]; a[0] += p[0]; a[1] += p[1]; a[2]++; acc.set(o.zt, a); } for (const [t, a] of acc) cent.set(t, [a[0] / a[2], a[1] / a[2]]); }
+  const cent = new Map(); if (geoOK) { const acc = new Map(); for (const o of orders) if (o.zt != null && o.zhow !== 'name' && geo.has(o.sd)) { const p = geo.get(o.sd), a = acc.get(o.zt) || [0, 0, 0]; a[0] += p[0]; a[1] += p[1]; a[2]++; acc.set(o.zt, a); } for (const [t, a] of acc) cent.set(t, [a[0] / a[2], a[1] / a[2]]); }
   const groups = new Map(); for (const o of out) { const k = o.sd + '|' + o.d; (groups.get(k) || groups.set(k, { sd: o.sd, d: o.d, n: 0, orders: [], roads: new Map() }).get(k)).n++; groups.get(k).orders.push(o); for (const r of roadsOf(o.addr)) groups.get(k).roads.set(r, (groups.get(k).roads.get(r) || 0) + 1); }
   for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
   const useRoad = $('zRoad').checked; for (const o of out) o.rd = useRoad ? roadVerdict(o, roadVotes, null) : null;      // street level: a road / soi that the orders already in a zone use decides the order by itself
-  let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
+  let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak' && o.zhow !== 'name') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
   Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr), guess: (buildLex(orders, M), buildGuess(orders, M)) });
   renderZones(); msg.className = 'msg ok'; msg.textContent = `ตรวจ ${orders.length.toLocaleString()} ออเดอร์ (${Z.day})${M.dups.length ? ' · ' + M.dups.join(' · ') : ''}${zt.errs.length ? ' · ข้ามบรรทัดที่อ่านไม่ได้ ' + zt.errs.length + ' บรรทัด' : ''}`;
 }
@@ -3461,7 +3467,7 @@ function renderZones() {
   const roadN = rows.reduce((a, g) => a + g.orders.filter(o => o.rd).length, 0);
   let h = `<div class="sum" style="margin-top:12px"><div class="chip"><b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small></div><div class="chip"><b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small></div>
     <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div>${Z.useRoad ? `<div class="chip"><b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small></div>` : ''}</div>
-    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยซอยในที่อยู่ ${how.soi.toLocaleString()} ใบ · ด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
+    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยซอยในที่อยู่ ${how.soi.toLocaleString()} ใบ · ด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ${how.name ? ` · ด้วยชื่อลูกค้า ${how.name.toLocaleString()} ใบ` : ''}</p>`;
   if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
   let detail = '';      // (the long explanations, the outside-zone areas, the learned roads and the downloads go under one folded line: the first thing seen is the numbers and the Trips)
   if ([...groups.values()].some(g => g.link)) detail += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
@@ -3483,7 +3489,7 @@ function renderZones() {
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
   $('zApplyTrip').onclick = applyRoutes;
   $('zCsvOut').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Suggested Trip,Based On,Confidence'].concat([...Z.groups.values()].flatMap(g => g.orders.map(o => { const t = finalOf(o); return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, o.rd ? 'ถนน/ซอย ' + o.rd.road : (g.pick ? 'แขวง/เส้นทาง' : ''), o.rd ? o.rd.conf : (g.pick ? g.conf : '')].map(csvCell).join(','); }))), 'orders-outside-zones.csv');
-  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const t = finalOf(o); const by = o.zt != null ? ({ soi: 'ซอย', road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : o.rd ? 'ถนน/ซอย ' + o.rd.road + ' (' + o.rd.conf + ')' : t != null ? 'แนะนำ' : 'ไม่มี'; return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
+  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const t = finalOf(o); const by = o.zt != null ? ({ name: 'ชื่อลูกค้า', soi: 'ซอย', road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : o.rd ? 'ถนน/ซอย ' + o.rd.road + ' (' + o.rd.conf + ')' : t != null ? 'แนะนำ' : 'ไม่มี'; return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
 }
 const csvCell = c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c);
 function saveCsv(lines, name) { download(new Blob([String.fromCharCode(0xFEFF) + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), name); }
@@ -3596,8 +3602,8 @@ $('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGU
    x = {sd, d, addr, zip} -> the Trip number, null = outside the table, undefined = there is no table to read. zoneVer() names the table text (and this matching): a number worked out under another version is not trusted. */
 let zmc = null;
 const zhash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m2|' + txt) : '' }; } return zmc; }
-function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }, z.M).trip; }
+function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m3|' + txt) : '' }; } return zmc; }
+function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '', name: x.name || '' }, z.M).trip; }
 async function applyRoutes(silent) {
   if (!Z.zt) return;
   const bySd = new Map();
@@ -5176,6 +5182,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['อยู่นอกโซน', 'Outside the zones', 'ဇုန်ပြင်ပ'],
   ['แขวงที่อยู่นอกโซน', 'Sub-districts outside the zones', 'ဇုန်ပြင်ပရှိ ရပ်ကွက်များ'],
   ['ตัดสินด้วยถนน/ซอย', 'Decided by road / soi', 'လမ်း / ဆွိုင်ဖြင့် ဆုံးဖြတ်'],
+  ['ด้วยชื่อลูกค้า {0} ใบ', 'by the customer name: {0}', 'ဝယ်သူအမည်ဖြင့်: {0}'],
   ['เข้าโซนด้วยซอยในที่อยู่ {0} ใบ', 'In a zone by the soi in the address: {0}', 'လိပ်စာထဲရှိ ဆွိုင်ဖြင့် ဇုန်ဝင်: {0}'],
   ['เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ {0} ใบ', 'In a zone by the road / community name in the address: {0}', 'လိပ်စာထဲရှိ လမ်း / အသိုင်းအဝိုင်းအမည်ဖြင့် ဇုန်ဝင်: {0}'],
   ['ด้วยแขวง {0} ใบ', 'by sub-district: {0}', 'ရပ်ကွက်ဖြင့်: {0}'],
