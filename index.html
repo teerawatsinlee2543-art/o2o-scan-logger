@@ -1037,11 +1037,28 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip .drop b{text-wrap:balance}
 #paneTrip .zspn{display:none;font-size:12px}
 #paneTrip #ztTrips td{white-space:normal;word-break:break-word}
-#paneTrip #ztTrips td:nth-child(2){min-width:120px}      /* (the zones of a Trip wrap instead of making the table scroll sideways) */
+#paneTrip #ztTrips td:nth-child(2){min-width:200px}      /* (the zones of a Trip wrap instead of making the table scroll sideways) */
+#paneTrip #ztTrips th:nth-child(2),#paneTrip #ztTrips td:nth-child(2){width:56%}      /* (the zone boxes take the room, the count columns stay narrow) */
+/* the zones of a Trip are an edit box in their row; × takes the Trip out, the last row adds one (see renderTripTable) */
+#paneTrip #ztTrips .zcell{display:block;width:100%;box-sizing:border-box;min-height:32px;padding:5px 9px;border:1px solid var(--line);border-radius:9px;font:inherit;font-weight:700;color:inherit;background:var(--soft);line-height:1.45;outline:none;cursor:text;white-space:pre-wrap;word-break:break-word;transition:border-color .15s,background .15s,box-shadow .15s}
+#paneTrip #ztTrips .zcell:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+#paneTrip #ztTrips .zcell:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}
+#paneTrip #ztTrips input.zcell{height:36px;font-weight:600}
+#paneTrip #ztTrips input.zcell::placeholder{font-weight:500;color:var(--muted)}
+#paneTrip #ztTrips .znum{width:64px;text-align:center}
+#paneTrip #ztTrips td.zx{display:table-cell!important;width:1%;white-space:nowrap;text-align:center;vertical-align:top}      /* (also on a phone, where the two count columns are hidden) */
+#paneTrip #ztTrips .zdel{width:30px;height:30px;padding:0;border-radius:9px;border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad);font-size:18px;line-height:1;font-weight:800;cursor:pointer}
+#paneTrip #ztTrips .zdel:hover{background:color-mix(in srgb,var(--bad) 26%,transparent)}
+#paneTrip #ztTrips .zplus{height:36px;padding:0 12px;border-radius:9px;font-weight:800;white-space:nowrap}
+#paneTrip #ztTrips tr.zadd td{border-bottom:0;padding-top:10px}
+#paneTrip #ztTrips th small{font-weight:500}
 @media (max-width:640px){      /* phones: the per-Trip table keeps Trip | zones | total (the two middle counts are in the total) */
   #paneTrip #ztTrips tr > :nth-child(3), #paneTrip #ztTrips tr > :nth-child(4){display:none}
   #paneTrip .zspn{display:block}
-  #paneTrip #ztTrips td:nth-child(2){min-width:0}
+  #paneTrip #ztTrips td:nth-child(2){min-width:150px}      /* (room for the zone box: it is a field now, and a field of 96px is too narrow to type in) */
+  #paneTrip #ztTrips .zcell{padding:4px 7px;font-size:14px}
+  #paneTrip #ztTrips .zdel{width:28px;height:28px}
+  #paneTrip #ztTrips td.zx{padding-left:2px;padding-right:2px}
   #paneTrip #ztTrips th{white-space:normal}
   #paneTrip .cmp th,#paneTrip .cmp td{padding:6px 5px}
 }
@@ -3079,14 +3096,14 @@ const fz = s => String(s == null ? '' : s).toLowerCase().replace(/[\s._\-,()\/\\
 const nk = s => fz(String(s == null ? '' : s).trim().replace(/^(ถนน|ซอย|แขวง|เขต|ถ\.|ซ\.)/, ''));
 const WEAK = new Set(['รามอินทรา', 'รามคำแหง', 'ลาดพร้าว', 'นวมินทร์', 'สุวินทวงศ์', 'สุวินทวงค์', 'เสรีไทย', 'เสรีไท', 'ศรีนครินทร์', 'สะพานสูง'].map(nk));      // big roads / districts that pass through many areas: only used when nothing more specific is found
 function parseZones(text) {
-  const trips = [], errs = [];
-  for (const line of String(text || '').split(/\r?\n/)) {
-    if (!line.trim()) continue;
+  const trips = [], errs = [], srcLines = String(text || '').split(/\r?\n/);
+  for (let li = 0; li < srcLines.length; li++) {      // (li = the line's place in the text, so a row of the per-Trip table knows which line it edits)
+    const line = srcLines[li]; if (!line.trim()) continue;
     const m = /^\s*(ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)\s*(.+)$/.exec(line); if (!m) { errs.push(line.trim().slice(0, 30)); continue; }
     const label = m[1].replace(/\s+/g, ''), num = /^\d+$/.test(label) ? +label : null, extras = [];
     const base = m[2].replace(/[(（]([^)）]*)[)）]/g, (_, x) => { x.split(/[,，]/).forEach(s => s.trim() && extras.push(s.trim())); return ' '; });
     const zones = base.split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean).concat(extras).map(z => ({ raw: z, names: z.split('|').map(s => s.trim()).filter(Boolean) }));
-    trips.push({ label, num, line: line.trim(), zones, special: num === null });
+    trips.push({ label, num, line: line.trim(), li, zones, special: num === null });
   }
   return { trips, errs };
 }
@@ -3200,16 +3217,68 @@ function runZones() {
 const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
 function addedByTrip() { const m = new Map(); for (const g of Z.groups.values()) for (const o of g.orders) { const t = finalOf(o); if (t != null) m.set(t, (m.get(t) || 0) + 1); } return m; }
 function roadSplit(g) { const m = new Map(); let n = 0; for (const o of g.orders) if (o.rd) { n++; m.set(o.rd.trip, (m.get(o.rd.trip) || 0) + 1); } return n ? `${n} ใบ: ` + [...m].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, c]) => `T${t}×${c}`).join(' ') : '—'; }
+/* The per-Trip table is also where the zone table is EDITED: the zones of a Trip are a text box in the row (written exactly as in the zone table: zones with " / ", other spellings with " | ", extras in brackets),
+   the × at the end of a row takes that Trip out, the last row adds a Trip. Enter or leaving the box saves it (Esc puts the old text back) — the change goes into the zone table (#zoneIn, this browser, the other
+   computers) and the check runs again by itself, exactly like an edit of the long text under "ตารางโซน Trip 1-20". While a box is being typed in, the table is not rebuilt under the person's hands. */
+const ZRE = /^\s*(?:ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)\s*/;
+const zoneTextOf = t => t.line.replace(ZRE, '');
+const zHasName = s => /[^\s\/|,，()（）]/.test(s);
+const zEditing = () => { const a = document.activeElement; return !!(a && a.closest && a.closest('#ztTrips') && (a.classList.contains('zcell'))); };
+let zRenderLater = false;
+function zSaveZoneText(text) {
+  $('zoneIn').value = text; try { localStorage.setItem(LS_ZONES, text); } catch (_) {}
+  zoneChanged(); autoCheck(); toast('บันทึกตารางโซนแล้ว');
+}
+function zTripAt(li) { const t = Z.zt && Z.zt.trips.find(x => x.li === li), lines = $('zoneIn').value.split(/\r?\n/); return t && lines[li] != null && lines[li].trim() === t.line ? { t, lines } : null; }
+function zCommitCell(el) {
+  const li = +el.dataset.li, txt = el.textContent.replace(/\s+/g, ' ').trim(), cur = zTripAt(li);
+  if (!cur) { toast('ตารางโซนเปลี่ยนไปแล้ว — โหลดผลใหม่ก่อนแก้'); if (Z.zt) renderZones(); return; }
+  if (txt === zoneTextOf(cur.t)) { el.textContent = txt; return; }                  // (nothing changed)
+  if (!zHasName(txt)) { toast('ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม ×'); el.textContent = zoneTextOf(cur.t); return; }
+  cur.lines[li] = cur.t.label + '\t' + txt; zSaveZoneText(cur.lines.join('\n'));
+}
+async function zDeleteRow(li) {
+  const cur = zTripAt(li); if (!cur) { toast('ตารางโซนเปลี่ยนไปแล้ว — โหลดผลใหม่ก่อนแก้'); return; }
+  if (!(await ask(`ลบ Trip ${cur.t.label} ออกจากตารางโซน? (โซนของ Trip นี้จะไม่ถูกใช้จับออเดอร์อีก)`))) return;
+  const again = zTripAt(li); if (!again) return;
+  again.lines.splice(li, 1); zSaveZoneText(again.lines.join('\n'));
+}
+function zAddTrip() {
+  const n = +$('zNewNum').value.replace(/\D/g, ''), txt = $('zNewZones').value.replace(/\s+/g, ' ').trim();
+  if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99'); $('zNewNum').focus(); return; }
+  if (Z.zt.trips.some(t => t.num === n)) { toast(`มี Trip ${n} อยู่แล้ว — แก้ที่แถวนั้นได้เลย`); return; }
+  if (!zHasName(txt)) { toast('ใส่ชื่อโซนอย่างน้อย 1 ชื่อ'); $('zNewZones').focus(); return; }
+  const lines = $('zoneIn').value.split(/\r?\n/).filter(l => l.trim());
+  let at = lines.length; for (let i = 0; i < lines.length; i++) { const m = /^\s*(\d{1,2})(?!\d)/.exec(lines[i]); if (m && +m[1] > n) { at = i; break; } }      // (in number order: before the first Trip with a bigger number)
+  lines.splice(at, 0, n + '\t' + txt); zSaveZoneText(lines.join('\n'));
+}
 function renderTripTable() {
-  const add = addedByTrip(); let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง</th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th></tr>';
+  if (zEditing()) { zRenderLater = true; return; }
+  const add = addedByTrip(); let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง <small class="muted">(แก้ได้ตรงช่อง)</small></th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th><th></th></tr>';
+  const cell = t => `<div class="zcell" contenteditable="plaintext-only" role="textbox" spellcheck="false" data-li="${t.li}" aria-label="${esc('โซนของ Trip ' + t.label)}">${esc(zoneTextOf(t))}</div>`;
+  const del = t => `<td class="zx"><button type="button" class="zdel" data-li="${t.li}" title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">×</button></td>`;
   for (const t of Z.zt.trips) {
-    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${esc(t.zones.map(z => z.raw).join(' / '))}<div class="zspn muted">ไม่นำมาจับออเดอร์</div></td><td colspan="3" class="muted zsp">ไม่นำมาจับออเดอร์</td></tr>`; continue; }      // (the note is in its own cell on a wide screen, under the zones on a phone)
+    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${cell(t)}<div class="zspn muted">ไม่นำมาจับออเดอร์</div></td><td colspan="3" class="muted zsp">ไม่นำมาจับออเดอร์</td>${del(t)}</tr>`; continue; }      // (the note is in its own cell on a wide screen, under the zones on a phone)
     const a = Z.byTrip.get(t.num) || 0, b = add.get(t.num) || 0;
-    h += `<tr><td><b>${t.num}</b></td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td>${a}</td><td>${b ? '+' + b : ''}</td><td><b>${a + b}</b></td></tr>`;
+    h += `<tr><td><b>${t.num}</b></td><td>${cell(t)}</td><td>${a}</td><td>${b ? '+' + b : ''}</td><td><b>${a + b}</b></td>${del(t)}</tr>`;
   }
-  $('ztTrips').innerHTML = h + '</table>';
+  h += `<tr class="zadd"><td><input id="zNewNum" class="zcell znum" type="text" inputmode="numeric" maxlength="2" placeholder="Trip" aria-label="เลข Trip ใหม่"></td><td><input id="zNewZones" class="zcell" type="text" spellcheck="false" placeholder="เพิ่ม Trip ใหม่: พิมพ์โซน / โซน แล้วกด Enter" aria-label="โซนของ Trip ใหม่"></td><td colspan="3"></td><td class="zx"><button id="zNewAdd" type="button" class="zplus" title="เพิ่ม Trip">+ เพิ่ม</button></td></tr>`;
+  const box = $('ztTrips'); box.innerHTML = h + '</table>';
+  box.querySelectorAll('div.zcell').forEach(el => {
+    if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';      // (an older browser: plain text is forced on paste below)
+    let before = el.textContent;
+    el.addEventListener('focus', () => { before = el.textContent; });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); el.textContent = before; el.blur(); } });
+    el.addEventListener('paste', e => { e.preventDefault(); const tx = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\s*\r?\n\s*/g, ' '); document.execCommand('insertText', false, tx); });
+    el.addEventListener('blur', () => zCommitCell(el));
+  });
+  box.querySelectorAll('.zdel').forEach(b => b.addEventListener('click', () => zDeleteRow(+b.dataset.li)));
+  const addEnter = e => { if (e.key === 'Enter') { e.preventDefault(); zAddTrip(); } };
+  $('zNewNum').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('zNewZones').focus(); } });
+  $('zNewZones').addEventListener('keydown', addEnter); $('zNewAdd').addEventListener('click', zAddTrip);
 }
 function renderZones() {
+  if (zEditing()) { zRenderLater = true; return; }      // (a zone box of the per-Trip table is being typed in: the table is built again when the person leaves it)
   const { how, groups, orders } = Z, outN = how.none, tot = orders.length, inN = tot - outN, rows = [...groups.values()].sort((a, b) => b.n - a.n);
   const opts = pick => '<option value="">ไม่เพิ่ม</option>' + Z.nums.map(n => `<option value="${n}"${String(n) === pick ? ' selected' : ''}>Trip ${n}</option>`).join('');
   const roadN = rows.reduce((a, g) => a + g.orders.filter(o => o.rd).length, 0);
@@ -3341,6 +3410,7 @@ setTimeout(() => {                                                          // (
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { setZoneText(null); zoneChanged(); });
 $('btnZone').addEventListener('click', runZones);
+$('zoneOut').addEventListener('focusout', () => setTimeout(() => { if (zRenderLater && !zEditing()) { zRenderLater = false; if (Z.zt) renderZones(); } }, 0));      // (a check that finished while a zone box was being typed in is shown now)
 if (IN_VIEWER || !sheetReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
 /* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
