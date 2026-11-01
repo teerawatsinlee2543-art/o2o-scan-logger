@@ -251,6 +251,10 @@ details.settings summary{cursor:pointer;color:var(--muted);font-size:14px;font-w
 details.settings .row{margin-top:10px}
 details.settings label{display:flex;align-items:center;gap:8px;font-size:14px}
 details.settings input[type=number]{width:76px}
+details.settings,details.settings .row{min-width:0;max-width:100%}
+details.settings label{min-width:0;max-width:100%}      /* (a long select / sentence wraps inside the row: on a 320-390 px phone, and in English / Burmese, the row used to push the page wider) */
+details.settings label input[type=checkbox]{flex:none}
+details.settings select{min-width:0;max-width:100%;text-overflow:ellipsis}
 details.settings input[type=checkbox]{flex:none}
 
 /* ---- right column ---- */
@@ -483,8 +487,8 @@ td.x{width:34px;text-align:center}
 .impprev ul{margin:4px 0 0;padding-left:18px;max-height:150px;overflow:auto}
 .prow button.go{color:#fff;border-color:transparent;background:linear-gradient(135deg,#2f9e5f,#238a50)}
 .prow button.go:hover:not(:disabled){background:linear-gradient(135deg,#34ad6b,#27995a);border-color:transparent}
-.phead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.phead label{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--pt)}
+.phead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-bottom:6px}      /* (wraps instead of overflowing: a long Burmese title + the zoom button on a 320 px phone) */
+.phead label{display:flex;align-items:center;gap:8px;min-width:0;font-size:15px;font-weight:800;color:var(--pt)}
 .phead label::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot)}
 .pcount{min-width:24px;text-align:center;padding:0 10px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.7);border:1px solid var(--pbd);color:var(--pt);font-variant-numeric:tabular-nums}
 .panel input[type=text]{width:100%;height:40px;padding:0 10px;border-radius:10px;outline:none;background:var(--card);color:var(--ink);
@@ -1006,7 +1010,22 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 /* the Trip tab is two boxes, one above the other (never side by side — the user asked for that): ก = drop the file (everything after it runs by itself), ข = what came out */
 .tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
 .tgrid .dsec{margin-bottom:0}
-#paneTrip .zset{display:grid;gap:8px;margin-top:10px}
+#paneTrip .zset{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:10px}
+#paneTrip label.f{min-width:0}
+#paneTrip label.f input[type=checkbox]{flex:none}
+#paneTrip .zset select{min-width:0;max-width:100%}
+#paneTrip #dayPick label.f{flex-wrap:wrap}
+#paneTrip .drop b{text-wrap:balance}
+#paneTrip .zspn{display:none;font-size:12px}
+#paneTrip #ztTrips td{white-space:normal;word-break:break-word}
+#paneTrip #ztTrips td:nth-child(2){min-width:120px}      /* (the zones of a Trip wrap instead of making the table scroll sideways) */
+@media (max-width:640px){      /* phones: the per-Trip table keeps Trip | zones | total (the two middle counts are in the total) */
+  #paneTrip #ztTrips tr > :nth-child(3), #paneTrip #ztTrips tr > :nth-child(4){display:none}
+  #paneTrip .zspn{display:block}
+  #paneTrip #ztTrips td:nth-child(2){min-width:0}
+  #paneTrip #ztTrips th{white-space:normal}
+  #paneTrip .cmp th,#paneTrip .cmp td{padding:6px 5px}
+}
 #paneTrip .zsync{margin:12px 2px 8px}
 #paneTrip details.zbox>summary .rcount{margin-left:8px}
 #paneTrip details.zbox details.zbox{margin-top:10px}
@@ -3169,7 +3188,7 @@ function roadSplit(g) { const m = new Map(); let n = 0; for (const o of g.orders
 function renderTripTable() {
   const add = addedByTrip(); let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง</th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th></tr>';
   for (const t of Z.zt.trips) {
-    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td colspan="3" class="muted">ไม่นำมาจับออเดอร์</td></tr>`; continue; }
+    if (t.special) { h += `<tr><td>${esc(t.label)}</td><td>${esc(t.zones.map(z => z.raw).join(' / '))}<div class="zspn muted">ไม่นำมาจับออเดอร์</div></td><td colspan="3" class="muted zsp">ไม่นำมาจับออเดอร์</td></tr>`; continue; }      // (the note is in its own cell on a wide screen, under the zones on a phone)
     const a = Z.byTrip.get(t.num) || 0, b = add.get(t.num) || 0;
     h += `<tr><td><b>${t.num}</b></td><td>${esc(t.zones.map(z => z.raw).join(' / '))}</td><td>${a}</td><td>${b ? '+' + b : ''}</td><td><b>${a + b}</b></td></tr>`;
   }
