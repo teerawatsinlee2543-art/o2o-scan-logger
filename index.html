@@ -3117,13 +3117,28 @@ function buildMatcher(zt) {
   kws.sort((a, b) => b.k.length - a.k.length);
   return { kws, kmap, dups };
 }
-function matchOrder(o, M) {                                          // -> {trip, how} ; how: road (a zone name in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
+/* The soi ("ซ." / "ซอย" / "ซ ") and the road ("ถ." / "ถนน" / "ถ ") that the Shipping Address names, with the name and the number after it ("ซ.เสรีไทย 89", "ซอยคลองเก้า7", "ถนน คุ้มเกล้า"): a soi / road is a small, exact place, while a sub-district or a district of Bangkok
+   is a big area that many Trips cross, so these are asked first. */
+const MENTION_RE = /(?:^|[\s,;(\[\-])(ซอย|ซ\.|ซ(?=\s)|ถนน|ถ\.|ถ(?=\s))\s*([^\s,;()\[\]]+(?:\s*\d+(?:[\/\-]\d+)*)?)/g;
+function mentionsOf(addr) {
+  const s = String(addr || '').replace(/[​‌‍]/g, ''), out = []; let m; MENTION_RE.lastIndex = 0;
+  while ((m = MENTION_RE.exec(s))) { if (/^[\d\/\-]+$/.test(m[2])) continue; out.push({ kind: m[1][0] === 'ซ' ? 'ซ' : 'ถ', text: m[2] }); if (out.length >= 8) break; }      // (a bare number is a soi of a road named somewhere else: nothing to look up)
+  return out;
+}
+/* Order of asking — each step only when the one before found no zone name:
+   1. the soi of the address (ซ. / ซอย / ซ)      2. the road of the address (ถ. / ถนน / ถ)      3. everything else written in the address (communities, villages, roads written without ถ.)
+   4. the Sub District column      5. a big road named in the address / the District column (weak evidence).
+   In steps 1 and 2 a big road (รามอินทรา, เสรีไทย, …) counts too: named as THE road or soi of the address it is exact, unlike in the free text. */
+function matchOrder(o, M) {                                          // -> {trip, how} ; how: soi / road (a zone name in the soi, the road or elsewhere in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
   const sdk = nk(o.sd), dk = nk(o.d);
-  let text = fz(o.addr);
-  for (const x of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(o.zip || '')]) if (x && x.length > 1) text = text.split(x).join('|');      // the administrative words of the address are not road names
-  for (const w of M.kws) if (!w.weak && text.includes(w.k)) return { trip: w.trip, how: 'road' };
+  const clean = t => { for (const x of [sdk, dk, fz('กรุงเทพมหานคร'), fz('กรุงเทพฯ'), fz('กรุงเทพ'), fz('แขวง'), fz('เขต'), String(o.zip || '')]) if (x && x.length > 1) t = t.split(x).join('|'); return t; };      // the administrative words of the address are not road names
+  const hit = (txt, strongOnly) => { for (const w of M.kws) if ((!strongOnly || !w.weak) && txt.includes(w.k)) return w; return null; };
+  const ms = mentionsOf(o.addr);
+  for (const kind of ['ซ', 'ถ']) for (const m of ms) if (m.kind === kind) { const t = clean(fz(m.text)), w = hit(t, true) || hit(t, false); if (w) return { trip: w.trip, how: kind === 'ซ' ? 'soi' : 'road' }; }      // (a road written as two roads, "ศรีนครินทร์-ร่มเกล้า": the one that is not a big road wins, as it does in the free text)
+  const text = clean(fz(o.addr));
+  const w3 = hit(text, true); if (w3) return { trip: w3.trip, how: 'road' };
   if (M.kmap.has(sdk)) return { trip: M.kmap.get(sdk), how: 'sd' };
-  for (const w of M.kws) if (w.weak && text.includes(w.k)) return { trip: w.trip, how: 'weak' };
+  const w5 = hit(text, false); if (w5) return { trip: w5.trip, how: 'weak' };
   if (M.kmap.has(dk)) return { trip: M.kmap.get(dk), how: 'weak' };
   return { trip: null, how: '' };
 }
@@ -3196,7 +3211,7 @@ function runZones() {
   const day = $('daySel').value, useAll = $('zAll').checked;
   const orders = S.orders.filter(o => (useAll || o.date === day) && !/cancel|return/i.test(o.status));
   geo = new Map();
-  const how = { road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
+  const how = { soi: 0, road: 0, sd: 0, weak: 0, none: 0 }, roadVotes = new Map(), byTrip = new Map(), stat = { sd: new Map(), d: new Map() }, out = [];
   for (const o of orders) {
     const r = matchOrder(o, M); o.zt = r.trip; o.zhow = r.how;
     if (r.trip == null) { how.none++; out.push(o); continue; }
@@ -3284,7 +3299,7 @@ function renderZones() {
   const roadN = rows.reduce((a, g) => a + g.orders.filter(o => o.rd).length, 0);
   let h = `<div class="sum" style="margin-top:12px"><div class="chip"><b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small></div><div class="chip"><b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small></div>
     <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div>${Z.useRoad ? `<div class="chip"><b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small></div>` : ''}</div>
-    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
+    <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยซอยในที่อยู่ ${how.soi.toLocaleString()} ใบ · ด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ</p>`;
   if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
   let detail = '';      // (the long explanations, the outside-zone areas, the learned roads and the downloads go under one folded line: the first thing seen is the numbers and the Trips)
   if ([...groups.values()].some(g => g.link)) detail += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
@@ -3306,7 +3321,7 @@ function renderZones() {
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
   $('zApplyTrip').onclick = applyRoutes;
   $('zCsvOut').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Suggested Trip,Based On,Confidence'].concat([...Z.groups.values()].flatMap(g => g.orders.map(o => { const t = finalOf(o); return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, o.rd ? 'ถนน/ซอย ' + o.rd.road : (g.pick ? 'แขวง/เส้นทาง' : ''), o.rd ? o.rd.conf : (g.pick ? g.conf : '')].map(csvCell).join(','); }))), 'orders-outside-zones.csv');
-  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const t = finalOf(o); const by = o.zt != null ? ({ road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : o.rd ? 'ถนน/ซอย ' + o.rd.road + ' (' + o.rd.conf + ')' : t != null ? 'แนะนำ' : 'ไม่มี'; return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
+  $('zCsvAll').onclick = () => saveCsv(['Order Number,Date,Wave,Sub District,District,Trip,Matched By'].concat(Z.orders.map(o => { const t = finalOf(o); const by = o.zt != null ? ({ soi: 'ซอย', road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' }[o.zhow]) : o.rd ? 'ถนน/ซอย ' + o.rd.road + ' (' + o.rd.conf + ')' : t != null ? 'แนะนำ' : 'ไม่มี'; return [o.no, o.date, o.wave, o.sd, o.d, t == null ? '' : t, by].map(csvCell).join(','); })), 'orders-with-trip.csv');
 }
 const csvCell = c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c);
 function saveCsv(lines, name) { download(new Blob([String.fromCharCode(0xFEFF) + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), name); }
@@ -3419,7 +3434,7 @@ $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone
    x = {sd, d, addr, zip} -> the Trip number, null = outside the table, undefined = there is no table to read. zoneVer() names the table text (and this matching): a number worked out under another version is not trusted. */
 let zmc = null;
 const zhash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m1|' + txt) : '' }; } return zmc; }
+function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m2|' + txt) : '' }; } return zmc; }
 function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }, z.M).trip; }
 async function applyRoutes(silent) {
   if (!Z.zt) return;
@@ -4973,6 +4988,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['อยู่นอกโซน', 'Outside the zones', 'ဇုန်ပြင်ပ'],
   ['แขวงที่อยู่นอกโซน', 'Sub-districts outside the zones', 'ဇုန်ပြင်ပရှိ ရပ်ကွက်များ'],
   ['ตัดสินด้วยถนน/ซอย', 'Decided by road / soi', 'လမ်း / ဆွိုင်ဖြင့် ဆုံးဖြတ်'],
+  ['เข้าโซนด้วยซอยในที่อยู่ {0} ใบ', 'In a zone by the soi in the address: {0}', 'လိပ်စာထဲရှိ ဆွိုင်ဖြင့် ဇုန်ဝင်: {0}'],
   ['เข้าโซนด้วยชื่อถนน/ชุมชนในที่อยู่ {0} ใบ', 'In a zone by the road / community name in the address: {0}', 'လိပ်စာထဲရှိ လမ်း / အသိုင်းအဝိုင်းအမည်ဖြင့် ဇုန်ဝင်: {0}'],
   ['ด้วยแขวง {0} ใบ', 'by sub-district: {0}', 'ရပ်ကွက်ဖြင့်: {0}'],
   ['ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) {0} ใบ', 'by main road / district (weak evidence): {0}', 'လမ်းမကြီး / ခရိုင်ဖြင့် (သက်သေအားနည်း): {0}'],
