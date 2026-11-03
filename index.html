@@ -1523,7 +1523,16 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <div id="dbStatus" class="preview" hidden></div>
     </section>
     <section class="dsec">
-      <p class="dtitle"><span class="dnum">ข</span>ลิงก์ไฟล์ Excel / CSV <span class="rcount">ทำงานเองทันที</span></p>
+      <p class="dtitle"><span class="dnum">ข</span>ลิงก์ Google Sheet ที่ 2 <span class="rcount">ทำงานเองทันที</span></p>
+      <input id="db2Link" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ Google Sheet ชีตที่ 2 (แชร์แบบ &quot;ทุกคนที่มีลิงก์ดูได้&quot;) — วางแล้วเชื่อมต่อให้เอง">
+      <p class="hint">ชีตที่ 2 — ใช้เมื่อเลขออเดอร์ที่สแกนไม่อยู่ในชีตช่อง ก (ชีตช่อง ก มาก่อนเสมอ แล้วจึงค้นชีตนี้ แล้วค้นไฟล์ Excel). อ่านอย่างเดียวเหมือนช่อง ก และใช้หัวคอลัมน์ชุดเดียวกัน: Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address — ค้นหาจากแท็บที่ลิงก์ชี้อยู่</p>
+      <div class="row dact">
+        <button id="db2Off" type="button" class="danger" hidden>ตัดการเชื่อมต่อ</button>
+      </div>
+      <div id="db2Status" class="preview" hidden></div>
+    </section>
+    <section class="dsec">
+      <p class="dtitle"><span class="dnum">ค</span>ลิงก์ไฟล์ Excel / CSV <span class="rcount">ทำงานเองทันที</span></p>
       <input id="xlLink" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ตรงไปที่ไฟล์ .xlsx หรือ .csv — วางแล้วเชื่อมต่อให้เอง">
       <p class="hint">แหล่งข้อมูลออเดอร์ที่ 2 — ใช้เมื่อเลขออเดอร์ที่สแกนไม่อยู่ในชีต (ชีตมาก่อนเสมอ). โปรแกรมโหลดไฟล์มาอ่านอย่างเดียว ไม่แก้ไฟล์ แล้วเก็บไว้ในหน่วยความจำของเบราว์เซอร์นี้ (อ่านใหม่ทุก 5 นาที และเมื่อเจอเลขออเดอร์ที่ยังไม่มี) ไม่ส่งเลขออเดอร์ไปที่ไหน. ต้องเป็นลิงก์ที่เปิดตัวไฟล์ได้ตรง ๆ (ลิงก์แชร์ของ OneDrive / SharePoint / Google Drive ธรรมดาอ่านไม่ได้) และไฟล์ต้องมีหัวคอลัมน์เหมือนชีต: Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address</p>
       <div class="row dact">
@@ -1532,7 +1541,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <div id="xlStatus" class="preview" hidden></div>
     </section>
     <section class="dsec">
-      <p class="dtitle"><span class="dnum">ค</span>ลองค้นหาออเดอร์</p>
+      <p class="dtitle"><span class="dnum">ง</span>ลองค้นหาออเดอร์</p>
       <div class="row">
         <input id="dbTest" type="text" spellcheck="false" autocomplete="off" placeholder="เลขออเดอร์ 11 ตัว" style="flex:1;min-width:160px">
         <button id="dbTestGo" type="button">ค้นหา</button>
@@ -3098,8 +3107,10 @@ async function gviz(cfg, tq) {
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
   try { const r = await hooks.fetch(u, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' }); if (!r.ok) throw new Error('HTTP ' + r.status); const text = await r.text(); if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared'); return text; } finally { clearTimeout(timer); }
 }
-async function ordersFromSheet(dateTexts) {
-  let cfg = null; try { cfg = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); } catch (_) {}
+const SHEET_KEYS = ['o2o-sheet-v1', 'o2o-sheet2-v1'];      // the two sheet slots (boxes ก and ข of Update Data → ฐานข้อมูลออเดอร์)
+const sheetCfgsNow = () => { if (IN_VIEWER) return []; const out = []; for (const k of SHEET_KEYS) { try { const c = JSON.parse(localStorage.getItem(k) || 'null'); if (c && c.id) out.push(c); } catch (_) {} } return out; };
+async function ordersFromSheet(dateTexts, cfg) {
+  if (!cfg) cfg = sheetCfgsNow()[0] || null;
   if (!cfg || !cfg.id) throw new Error('ยังไม่ได้เชื่อมต่อชีตในโปรแกรมสแกน — เปิด Update Data → ฐานข้อมูลออเดอร์ ก่อน (หน้านี้ใช้ชีตที่เชื่อมต่อไว้ที่นั่น) หรือใช้ไฟล์แทน');
   const head = parseDelimited(await gviz(cfg, 'select * limit 1'))[0] || [], hn = head.map(normH);
   const cols = {}; for (const k of Object.keys(KEYS)) { const i = hn.findIndex(h => KEYS[k].includes(h)); cols[k] = i >= 0 ? colName(i) : null; }
@@ -3711,7 +3722,7 @@ zDropBox.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTrans
    - at once when the sheet link is set or changed, when a route file is dropped, when the zone table is edited (1.5 s after the last key), and when another computer changes the link or the zone table.
    A read that fails (offline, link not shared) is tried again after 2 minutes. The link and the zone table are shared with the other computers like the rest (see CLOUD_SETS: sheet, zones). */
 const AUTO_MS = 10 * 60 * 1000, LS_ZAT = 'o2o-zone-auto-at-v1';
-const sheetReady = () => { if (IN_VIEWER) return false; try { const c = JSON.parse(localStorage.getItem('o2o-sheet-v1') || 'null'); return !!(c && c.id); } catch (_) { return false; } };
+const sheetReady = () => sheetCfgsNow().length > 0;
 const srcReady = () => sheetReady() || !!xlCfgNow();      // (a source to read the orders from: the sheet, the Excel / CSV link, or both)
 const lastDays = (n, ahead) => { const out = [], now = new Date(); for (let k = -ahead; k < n; k++) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - k); out.push(`${String(d.getDate()).padStart(2, '0')}-${MON[d.getMonth()]}-${d.getFullYear()}`); } return out; };
 let zSyncing = false, zLastSync = 0, zFailAt = 0;
@@ -3720,8 +3731,12 @@ async function syncSheet(manual) {
   if (!srcReady()) { if (manual) say(IN_VIEWER ? 'หน้านี้เปิดใน Artifact — อ่านชีตไม่ได้ ใช้ไฟล์แทน' : 'ยังไม่ได้เชื่อมต่อชีต — เปิดแท็บ "ฐานข้อมูลออเดอร์" แล้วเชื่อมต่อก่อน', 'err'); return; }
   zSyncing = true; say('กำลังซิงค์จากชีต (อ่านอย่างเดียว) …');
   try {
-    let orders = [], sheetErr = null;
-    if (sheetReady()) { try { orders = await ordersFromSheet(lastDays(30, 3)); } catch (e) { sheetErr = e; } }
+    let orders = [], sheetErr = null, nSheets = 0;
+    const have0 = new Set();
+    for (const cfg of sheetCfgsNow()) {      // each connected sheet (ก, then ข): the orders of the 30 days; an order that two sheets both have is the first sheet's
+      try { const got = await ordersFromSheet(lastDays(30, 3), cfg); nSheets++; for (const o of got) if (!have0.has(o.no)) { have0.add(o.no); orders.push(o); } } catch (e) { sheetErr = sheetErr || e; }
+    }
+    if (nSheets) sheetErr = null;      // (one sheet could not be read but another could: what was read is used, the next sync tries again)
     let xlN = 0;
     if (xlCfgNow()) {      // the Excel / CSV link: its orders of the same 30 days join the bulk read (an order that is in the sheet too is the sheet's)
       await xlRefresh(false);
@@ -3731,7 +3746,8 @@ async function syncSheet(manual) {
     if (sheetErr && !xlN) throw sheetErr;      // (the sheet could not be read and the file gave nothing: the usual failure, tried again after 2 minutes)
     zLastSync = Date.now(); zFailAt = 0; try { localStorage.setItem(LS_ZAT, String(zLastSync)); } catch (_) {}
     const hm = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    setOrders(orders, `${sheetReady() && !sheetErr ? (xlCfgNow() ? 'ชีตที่เชื่อมต่อไว้ + ไฟล์ Excel' : 'ชีตที่เชื่อมต่อไว้') : 'ไฟล์ Excel ที่เชื่อมต่อไว้'} · ซิงค์ ${hm} · 30 วันล่าสุด`); S.fromSheet = true;      // (each piece between " · " has its own translation row)
+    const srcName = nSheets ? (nSheets > 1 ? 'ชีตที่เชื่อมต่อไว้ 2 ชีต' : 'ชีตที่เชื่อมต่อไว้') + (xlCfgNow() ? ' + ไฟล์ Excel' : '') : 'ไฟล์ Excel ที่เชื่อมต่อไว้';
+    setOrders(orders, `${srcName} · ซิงค์ ${hm} · 30 วันล่าสุด`); S.fromSheet = true;      // (each piece between " · " has its own translation row)
     if (orders.length) { $('zAll').checked = true; runZones(); await applyRoutes(true); }
     return true;
   } catch (e) { zFailAt = Date.now(); const m2 = String(e.message || e); say(m2 === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : /Failed to fetch|abort/i.test(m2) ? 'ต่อชีตไม่ได้ — ตรวจอินเทอร์เน็ต' : m2, 'err'); }
@@ -3828,12 +3844,16 @@ window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncShee
 /* ---------- ฐานข้อมูลออเดอร์ (Update Data, tab 3): a Google Sheet used as a READ-ONLY database ----------
    The sheet must be shared "anyone with the link can view". Only GET requests go to Google's gviz query address, each one asking for the rows of a few order numbers and a few
    columns (order, customer name, Original Expected Date / Time, Sub District); nothing is ever written to the sheet. What comes back is kept in this browser (orderInfo). */
-const LS_SHEET = 'o2o-sheet-v1';
-let sheetCfg = null;                           // {id, gid, link, cols:{order,name,date,time,sd}} (column letters), saved in this browser only
-try { const r = JSON.parse(localStorage.getItem(LS_SHEET) || 'null'); if (r && r.id && r.cols && r.cols.order) sheetCfg = r; } catch (_) {}
+const LS_SHEETS = ['o2o-sheet-v1', 'o2o-sheet2-v1'], CLOUD_SHEETS = ['sheet', 'sheet2'];      // two Google Sheets can be connected: slot 0 = box ก (as before), slot 1 = box ข; the order is asked of slot 0 first, then slot 1, then of the Excel / CSV file
+let sheetCfgs = [null, null];                  // per slot: {id, gid, link, cols:{order,name,date,time,sd}} (column letters), saved in this browser only
+LS_SHEETS.forEach((k, i) => { try { const r = JSON.parse(localStorage.getItem(k) || 'null'); if (r && r.id && r.cols && r.cols.order) sheetCfgs[i] = r; } catch (_) {} });
 const rangeOne = s => { const p = String(s).split(/\s+-\s+/); return p.length === 2 && p[0] === p[1] ? p[0] : String(s); };      // "29-Oct-2026 - 29-Oct-2026" -> "29-Oct-2026"
 const sheetMiss = new Map();                   // order -> time it was not found (asked again after a minute)
-const sheetUsable = () => !!sheetCfg && !IN_VIEWER;
+const sheetSlots = () => IN_VIEWER ? [] : [0, 1].filter(i => sheetCfgs[i]);      // the slots that have a sheet connected
+const sheetUsable = () => sheetSlots().length > 0;
+const dbUsable = () => sheetUsable() || xlUsable();      // some source (a sheet or the Excel / CSV link) can answer
+const sheetHasAddr = () => sheetSlots().some(i => sheetCfgs[i].cols && sheetCfgs[i].cols.addr);
+const DB_IDS = [{ link: 'dbLink', off: 'dbOff', status: 'dbStatus' }, { link: 'db2Link', off: 'db2Off', status: 'db2Status' }];      // the boxes of the two sheet slots (ก, ข)
 const LS_XL = 'o2o-xl-v1';
 let xlCfg = null;                              // {url, link}: the Excel / CSV link of the second source (box ข), saved in this browser only; the file itself is read and kept by O2OZone (xlRec / xlHas)
 try { const r = JSON.parse(localStorage.getItem(LS_XL) || 'null'); if (r && r.url) xlCfg = r; } catch (_) {}
@@ -3864,25 +3884,25 @@ async function connectSheet(link) {
   return { cfg, missing, nCols: head.length };
 }
 const ZT_KEYS = ['d', 'zip', 'addr'];            // read from the sheet only to work out the Trip of the order; never kept (see ztPut)
-let colsUp = null;
-function upgradeCols() {                          // a connection saved before the Trip was decided by address has no district / post code / address columns yet: look them up once
-  if (!sheetCfg || sheetCfg.cols.addr !== undefined) return Promise.resolve();
-  if (colsUp) return colsUp;
-  const cfg = sheetCfg;
-  return colsUp = (async () => {
+const colsUp = [null, null];
+function upgradeCols(slot) {                      // a connection saved before the Trip was decided by address has no district / post code / address columns yet: look them up once
+  const cfg = sheetCfgs[slot];
+  if (!cfg || cfg.cols.addr !== undefined) return Promise.resolve();
+  if (colsUp[slot]) return colsUp[slot];
+  return colsUp[slot] = (async () => {
     try {
       const head = (csvRows(await gviz(cfg, 'select * limit 1'))[0] || []).map(normH), f = h => { const i = head.indexOf(h); return i >= 0 ? colName(i) : null; };
       if (head.length < 3 || head.indexOf('ordernumber') < 0) return;      // (an empty or odd answer says nothing about the columns: asked again at the next lookup)
       cfg.cols.d = f('district'); cfg.cols.zip = f('postcode'); cfg.cols.addr = f('shippingaddress');
-      if (sheetCfg === cfg) { try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} }
-    } catch (_) {} finally { colsUp = null; }
+      if (sheetCfgs[slot] === cfg) { try { localStorage.setItem(LS_SHEETS[slot], JSON.stringify(cfg)); } catch (_) {} }
+    } catch (_) {} finally { colsUp[slot] = null; }
   })();
 }
-async function sheetLookup(orders) {            // Map order -> {name, date, time, sd, d, zip, addr}
-  await upgradeCols();
-  const c = sheetCfg.cols, keys = ['order', 'name', 'date', 'time', 'sd', 'd', 'zip', 'addr'].filter(k => c[k]);      // (the address last: a cell with a line break inside can only cut what comes after it)
+async function sheetLookup(orders, slot = 0) {  // Map order -> {name, date, time, sd, d, zip, addr}, asked of the sheet in that slot
+  await upgradeCols(slot);
+  const cfg = sheetCfgs[slot], c = cfg.cols, keys = ['order', 'name', 'date', 'time', 'sd', 'd', 'zip', 'addr'].filter(k => c[k]);      // (the address last: a cell with a line break inside can only cut what comes after it)
   const cond = orders.map(o => /^\d+$/.test(o) ? `${c.order} = '${o}' or ${c.order} = ${o}` : `${c.order} = '${o}'`).join(' or ');
-  const rows = csvRows(await gviz(sheetCfg, `select ${keys.map(k => c[k]).join(', ')} where ${cond}`));
+  const rows = csvRows(await gviz(cfg, `select ${keys.map(k => c[k]).join(', ')} where ${cond}`));
   const got = new Map();
   for (const r of rows) {
     const o = cellText(r[0]); if (!ORD_RE.test(o) || got.has(o)) continue;     // (a header row is skipped here)
@@ -3895,13 +3915,13 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
   if (!sheetUsable() && !xlUsable()) return false;
   const now = Date.now(), need = [...new Set(orders)].filter(o => ORD_RE.test(o) && infoNeeded(o) && !(sheetMiss.get(o) > now - 60000));
   let changed = false, dirty = false;
-  const take = (o, v) => {
-    if (sheetIdx) sheetIdx.add(o);                // (it is in the sheet after all: the index of the sheet learns it)
+  const take = (o, v, slot) => {
+    if (slot != null && sheetIdxs[slot]) sheetIdxs[slot].add(o);      // (it is in that sheet after all: the index of the sheet learns it)
     const cur = orderInfo[o] || {}, nxt = Object.assign({}, cur, Object.fromEntries(Object.entries(v).filter(([k, x]) => x && !ZT_KEYS.includes(k))));
     if (JSON.stringify(nxt) !== JSON.stringify(cur)) { orderInfo[o] = nxt; changed = dirty = true; }
     const t = window.O2OZone && window.O2OZone.tripOfOrder ? window.O2OZone.tripOfOrder(v) : undefined;      // the Trip by the zone table and the address of this order; the address itself goes no further than this line
     if (t !== undefined && ztPut(o, t)) changed = true;
-    if (window.O2OZone && window.O2OZone.roadOf && (sheetCfg ? sheetCfg.cols.addr : true) && orderInfo[o]) {      // and the road / soi of the address (a short label like "ถ.เสรีไทย ซ.89", printed on the slip instead of the Sub District; '' = none found, also when the address cell is empty, so it is not asked again and again)
+    if (window.O2OZone && window.O2OZone.roadOf && (sheetUsable() ? sheetHasAddr() : true) && orderInfo[o]) {      // and the road / soi of the address (a short label like "ถ.เสรีไทย ซ.89", printed on the slip instead of the Sub District; '' = none found, also when the address cell is empty, so it is not asked again and again)
       const rd = window.O2OZone.roadOf(v) || '';
       if (orderInfo[o].rd !== rd) { orderInfo[o].rd = rd; changed = dirty = true; }
     }
@@ -3917,27 +3937,31 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
     takeRec(o, r);
   }
   if (rest.length && xlUsable() && window.O2OZone && window.O2OZone.xlReady) await window.O2OZone.xlReady(4000);      // (the first read of the file after the page was opened: wait for it a moment)
-  const toAsk = [], gone = [];
-  for (const o of rest) { if (xlHas(o) && (!sheetUsable() || (sheetIdx && !sheetIdx.has(o))) && fromXl(o)) continue; toAsk.push(o); }      // (the file has it and the sheet's index does not: answered from memory at once, no question to the sheet)
-  if (sheetUsable()) {
-    let failed = false;
-    for (let i = 0; i < toAsk.length; i += 25) {
-      const chunk = toAsk.slice(i, i + 25);
+  const slots = sheetSlots(), unsure = new Set();      // (unsure: orders that a sheet could not answer about — offline / not shared / blocked: they are never counted as "not found")
+  let pending = [];
+  for (const o of rest) { if (xlHas(o) && (!slots.length || (idxFresh() && !idxHas(o))) && fromXl(o)) continue; pending.push(o); }      // (the file has it and no sheet's index does: answered from memory at once, no question to a sheet)
+  for (const slot of slots) {                    // the sheets in order: the first one that knows an order answers it, the others are asked only for what is left
+    if (!pending.length) break;
+    const left = []; let failed = false;
+    for (let i = 0; i < pending.length; i += 25) {
+      const chunk = pending.slice(i, i + 25);
       if (!failed) {
         try {
-          const got = await sheetLookup(chunk);
-          for (const o of chunk) { const v = got.get(o); if (v) take(o, v); else if (!fromXl(o)) gone.push(o); }
+          const got = await sheetLookup(chunk, slot);
+          for (const o of chunk) { const v = got.get(o); if (v) take(o, v, slot); else left.push(o); }
           continue;
-        } catch (_) { failed = true; }           // offline / not shared / blocked: the sheet is just skipped (the file may still know the orders), scanning goes on
+        } catch (_) { failed = true; }           // this sheet could not answer: it is just skipped (the next sheet or the file may still know the orders), scanning goes on
       }
-      chunk.forEach(fromXl);
+      chunk.forEach(o => { left.push(o); unsure.add(o); });
     }
-  } else for (const o of toAsk) if (!fromXl(o)) gone.push(o);
-  if (gone.length && xlUsable() && window.O2OZone && window.O2OZone.xlRefresh) {      // in neither source: the file may have got it since its last read (asked again at most once a minute)
+    pending = left;
+  }
+  const gone = pending.filter(o => !fromXl(o));  // (the file is the last source)
+  if (gone.length && xlUsable() && window.O2OZone && window.O2OZone.xlRefresh) {      // in no source: the file may have got it since its last read (asked again at most once a minute)
     await window.O2OZone.xlRefresh(true);
     const judged = !!(window.O2OZone.xlFresh && window.O2OZone.xlFresh());      // (a file that could not be read says nothing: no miss is raised against a source that did not answer)
-    for (const o of gone) if (!fromXl(o) && judged) sheetMiss.set(o, Date.now());
-  } else gone.forEach(o => sheetMiss.set(o, Date.now()));
+    for (const o of gone) if (!fromXl(o) && judged && !unsure.has(o)) sheetMiss.set(o, Date.now());
+  } else gone.forEach(o => { if (!unsure.has(o)) sheetMiss.set(o, Date.now()); });
   if (dirty) saveInfo();
   return changed;
 }
@@ -3945,7 +3969,7 @@ async function ensureInfo(orders) {             // fills orderInfo from the shee
    "ไม่มีเลขออเดอร์ อยู่ในระบบ — รบกวนติดต่อที่ Admin Counter". Only when the sheet really answered (a lookup that failed — offline, not shared — is not a miss), so a bad connection never cries wolf;
    with no sheet connected (or on the claude.ai copy, which cannot reach it) nothing can be checked and nothing is raised. Several orders scanned while the pop-up is open are added to its list. */
 const hasInfo = o => !!(orderInfo[o] && (orderInfo[o].name || orderInfo[o].time));
-const infoNeeded = o => !hasInfo(o) || (!!ztVer() && ztGet(o) === undefined) || (!!(sheetCfg ? sheetCfg.cols && sheetCfg.cols.addr : xlCfg) && orderInfo[o].rd === undefined);      // the sheet is asked for an order that has no data yet, or whose Trip (by its address) is not worked out under the current zone table, or whose road (for the slip) is not read yet
+const infoNeeded = o => !hasInfo(o) || (!!ztVer() && ztGet(o) === undefined) || (!!(sheetUsable() ? sheetHasAddr() : xlCfg) && orderInfo[o].rd === undefined);      // the sheet is asked for an order that has no data yet, or whose Trip (by its address) is not worked out under the current zone table, or whose road (for the slip) is not read yet
 const ndDlg = $('nodataDlg'), ndOrders = [];
 let ndT = null;
 function noDataAlert(list) {
@@ -3967,27 +3991,30 @@ function noDataRetract(list) {                   // the sheet did know them afte
 /* a per-order question to the sheet takes ~1.3 s (measured), too slow for an alarm. So the order numbers of the sheet (one column, ~150 KB, ~1.2 s) are kept in memory and renewed every minute:
    a scan is judged against them at once — an order that is not in the index raises the alert on the spot, and the per-order question (which also fetches the customer data) follows in the background:
    if the sheet knows the order after all (it was added after the last renewal) the alert takes itself back. */
-let sheetIdx = null, sheetIdxAt = 0, sheetIdxBusy = false;
-async function refreshSheetIdx() {
-  if (!sheetUsable() || sheetIdxBusy) return;
-  sheetIdxBusy = true;
+const sheetIdxs = [null, null], sheetIdxAts = [0, 0], sheetIdxBusy = [false, false];      // one index per sheet slot
+async function refreshSheetIdx(slot) {
+  if (slot === undefined) { sheetSlots().forEach(i => refreshSheetIdx(i)); return; }
+  const cfg = sheetCfgs[slot]; if (IN_VIEWER || !cfg || sheetIdxBusy[slot]) return;
+  sheetIdxBusy[slot] = true;
   try {
-    const rows = csvRows(await gviz(sheetCfg, `select ${sheetCfg.cols.order}`)), set = new Set();
+    const rows = csvRows(await gviz(cfg, `select ${cfg.cols.order}`)), set = new Set();
     for (const r of rows) { const o = cellText(r[0]); if (o) set.add(o); }
-    if (set.size > 100) { sheetIdx = set; sheetIdxAt = Date.now(); }      // (an empty or broken answer never becomes the truth)
-  } catch (_) {} finally { sheetIdxBusy = false; }
+    if (set.size > (slot === 0 ? 100 : 0) && sheetCfgs[slot] === cfg) { sheetIdxs[slot] = set; sheetIdxAts[slot] = Date.now(); }      // (an empty or broken answer never becomes the truth)
+  } catch (_) {} finally { sheetIdxBusy[slot] = false; }
 }
+const idxFresh = () => sheetSlots().every(i => sheetIdxs[i] && Date.now() - sheetIdxAts[i] < 600000);      // every connected sheet has an index that is fresh enough to judge by
+const idxHas = o => sheetSlots().some(i => sheetIdxs[i] && sheetIdxs[i].has(o));
 if (sheetUsable()) refreshSheetIdx();
 setInterval(() => { if (sheetUsable() && !document.hidden) refreshSheetIdx(); }, 60000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && sheetUsable() && Date.now() - sheetIdxAt > 30000) refreshSheetIdx(); });
-function scanCheck(orders, alertFor) {           // asks the sheet for the orders (see ensureInfo) and raises the alert for those of `alertFor` (default: all) that it does not know; resolves true when new data arrived
-  if (!sheetUsable() && !xlUsable()) return Promise.resolve(false);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sheetSlots().forEach(i => { if (Date.now() - sheetIdxAts[i] > 30000) refreshSheetIdx(i); }); });
+function scanCheck(orders, alertFor) {           // asks the sheets / the file for the orders (see ensureInfo) and raises the alert for those of `alertFor` (default: all) that none of them knows; resolves true when new data arrived
+  if (!dbUsable()) return Promise.resolve(false);
   const target = [...new Set(alertFor || orders)].filter(o => ORD_RE.test(o));
-  const sheetOk = !sheetUsable() || (sheetIdx && Date.now() - sheetIdxAt < 600000), xlOk = !xlUsable() || !!(window.O2OZone && window.O2OZone.xlFresh && window.O2OZone.xlFresh());      // (every source has an index that is fresh enough to judge by)
-  const early = sheetOk && xlOk ? target.filter(o => !hasInfo(o) && !(sheetUsable() && sheetIdx.has(o)) && !xlHas(o)) : [];
-  if (early.length) noDataAlert(early);          // not in the index of the sheet: the alert does not wait for the per-order question
+  const sheetOk = !sheetUsable() || idxFresh(), xlOk = !xlUsable() || !!(window.O2OZone && window.O2OZone.xlFresh && window.O2OZone.xlFresh());      // (every source has an index that is fresh enough to judge by)
+  const early = sheetOk && xlOk ? target.filter(o => !hasInfo(o) && !idxHas(o) && !xlHas(o)) : [];
+  if (early.length) noDataAlert(early);          // not in the index of any sheet: the alert does not wait for the per-order question
   return ensureInfo(orders).then(ch => {
-    const found = early.filter(o => hasInfo(o) || (sheetIdx && sheetIdx.has(o)) || xlHas(o));
+    const found = early.filter(o => hasInfo(o) || idxHas(o) || xlHas(o));
     if (found.length) noDataRetract(found);
     const miss = target.filter(o => !early.includes(o) && !hasInfo(o) && (sheetMiss.get(o) || 0) > Date.now() - 60000);
     if (miss.length) noDataAlert(miss);
@@ -3995,47 +4022,51 @@ function scanCheck(orders, alertFor) {           // asks the sheet for the order
   });
 }
 function renderDb() {
-  const on = sheetUsable() || xlUsable();
+  const on = dbUsable();
   $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on); $('tabDbCnt').classList.toggle('live', on);   // green when connected, no colour when not
-  $('dbOff').hidden = !sheetCfg; $('dbLink').value = $('dbLink').value || (sheetCfg ? sheetCfg.link : '');
+  for (const i of [0, 1]) { const ids = DB_IDS[i]; $(ids.off).hidden = !sheetCfgs[i]; $(ids.link).value = $(ids.link).value || (sheetCfgs[i] ? sheetCfgs[i].link : ''); $(ids.link).disabled = IN_VIEWER; }
   $('xlOff').hidden = !xlCfg; $('xlLink').value = $('xlLink').value || (xlCfg ? xlCfg.link : '');
-  $('dbLink').disabled = IN_VIEWER; $('xlLink').disabled = IN_VIEWER; $('dbTestGo').disabled = !on;
-  if (IN_VIEWER) { for (const id of ['dbStatus', 'xlStatus']) { $(id).hidden = false; $(id).innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; } }
+  $('xlLink').disabled = IN_VIEWER; $('dbTestGo').disabled = !on;
+  if (IN_VIEWER) { for (const id of [DB_IDS[0].status, DB_IDS[1].status, 'xlStatus']) { $(id).hidden = false; $(id).innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; } }
 }
 const DB_NAMES = { order: 'Order Number', name: 'Customer Name', date: 'Original Expected Date', time: 'Original Expected Time', sd: 'Sub District', d: 'District', zip: 'Post Code', addr: 'Shipping Address' };
 /* The link connects BY ITSELF: pasting it (or typing it, after a short pause, or pressing Enter / leaving the box) tests it and saves it — there is no button. The same link is not tried twice.
    Once connected, the order data is read in the background (Trip tab: autoRun) and the other computers receive the link with the usual sync. */
-let dbBusy = false;
-async function dbConnectNow() {
-  const box = $('dbStatus'), link = $('dbLink').value.trim();
-  if (IN_VIEWER || dbBusy || !link || (sheetCfg && sheetCfg.link === link)) return;
-  dbBusy = true; box.hidden = false; box.innerHTML = T('กำลังเชื่อมต่อ …');
+const dbBusy = [false, false];
+async function dbConnectNow(slot = 0) {
+  const ids = DB_IDS[slot], box = $(ids.status), link = $(ids.link).value.trim(), cur = sheetCfgs[slot];
+  if (IN_VIEWER || dbBusy[slot] || !link || (cur && cur.link === link)) return;
+  dbBusy[slot] = true; box.hidden = false; box.innerHTML = T('กำลังเชื่อมต่อ …');
   try {
-    const { cfg, missing, nCols } = await connectSheet(link);
-    sheetCfg = cfg; try { localStorage.setItem(LS_SHEET, JSON.stringify(cfg)); } catch (_) {} cloudTouch('sheet'); sheetIdx = null; refreshSheetIdx();
+    const { cfg, missing, nCols } = await connectSheet(link), other = sheetCfgs[1 - slot];
+    if (other && other.id === cfg.id && other.gid === cfg.gid) throw new Error('dup-sheet');      // (the same sheet and tab in both boxes would only ask the same thing twice)
+    sheetCfgs[slot] = cfg; try { localStorage.setItem(LS_SHEETS[slot], JSON.stringify(cfg)); } catch (_) {} cloudTouch(CLOUD_SHEETS[slot]); sheetIdxs[slot] = null; refreshSheetIdx(slot);
     try { window.O2OZone.autoRun(true); } catch (_) {}
     const cols = Object.entries(DB_NAMES).map(([k, n]) => cfg.cols[k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', cfg.cols[k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
     box.innerHTML = `<div class="add">${T('เชื่อมต่อได้ — ชีตมี {0} คอลัมน์', nCols)}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>` + (missing.length ? `<div class="chg">${T('ข้อมูลที่ไม่มีคอลัมน์จะว่างบนใบปะหน้า')}</div>` : '');
   } catch (e) {
     const m = String(e && e.message);
     const why = m === 'bad-link' ? 'ลิงก์นี้ไม่ใช่ลิงก์ Google Sheet (ต้องมี /spreadsheets/d/…)' : m === 'no-order-col' ? 'ไม่พบคอลัมน์ Order Number ในแท็บที่ลิงก์ชี้อยู่ (ตรวจ gid หรือหัวคอลัมน์แถวแรก)'
+      : m === 'dup-sheet' ? 'ชีตและแท็บนี้เชื่อมต่อไว้ในอีกช่องแล้ว — ใส่ชีตหรือแท็บอื่น'
       : m === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : 'เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต';
     box.innerHTML = `<span class="err">${T(why)}</span>`;
   }
-  dbBusy = false; renderDb(); render();
+  dbBusy[slot] = false; renderDb(); render();
 }
 const dbLinkOk = s => /\/spreadsheets\/d\/[A-Za-z0-9_-]{20,}/.test(s);
-let dbLinkT = null;
-$('dbLink').addEventListener('paste', () => { clearTimeout(dbLinkT); dbLinkT = setTimeout(dbConnectNow, 80); });
-$('dbLink').addEventListener('input', () => { clearTimeout(dbLinkT); if (dbLinkOk($('dbLink').value)) dbLinkT = setTimeout(dbConnectNow, 900); });
-$('dbLink').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(dbLinkT); dbConnectNow(); } });
-$('dbLink').addEventListener('change', () => { clearTimeout(dbLinkT); dbConnectNow(); });
-$('dbOff').addEventListener('click', () => { sheetCfg = null; sheetIdx = null; $('dbLink').value = ''; try { localStorage.removeItem(LS_SHEET); } catch (_) {} cloudTouch('sheet'); $('dbStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+DB_IDS.forEach((ids, slot) => {
+  let t = null; const link = $(ids.link);
+  link.addEventListener('paste', () => { clearTimeout(t); t = setTimeout(() => dbConnectNow(slot), 80); });
+  link.addEventListener('input', () => { clearTimeout(t); if (dbLinkOk(link.value)) t = setTimeout(() => dbConnectNow(slot), 900); });
+  link.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(t); dbConnectNow(slot); } });
+  link.addEventListener('change', () => { clearTimeout(t); dbConnectNow(slot); });
+  $(ids.off).addEventListener('click', () => { sheetCfgs[slot] = null; sheetIdxs[slot] = null; link.value = ''; try { localStorage.removeItem(LS_SHEETS[slot]); } catch (_) {} cloudTouch(CLOUD_SHEETS[slot]); $(ids.status).hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
+});
 /* box ข — the second source: the link of an Excel (.xlsx) / .csv file. It connects by itself like box ก (paste, type and pause, Enter, leave the box); O2OZone reads and keeps the file, see xlConnect. */
 let xlBusy = false;
 const xlWhy = (e, link) => {
   const m = String(e && e.message || e), host = (/^https?:\/\/([^/]+)/i.exec(link) || [])[1] || '';
-  if (m === 'xl-gsheet') return 'นี่คือลิงก์ Google Sheet — ใส่ในช่อง ก ด้านบน';
+  if (m === 'xl-gsheet') return 'นี่คือลิงก์ Google Sheet — ใส่ในช่อง ก หรือ ข ด้านบน';
   if (m === 'bad-link') return 'ลิงก์ไม่ถูกต้อง — ต้องขึ้นต้นด้วย https://';
   if (/^HTTP (\d+)/.test(m)) return T('เปิดลิงก์ไม่ได้ ({0}) — ตรวจว่าลิงก์ยังใช้ได้และเปิดให้ทุกคนดาวน์โหลด', m.slice(5));
   if (e && (e.name === 'TypeError' || e.name === 'AbortError' || /Failed to fetch|NetworkError|abort/i.test(m)))
@@ -4075,7 +4106,10 @@ $('dbTestGo').addEventListener('click', async () => {
   if (!ORD_RE.test(o)) { out.innerHTML = `<span class="err">${T('ใส่เลขออเดอร์ 11 ตัว')}</span>`; return; }
   out.textContent = T('กำลังค้นหา …');
   let v = null, from = '', failed = false;
-  if (sheetUsable()) { try { v = (await sheetLookup([o])).get(o) || null; } catch (_) { failed = true; } }
+  for (const slot of sheetSlots()) {             // the sheets in order (ก, then ข)
+    try { v = (await sheetLookup([o], slot)).get(o) || null; } catch (_) { failed = true; }
+    if (v) { from = slot ? 'พบในชีตช่อง ข' : ''; failed = false; break; }
+  }
   if (!v && xlUsable() && window.O2OZone) {
     await window.O2OZone.xlReady(4000);
     let r = window.O2OZone.xlRec(o); if (!r) { await window.O2OZone.xlRefresh(true); r = window.O2OZone.xlRec(o); }
@@ -4278,7 +4312,7 @@ function fitRpView() {
    does not know (the red alert) is not shown at all. */
 let rpSel = null, rpShown = [];                        // the page the green print button prints · the page on show
 const rpAsk = new Set();                               // orders whose Trip is being worked out again (see renderRpView)
-const rpNoData = o => sheetUsable() && !hasInfo(o) && (sheetIdx && Date.now() - sheetIdxAt < 600000 ? !sheetIdx.has(o) : (sheetMiss.get(o) || 0) > Date.now() - 60000);
+const rpNoData = o => dbUsable() && !hasInfo(o) && (idxFresh() && (!xlUsable() || (window.O2OZone && window.O2OZone.xlFresh && window.O2OZone.xlFresh())) ? !idxHas(o) && !xlHas(o) : (sheetMiss.get(o) || 0) > Date.now() - 60000);      // (no data and in no source's index — or, with no fresh index, asked a moment ago and not found)
 function rpPages() {
   const pg = [], L = state.reprints;
   const one = L.filter(x => !x.bulk && !x.pair).slice(-1)[0]; if (one) pg.push({ f: 1, orders: [one.order], pair: false });
@@ -4297,10 +4331,10 @@ function renderRpView() {
   clearTimeout(renderRpView.t); rpSel = null; rpShown = [];
   note.className = 'rpnote';
   if (!p) { $('rpTitle').textContent = T('ตัวอย่างใบที่จะพิมพ์'); $('rpPrint').disabled = true; note.textContent = ''; box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; return; }
-  const stale = sheetUsable() && ztVer() ? p.orders.filter(o => hasInfo(o) && ztGet(o) === undefined && !rpAsk.has(o)) : [];      // (the zone table changed since the Trip of these orders was worked out: the sheet is asked again and this page is drawn again when the answer comes)
+  const stale = dbUsable() && ztVer() ? p.orders.filter(o => hasInfo(o) && ztGet(o) === undefined && !rpAsk.has(o)) : [];      // (the zone table changed since the Trip of these orders was worked out: the sheet is asked again and this page is drawn again when the answer comes)
   if (stale.length) { stale.forEach(o => rpAsk.add(o)); ensureInfo(stale).then(ch => { stale.forEach(o => rpAsk.delete(o)); if (ch) renderRpView(); }); }
   const have = p.orders.filter(hasInfo).length, fresh = p.orders.some(o => { const e = state.reprints.find(x => x.order === o); return e && Date.now() - e.ts < 6000; });      // (the data of an order just scanned is still on its way; after 6 s the sheet is shown as it is, e.g. offline)
-  p.st = p.orders.every(rpNoData) ? 'gone' : (!sheetUsable() || have || !fresh) ? 'ready' : 'wait';
+  p.st = p.orders.every(rpNoData) ? 'gone' : (!dbUsable() || have || !fresh) ? 'ready' : 'wait';
   if (p.st === 'wait') renderRpView.t = setTimeout(renderRpView, 6100);
   rpSel = p.st === 'gone' ? null : p; rpShown = rpSel ? [p] : [];
   $('rpTitle').textContent = T('ตัวอย่างใบที่จะพิมพ์ — {0}', p.orders.join(' + ') + (p.pair && p.orders.length < 2 ? ' + …' : ''));
@@ -5150,7 +5184,7 @@ function pvDraw() {
 }
 function pvRender() {
   pvDraw();
-  if (!sheetUsable()) return;
+  if (!dbUsable()) return;
   const need = pvRows().map(r => r.order).filter(infoNeeded);
   if (!need.length) return;                                                    // the Google Sheet is asked for the sheets that still have no data; printing waits for the answer
   $('pvPrint').disabled = true; $('pvNote').textContent = T('กำลังดึงข้อมูลจาก Google Sheet …');
@@ -5734,7 +5768,16 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เชื่อมต่อได้', 'Connected', 'ချိတ်ဆက်ပြီး'],
   ['อ่านได้ {0} ออเดอร์', '{0} orders read', 'အော်ဒါ {0} ခု ဖတ်ပြီး'],
   ['วันที่ในไฟล์ {0} ถึง {1}', 'dates in the file: {0} to {1}', 'ဖိုင်ထဲရှိ ရက်စွဲ {0} မှ {1} အထိ'],
-  ['นี่คือลิงก์ Google Sheet — ใส่ในช่อง ก ด้านบน', 'This is a Google Sheet link — put it in box ก above', 'ဤသည် Google Sheet လင့်ခ် ဖြစ်သည် — အပေါ်ရှိ ကွက် ก တွင် ထည့်ပါ'],
+  ['นี่คือลิงก์ Google Sheet — ใส่ในช่อง ก หรือ ข ด้านบน', 'This is a Google Sheet link — put it in box ก or ข above', 'ဤသည် Google Sheet လင့်ခ် ဖြစ်သည် — အပေါ်ရှိ ကွက် ก သို့မဟုတ် ข တွင် ထည့်ပါ'],
+  ['ลิงก์ Google Sheet ที่ 2', 'Google Sheet link no. 2', 'Google Sheet လင့်ခ် အမှတ် ၂'],
+  ['วางลิงก์ Google Sheet ชีตที่ 2 (แชร์แบบ "ทุกคนที่มีลิงก์ดูได้") — วางแล้วเชื่อมต่อให้เอง', 'Paste the link of the 2nd Google Sheet (shared as "anyone with the link can view") — it connects by itself once pasted', 'Google Sheet ဒုတိယစာရွက်၏ လင့်ခ်ကို ထည့်ပါ ("လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" ဟု မျှဝေထားရမည်) — ထည့်သည်နှင့် ကိုယ်တိုင် ချိတ်ဆက်သည်'],
+  ['ชีตที่ 2 — ใช้เมื่อเลขออเดอร์ที่สแกนไม่อยู่ในชีตช่อง ก (ชีตช่อง ก มาก่อนเสมอ แล้วจึงค้นชีตนี้ แล้วค้นไฟล์ Excel). อ่านอย่างเดียวเหมือนช่อง ก และใช้หัวคอลัมน์ชุดเดียวกัน: Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address — ค้นหาจากแท็บที่ลิงก์ชี้อยู่',
+    'The 2nd sheet — used when a scanned order is not in the sheet of box ก (the sheet of box ก always comes first, then this one, then the Excel file). Read only like box ก, with the same column headings: Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address — looked up in the tab the link points to',
+    'ဒုတိယစာရွက် — စကင်န်ဖတ်ထားသော အော်ဒါသည် ကွက် ก ၏ စာရွက်တွင် မရှိသည့်အခါ သုံးသည် (ကွက် ก ၏ စာရွက်ကို အမြဲ အရင်ကြည့်ပြီး ဤစာရွက်၊ ထို့နောက် Excel ဖိုင်ကို ကြည့်သည်)။ ကွက် ก ကဲ့သို့ ဖတ်ရုံသာ လုပ်ပြီး ကော်လံခေါင်းစဉ် တူသည် — Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address — လင့်ခ်ညွှန်ပြသော တက်ဘ်တွင် ရှာသည်'],
+  ['ชีตและแท็บนี้เชื่อมต่อไว้ในอีกช่องแล้ว — ใส่ชีตหรือแท็บอื่น', 'This sheet and tab are already connected in the other box — use another sheet or tab', 'ဤစာရွက်နှင့် တက်ဘ်ကို အခြားကွက်တွင် ချိတ်ဆက်ပြီးဖြစ်သည် — အခြားစာရွက် သို့မဟုတ် တက်ဘ် သုံးပါ'],
+  ['พบในชีตช่อง ข', 'found in the sheet of box ข', 'ကွက် ข ၏ စာရွက်တွင် တွေ့သည်'],
+  ['ชีตที่เชื่อมต่อไว้ 2 ชีต', 'The 2 connected sheets', 'ချိတ်ဆက်ထားသော စာရွက် ၂ ခု'],
+  ['ชีตที่เชื่อมต่อไว้ 2 ชีต + ไฟล์ Excel', 'The 2 connected sheets + Excel file', 'ချိတ်ဆက်ထားသော စာရွက် ၂ ခု + Excel ဖိုင်'],
   ['ลิงก์ไม่ถูกต้อง — ต้องขึ้นต้นด้วย https://', 'Not a valid link — it must start with https://', 'လင့်ခ် မမှန်ပါ — https:// ဖြင့် စရမည်'],
   ['เปิดลิงก์ไม่ได้ ({0}) — ตรวจว่าลิงก์ยังใช้ได้และเปิดให้ทุกคนดาวน์โหลด', 'The link cannot be opened ({0}) — check that it still works and that everyone may download it', 'လင့်ခ်ကို ဖွင့်၍မရပါ ({0}) — လင့်ခ်ကို ဆက်သုံးနိုင်ကြောင်းနှင့် လူတိုင်း ဒေါင်းလုဒ်လုပ်နိုင်ကြောင်း စစ်ပါ'],
   ['ลิงก์แชร์ของ OneDrive / SharePoint / Google Drive / Dropbox อ่านตรง ๆ ไม่ได้ — ต้องเป็นลิงก์ตรงไปที่ตัวไฟล์ บนเว็บที่ให้โปรแกรมอ่านได้', 'Share links of OneDrive / SharePoint / Google Drive / Dropbox cannot be read directly — it must be a link straight to the file, on a site that lets the program read it', 'OneDrive / SharePoint / Google Drive / Dropbox ၏ မျှဝေလင့်ခ်များကို တိုက်ရိုက်ဖတ်၍မရပါ — ပရိုဂရမ်ကို ဖတ်ခွင့်ပေးသော ဝက်ဘ်ဆိုက်ပေါ်ရှိ ဖိုင်သို့ တိုက်ရိုက်လင့်ခ် ဖြစ်ရမည်'],
@@ -6094,7 +6137,8 @@ const CLOUD_SETS = {
                 ptime = inc; cloudLs(LS_PT, ptime); if (keep) setTimeout(() => cloudTouch('parttime'), 0);
               } },
   trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
-  sheet:    { get: () => sheetCfg, empty: () => !sheetCfg, set: v => { sheetCfg = v && v.id && v.cols && v.cols.order ? v : null; sheetIdx = null; cloudLs(LS_SHEET, sheetCfg || undefined); } },
+  sheet:    { get: () => sheetCfgs[0], empty: () => !sheetCfgs[0], set: v => { sheetCfgs[0] = v && v.id && v.cols && v.cols.order ? v : null; sheetIdxs[0] = null; cloudLs(LS_SHEETS[0], sheetCfgs[0] || undefined); } },
+  sheet2:   { get: () => sheetCfgs[1], empty: () => !sheetCfgs[1], set: v => { sheetCfgs[1] = v && v.id && v.cols && v.cols.order ? v : null; sheetIdxs[1] = null; cloudLs(LS_SHEETS[1], sheetCfgs[1] || undefined); } },      // (the second Google Sheet, box ข)
   xl:       { get: () => xlCfg, empty: () => !xlCfg, set: v => { xlCfg = v && v.url ? v : null; cloudLs(LS_XL, xlCfg || undefined); if (window.O2OZone) window.O2OZone.xlClear(); } },      // (the Excel / CSV link of the second source: every computer reads the file itself)
   zones:    { get: () => ({ text: window.O2OZone ? window.O2OZone.zoneText() : '' }), empty: () => !window.O2OZone || window.O2OZone.zoneIsDefault(),      // (the Trip zone table: a computer that still has the table from the picture sends nothing and takes the shared one)
               set: v => { if (window.O2OZone) window.O2OZone.setZoneText(v && typeof v.text === 'string' ? v.text : null); } },
@@ -6187,7 +6231,7 @@ async function sharePull() {
     try { render(); renderRpView(); } catch (_) {}
   }
   const need = touched.ords ? [...touched.ords].filter(infoNeeded) : [];      // orders scanned elsewhere whose data has not come with them: ask the sheet here too (it also tells the preview which orders the sheet does not know)
-  if (need.length && sheetUsable()) ensureInfo(need).then(ch => { if (ch) { try { render(); renderRpView(); } catch (_) {} } });
+  if (need.length && dbUsable()) ensureInfo(need).then(ch => { if (ch) { try { render(); renderRpView(); } catch (_) {} } });
 }
 async function shareRun() {
   if (!shareCfg || state.share === false) return;
@@ -6271,7 +6315,7 @@ cloudQ = (() => {
     for (const n of names) { try { const r = await syncOne(n); if (r === 'pulled' || r === 'lost') { pulled = true; got.push(n); } if (r === 'lost') lost = true; } catch (_) { failed = true; } }      // (each set on its own: one that cannot be read / written never stops the others)
     busy = false; lastRun = Date.now(); st = { kind: failed ? 'err' : 'ok', at: Date.now() }; paint();
     if (pulled) { afterApply(); toast(lost ? 'ข้อมูลถูกแก้จากเครื่องอื่นก่อน — ใช้ข้อมูลล่าสุดจากที่นั่น (ของเครื่องนี้เก็บสำรองไว้)' : 'อัปเดตข้อมูลจากเครื่องอื่นแล้ว'); }
-    if (got.includes('sheet') || got.includes('xl')) { try { window.O2OZone.autoRun(true); renderDb(); } catch (_) {} }      // (a link that arrived from another computer: read the orders at once, nobody has to open anything)
+    if (got.includes('sheet') || got.includes('sheet2') || got.includes('xl')) { try { window.O2OZone.autoRun(true); renderDb(); } catch (_) {} }      // (a link that arrived from another computer: read the orders at once, nobody has to open anything)
     if (again) { again = false; schedule(300); }
   }
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(run, ms); }
@@ -6298,7 +6342,7 @@ cloudQ = (() => {
 })();
 
 /* test/debug hook */
-window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, share: { run: () => shareRun(), info: () => share }, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg }) };
+window.O2O = { handleScan, state: () => state, derive, buildXlsx, render, roster: () => roster, tr: trText, T, setLang, lang: () => lang, hooks, cloud: cloudQ, share: { run: () => shareRun(), info: () => share }, data: () => ({ roster, rosterInfo, ptime, tripMap, sheetCfg: sheetCfgs[0], sheetCfg2: sheetCfgs[1] }) };
 
 empIn.value = state.emp || '';
 if (state.finished) feedback('ok', 'สิ้นสุดการสแกนแล้ว', 'ส่งออก Excel ได้ที่ช่อง "ส่งออก" ด้านล่าง หรือกด "กลับไปสแกนต่อ"');
