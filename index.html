@@ -3645,11 +3645,17 @@ function zSaveRow(li) {
   if (!cur || !row) { toast('ตารางโซนเปลี่ยนไปแล้ว — โหลดผลใหม่ก่อนแก้'); zFinishEdit(); return; }
   const taEl = row.querySelector('.zetxt'), numEl = row.querySelector('.zenum'), txt = taEl.value.replace(/\s+/g, ' ').trim();
   let label = cur.t.label;
-  if (numEl) {                                       // a numbered Trip: its number can be changed too (not onto the number of another Trip)
-    const n = +numEl.value.replace(/\D/g, '');
-    if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99'); numEl.focus(); return; }
-    if (Z.zt.trips.some(t => t.num === n && t.li !== li)) { toast(`มี Trip ${n} อยู่แล้ว — ใช้เลขอื่น หรือแก้ที่แถวนั้น`); numEl.focus(); return; }
-    label = String(n);
+  if (numEl) {                                       // the label of the row can be changed too: a Trip number (not onto the number of another Trip) or "ดี4" (the front-of-glass row, no orders matched to it)
+    const raw = numEl.value.replace(/\s+/g, '');
+    if (/^ดี4$/.test(raw)) {
+      if (Z.zt.trips.some(t => t.special && t.li !== li)) { toast('มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น'); numEl.focus(); return; }
+      label = 'ดี4';
+    } else {
+      const n = /^\d{1,2}$/.test(raw) ? +raw : 0;
+      if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99 (หรือ ดี4)'); numEl.focus(); return; }
+      if (Z.zt.trips.some(t => t.num === n && t.li !== li)) { toast(`มี Trip ${n} อยู่แล้ว — ใช้เลขอื่น หรือแก้ที่แถวนั้น`); numEl.focus(); return; }
+      label = String(n);
+    }
   }
   if (!zHasName(txt)) { toast('ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"'); taEl.focus(); return; }
   if (label === cur.t.label && txt === zoneTextOf(cur.t)) { zFinishEdit(); return; }      // (nothing changed)
@@ -3674,7 +3680,7 @@ function renderTripTable(force) {
   if (!force && zEditing()) { zRenderLater = true; return; }
   const add = addedByTrip(), busy = zEditLi !== null; let h = '<table class="cmp zt"><tr><th>Trip</th><th>โซนในตาราง <small class="muted">(กด "แก้ไข" ที่ท้ายแถว)</small></th><th>ออเดอร์เข้าโซน</th><th>เพิ่มจากที่แนะนำ</th><th>รวม</th><th></th></tr>';
   const zone = t => zEditLi === t.li ? `<textarea class="zcell zetxt" rows="2" spellcheck="false" aria-label="${esc('โซนของ Trip ' + t.label)}">${esc(zoneTextOf(t))}</textarea>` : `<div class="zview">${esc(zoneTextOf(t))}</div>`;
-  const numCell = t => zEditLi === t.li && !t.special ? `<td><input class="zcell zenum" type="text" inputmode="numeric" maxlength="2" value="${esc(t.label)}" aria-label="เลข Trip"></td>` : t.special ? `<td>${esc(t.label)}</td>` : `<td><b>${t.num}</b></td>`;
+  const numCell = t => zEditLi === t.li ? `<td><input class="zcell zenum" type="text"${t.special ? '' : ' inputmode="numeric"'} maxlength="4" value="${esc(t.label)}" aria-label="เลข Trip"></td>` : t.special ? `<td>${esc(t.label)}</td>` : `<td><b>${t.num}</b></td>`;      // (in edit mode every row has its label as a field — also ดี4)
   const acts = t => `<td class="zx"><div class="zacts">` + (zEditLi === t.li
     ? `<button type="button" class="zbtn zsave" data-li="${t.li}">บันทึก</button><button type="button" class="zbtn zcancel">ยกเลิก</button><button type="button" class="zbtn zdel" data-li="${t.li}" title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">ลบ</button>`
     : `<button type="button" class="zbtn zedit" data-li="${t.li}"${busy ? ' disabled' : ''} aria-label="${esc('แก้ไข Trip ' + t.label)}">แก้ไข</button><button type="button" class="zbtn zdel" data-li="${t.li}"${busy ? ' disabled' : ''} title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">ลบ</button>`) + '</div></td>';
@@ -5570,6 +5576,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['ใส่เลข Trip 1-99 (หรือ ดี4)', 'Enter a Trip number 1-99 (or ดี4)', 'Trip နံပါတ် ၁-၉၉ (သို့မဟုတ် ดี4) ထည့်ပါ'],
+  ['มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น', 'A ดี4 row already exists — use a Trip number or edit that row', 'ดี4 အတန်း ရှိပြီးသားဖြစ်သည် — Trip နံပါတ်သုံးပါ သို့မဟုတ် ထိုအတန်းတွင် ပြင်ပါ'],
   ['ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"', 'Enter at least one zone name — to take this Trip out, press "Delete"', 'ဇုန်အမည် အနည်းဆုံး ၁ ခု ထည့်ပါ — ဤ Trip ကို ဖယ်ရှားလိုပါက "ဖျက်ရန်" ကို နှိပ်ပါ'],
   ['มี Trip {0} อยู่แล้ว — ใช้เลขอื่น หรือแก้ที่แถวนั้น', 'Trip {0} already exists — use another number or edit that row', 'Trip {0} ရှိပြီးသားဖြစ်သည် — အခြားနံပါတ်သုံးပါ သို့မဟုတ် ထိုအတန်းတွင် ပြင်ပါ'],
   ['ออเดอร์เข้าโซน', 'Orders in the zone', 'ဇုန်ထဲဝင်သော အော်ဒါ'],
