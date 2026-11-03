@@ -3635,8 +3635,21 @@ function zTripAt(li) { const t = Z.zt && Z.zt.trips.find(x => x.li === li), line
 $('rosterDlg').addEventListener('close', () => { if (zEditLi !== null) zFinishEdit(); });      // (the Update Data window is closed with a row still open: it is closed too — an open row holds back every automatic redraw of the table)
 const zBlur = () => { const a = document.activeElement; if (a && a.closest && a.closest('#ztTrips') && a.blur) a.blur(); };      // (a box of the table that still has the focus makes zEditing() true, and the table would not be drawn again)
 function zFinishEdit() { zEditLi = null; zBlur(); if (zRenderLater && Z.zt) { zRenderLater = false; renderZones(); } else if (Z.zt) renderTripTable(true); }
+function zRowDirty() {                               // the open row has typing in it that is not saved yet
+  if (zEditLi === null) return false;
+  const cur = zTripAt(zEditLi), row = $('ztTrips').querySelector('tr.zediting'); if (!cur || !row) return false;
+  const ta = row.querySelector('.zetxt'), ne = row.querySelector('.zenum');
+  return !!((ta && ta.value.replace(/\s+/g, ' ').trim() !== zoneTextOf(cur.t)) || (ne && ne.value.replace(/\s+/g, '') !== cur.t.label.replace(/\s+/g, '')));
+}
+function zBlockedByOpenRow() {                       // another row's button was pressed while the open row has unsaved typing: nothing is thrown away, the open row is shown instead
+  if (!zRowDirty()) return false;
+  toast('บันทึกหรือยกเลิกแถวที่เปิดอยู่ก่อน'); const ta = $('ztTrips').querySelector('.zetxt'); if (ta) { ta.scrollIntoView({ block: 'center' }); ta.focus(); }
+  return true;
+}
 function zStartEdit(li) {
-  if (zEditLi !== null || !zTripAt(li)) return;
+  if (zEditLi === li) return;
+  if (zEditLi !== null) { if (zBlockedByOpenRow()) return; zEditLi = null; zBlur(); }      // (an open row with nothing typed in it is simply closed: the buttons of the other rows are never switched off)
+  if (!zTripAt(li)) return;
   zEditLi = li; renderTripTable(true);
   const ta = $('ztTrips').querySelector('.zetxt'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
 }
@@ -3662,6 +3675,7 @@ function zSaveRow(li) {
   cur.lines[li] = label + '\t' + txt; zEditLi = null; zRenderLater = false; zBlur(); zSaveZoneText(cur.lines.join('\n'));
 }
 async function zDeleteRow(li) {
+  if (zEditLi !== null && zEditLi !== li && zBlockedByOpenRow()) return;
   const cur = zTripAt(li); if (!cur) { toast('ตารางโซนเปลี่ยนไปแล้ว — โหลดผลใหม่ก่อนแก้'); return; }
   if (!(await ask(`ลบ Trip ${cur.t.label} ออกจากตารางโซน? (โซนของ Trip นี้จะไม่ถูกใช้จับออเดอร์อีก)`))) return;
   const again = zTripAt(li); if (!again) return;
@@ -3683,7 +3697,7 @@ function renderTripTable(force) {
   const numCell = t => zEditLi === t.li ? `<td><input class="zcell zenum" type="text"${t.special ? '' : ' inputmode="numeric"'} maxlength="4" value="${esc(t.label)}" aria-label="เลข Trip"></td>` : t.special ? `<td>${esc(t.label)}</td>` : `<td><b>${t.num}</b></td>`;      // (in edit mode every row has its label as a field — also ดี4)
   const acts = t => `<td class="zx"><div class="zacts">` + (zEditLi === t.li
     ? `<button type="button" class="zbtn zsave" data-li="${t.li}">บันทึก</button><button type="button" class="zbtn zcancel">ยกเลิก</button><button type="button" class="zbtn zdel" data-li="${t.li}" title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">ลบ</button>`
-    : `<button type="button" class="zbtn zedit" data-li="${t.li}"${busy ? ' disabled' : ''} aria-label="${esc('แก้ไข Trip ' + t.label)}">แก้ไข</button><button type="button" class="zbtn zdel" data-li="${t.li}"${busy ? ' disabled' : ''} title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">ลบ</button>`) + '</div></td>';
+    : `<button type="button" class="zbtn zedit" data-li="${t.li}" aria-label="${esc('แก้ไข Trip ' + t.label)}">แก้ไข</button><button type="button" class="zbtn zdel" data-li="${t.li}" title="เอา Trip นี้ออกจากตาราง" aria-label="${esc('ลบ Trip ' + t.label)}">ลบ</button>`) + '</div></td>';
   for (const t of Z.zt.trips) {
     const tr = zEditLi === t.li ? `<tr class="zediting" data-li="${t.li}">` : '<tr>';
     if (t.special) { h += `${tr}${numCell(t)}<td>${zone(t)}<div class="zspn muted">ไม่นำมาจับออเดอร์</div></td><td colspan="3" class="muted zsp">ไม่นำมาจับออเดอร์</td>${acts(t)}</tr>`; continue; }      // (the note is in its own cell on a wide screen, under the zones on a phone)
@@ -5576,6 +5590,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['บันทึกหรือยกเลิกแถวที่เปิดอยู่ก่อน', 'Save or cancel the row that is open first', 'ဖွင့်ထားသော အတန်းကို အရင် သိမ်းပါ သို့မဟုတ် ပယ်ဖျက်ပါ'],
   ['ใส่เลข Trip 1-99 (หรือ ดี4)', 'Enter a Trip number 1-99 (or ดี4)', 'Trip နံပါတ် ၁-၉၉ (သို့မဟုတ် ดี4) ထည့်ပါ'],
   ['มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น', 'A ดี4 row already exists — use a Trip number or edit that row', 'ดี4 အတန်း ရှိပြီးသားဖြစ်သည် — Trip နံပါတ်သုံးပါ သို့မဟုတ် ထိုအတန်းတွင် ပြင်ပါ'],
   ['ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"', 'Enter at least one zone name — to take this Trip out, press "Delete"', 'ဇုန်အမည် အနည်းဆုံး ၁ ခု ထည့်ပါ — ဤ Trip ကို ဖယ်ရှားလိုပါက "ဖျက်ရန်" ကို နှိပ်ပါ'],
