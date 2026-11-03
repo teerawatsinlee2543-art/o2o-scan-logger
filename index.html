@@ -3859,6 +3859,10 @@ let xlCfg = null;                              // {url, link}: the Excel / CSV l
 try { const r = JSON.parse(localStorage.getItem(LS_XL) || 'null'); if (r && r.url) xlCfg = r; } catch (_) {}
 const xlUsable = () => !!xlCfg && !IN_VIEWER;
 const xlHas = o => !!(window.O2OZone && window.O2OZone.xlHas && window.O2OZone.xlHas(o));
+async function netUp() {                         // is Google reachable at all? (any answer, even an error page, counts; only a missing connection fails)
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 6000);
+  try { await fetch('https://docs.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctrl.signal }); return true; } catch (_) { return false; } finally { clearTimeout(timer); }
+}
 async function gviz(cfg, tq) {
   const u = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq?gid=${cfg.gid}&tqx=out:csv&tq=${encodeURIComponent(tq)}`;
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
@@ -3868,6 +3872,11 @@ async function gviz(cfg, tq) {
     const text = await r.text();
     if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('not-shared');         // Google answered with a sign-in page
     return text;
+  } catch (e) {
+    // A sheet that is not shared with "anyone with the link" is answered by Google with 401 / a redirect to the sign-in page, which carries no CORS header: the browser only says "Failed to fetch",
+    // the same words as for no internet. So when Google itself can be reached, that is what it means.
+    if (e && e.name === 'TypeError' && await netUp()) throw new Error('not-shared');
+    throw e;
   } finally { clearTimeout(timer); }
 }
 const csvRows = text => text.split(/\r?\n/).filter(l => l.trim()).map(l => splitLine(l, ','));
@@ -4048,7 +4057,7 @@ async function dbConnectNow(slot = 0) {
     const m = String(e && e.message);
     const why = m === 'bad-link' ? 'ลิงก์นี้ไม่ใช่ลิงก์ Google Sheet (ต้องมี /spreadsheets/d/…)' : m === 'no-order-col' ? 'ไม่พบคอลัมน์ Order Number ในแท็บที่ลิงก์ชี้อยู่ (ตรวจ gid หรือหัวคอลัมน์แถวแรก)'
       : m === 'dup-sheet' ? 'ชีตและแท็บนี้เชื่อมต่อไว้ในอีกช่องแล้ว — ใส่ชีตหรือแท็บอื่น'
-      : m === 'not-shared' ? 'อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"' : 'เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต';
+      : m === 'not-shared' ? 'อ่านชีตไม่ได้ — ชีตนี้ยังไม่ได้แชร์ให้ "ทุกคนที่มีลิงก์" ดูได้ (Google ให้เฉพาะคนที่ล็อกอิน). แก้: เปิดชีต → ปุ่ม "แชร์" → "การเข้าถึงทั่วไป" → เลือก "ทุกคนที่มีลิงก์" สิทธิ์ "ผู้ดู" → แล้ววางลิงก์ใหม่' : 'เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต';
     box.innerHTML = `<span class="err">${T(why)}</span>`;
   }
   dbBusy[slot] = false; renderDb(); render();
@@ -5756,6 +5765,9 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลิงก์นี้ไม่ใช่ลิงก์ Google Sheet (ต้องมี /spreadsheets/d/…)', 'This is not a Google Sheet link (it must contain /spreadsheets/d/…)', 'ဤလင့်ခ်သည် Google Sheet လင့်ခ် မဟုတ်ပါ (/spreadsheets/d/… ပါရမည်)'],
   ['ไม่พบคอลัมน์ Order Number ในแท็บที่ลิงก์ชี้อยู่ (ตรวจ gid หรือหัวคอลัมน์แถวแรก)', 'No Order Number column in the tab the link points to (check the gid or the first-row headers)', 'လင့်ခ်ညွှန်ပြသော တက်ဘ်တွင် Order Number ကော်လံ မတွေ့ပါ (gid သို့မဟုတ် ပထမတန်းခေါင်းစဉ်များကို စစ်ပါ)'],
   ['อ่านชีตไม่ได้ — ต้องตั้งการแชร์เป็น "ทุกคนที่มีลิงก์ ดูได้"', 'The sheet cannot be read — set sharing to "anyone with the link can view"', 'စာရွက်ကို မဖတ်နိုင်ပါ — မျှဝေမှုကို "လင့်ခ်ရှိသူတိုင်း ကြည့်နိုင်သည်" ဟု ပြောင်းပါ'],
+  ['อ่านชีตไม่ได้ — ชีตนี้ยังไม่ได้แชร์ให้ "ทุกคนที่มีลิงก์" ดูได้ (Google ให้เฉพาะคนที่ล็อกอิน). แก้: เปิดชีต → ปุ่ม "แชร์" → "การเข้าถึงทั่วไป" → เลือก "ทุกคนที่มีลิงก์" สิทธิ์ "ผู้ดู" → แล้ววางลิงก์ใหม่',
+    'The sheet cannot be read — it is not shared with "anyone with the link" (Google only lets signed-in people in). Fix: open the sheet → "Share" button → "General access" → choose "Anyone with the link", role "Viewer" → then paste the link again',
+    'စာရွက်ကို မဖတ်နိုင်ပါ — ဤစာရွက်ကို "လင့်ခ်ရှိသူတိုင်း" ကြည့်နိုင်ရန် မျှဝေမထားပါ (Google သည် လော့ဂ်အင်ဝင်ထားသူကိုသာ ခွင့်ပြုသည်)။ ပြင်ရန်: စာရွက်ကိုဖွင့် → "Share" ခလုတ် → "General access" → "Anyone with the link" ရွေးပြီး အခွင့်အရေး "Viewer" → ထို့နောက် လင့်ခ်ကို ထပ်ထည့်ပါ'],
   ['เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ตและการแชร์ของชีต', 'Could not connect — check the internet and the sharing of the sheet', 'မချိတ်ဆက်နိုင်ပါ — အင်တာနက်နှင့် စာရွက်၏ မျှဝေမှုကို စစ်ပါ'],
   ['ใส่เลขออเดอร์ 11 ตัว', 'Enter an 11-character order number', 'စာလုံး ၁၁ လုံး အော်ဒါနံပါတ် ထည့်ပါ'],
   ['กำลังค้นหา …', 'Searching …', 'ရှာဖွေနေသည် …'],
