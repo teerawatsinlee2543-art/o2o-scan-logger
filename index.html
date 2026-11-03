@@ -1089,7 +1089,15 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip #ztTrips .zplus{height:36px;padding:0 12px;border-radius:9px;font-weight:800;white-space:nowrap}
 #paneTrip #ztTrips tr.zadd td{border-bottom:0;padding-top:10px}
 #paneTrip .zrep input.zrname{width:100%;min-width:170px;box-sizing:border-box;height:34px;font-weight:700}      /* shops that order again and have no Trip: the name to add (editable), the Trip, "เพิ่ม" */
-#paneTrip .zrep td{vertical-align:middle}
+#paneTrip .zrep td{vertical-align:top}
+#paneTrip .zrep .zrtools{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:4px;font-size:13px}
+#paneTrip .zrep .zrtools a{color:var(--accent);white-space:nowrap}
+#paneTrip .zrep .zrfind{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap}
+#paneTrip .zrep .zrres{margin-top:4px;font-size:13px;line-height:1.4;word-break:break-word}
+#paneTrip .zrep .zrres:empty{display:none}
+#paneTrip .zrep .zrres.ok{color:var(--ok)}
+#paneTrip .zrep .zrres.warn{color:var(--warn,#b26a00)}
+#paneTrip .zrep .zrres a{color:var(--accent)}
 #paneTrip .zrep td:nth-child(3){text-align:right;white-space:nowrap}
 #paneTrip .zrep .zbtn{height:32px;padding:0 14px;border-radius:9px;font-weight:800;white-space:nowrap;cursor:pointer;color:#fff;border-color:transparent;background:linear-gradient(135deg,#2f9e5f,#238a50)}
 #paneTrip .zrep .zbtn:hover{filter:brightness(1.08)}
@@ -3693,17 +3701,47 @@ const zShopName = s => {                               // "ร้าน เช�
   const t = String(s || '').replace(/[\d.\/|()（）,，;:"'*+\-]+/g, ' ').replace(/^\s*(ร้าน|บริษัท|บจก|หจก|คุณ|นาย|นาง|นางสาว)\s+/, '').replace(/\s+/g, ' ').trim();
   return (t.match(/[A-Za-zก-๙]/g) || []).length >= 5 ? t : '';
 };
+const zAreaDistricts = () => {                         // the districts the Trips really work in (25+ orders placed by their soi / road): a shop in another part of Bangkok has no Trip of this table
+  const placedBy = new Map(); for (const o of Z.orders || []) if (o.zt != null && (o.zhow === 'soi' || o.zhow === 'road')) placedBy.set(o.d, (placedBy.get(o.d) || 0) + 1);
+  return new Set([...placedBy].filter(([, n]) => n >= 25).map(x => x[0]));
+};
 function zRepeatShops() {
   if (!Z.orders || !Z.nums || !Z.nums.length) return [];
-  const placedBy = new Map(); for (const o of Z.orders) if (o.zt != null && (o.zhow === 'soi' || o.zhow === 'road')) placedBy.set(o.d, (placedBy.get(o.d) || 0) + 1);
-  const area = new Set([...placedBy].filter(([, n]) => n >= 25).map(x => x[0]));      // (only districts the Trips really work in: a shop in another part of Bangkok has no Trip of this table)
+  const area = zAreaDistricts();
   const g = new Map();
   for (const o of Z.orders) {
     if (o.zt != null || !area.has(o.d)) continue;
     const nm = zShopName(o.raw && o.raw.name); if (!nm) continue;
-    const k = fz(nm), e = g.get(k) || g.set(k, { nm, n: 0, sd: new Map() }).get(k); e.n++; e.sd.set(o.sd, (e.sd.get(o.sd) || 0) + 1);
+    const k = fz(nm), e = g.get(k) || g.set(k, { nm, n: 0, sd: new Map(), d: o.d, shop: false }).get(k); e.n++; e.sd.set(o.sd, (e.sd.get(o.sd) || 0) + 1);
+    if (ZSHOP_RE.test(o.raw.name)) e.shop = true;      // (a business: only these may be looked up on a map; a person's name is never sent anywhere)
   }
   return [...g.values()].filter(e => e.n >= 2).sort((a, b) => b.n - a.n).slice(0, 30).map(e => Object.assign(e, { sd: [...e.sd].sort((a, b) => b[1] - a[1])[0][0] }));
+}
+const ZSHOP_RE = /ร้าน|บริษัท|บจก|หจก|จำกัด|สาขา|ตลาด|โรงเรียน|โรงพยาบาล|วิทยาลัย|มหาวิทยาลัย|โรงงาน|โรงแรม|รีสอร์ท|ห้าง|คลินิก|ปั๊ม|ศูนย์|ฟาร์ม|คาเฟ่|ครัว|ก๋วยเตี๋ยว|หมูกะทะ|ชาบู|สเต็ก|ข้าว|กาแฟ|เบเกอรี่|ซุปเปอร์|มาร์ท|ช็อป|[A-Za-z]{4,}/i;
+const Z_VIEWBOX = '100.58,13.99,100.96,13.66';      // west,north,east,south: the area the Trips work in (Min Buri / Khlong Sam Wa / Khan Na Yao / Sai Mai / Lat Krabang / Sapan Sung): the map is only asked inside it
+const zTripOfRoad = road => { try { const r = matchOrder({ sd: '', d: '', addr: /^(ถนน|ซอย|ถ\.|ซ\.)/.test(road) ? road : 'ถนน' + road, zip: '', name: '' }, zoneMatcher().M); return r && r.trip != null ? r.trip : null; } catch (_) { return null; } };
+async function zMapGet(url) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 10000);
+  try { const r = await fetch(url, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'origin' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); } finally { clearTimeout(timer); }
+}
+async function zMapLookup(tr) {                       // one question to OpenStreetMap (Nominatim), only when the button is pressed: the shop name, inside the area of the Trips → the road it is on → the Trip that the zone table gives that road
+  const name = tr.querySelector('.zrname').value.replace(/\s+/g, ' ').trim(), res = tr.querySelector('.zrres'), sdn = tr.dataset.sd, btn = tr.querySelector('.zrfind');
+  if (!zHasName(name)) { toast('ใส่ชื่อร้านที่จะเพิ่ม'); return; }
+  btn.disabled = true; res.className = 'zrres muted'; res.textContent = T('กำลังค้นแผนที่ …');
+  try {
+    const areaDs = [...zAreaDistricts()];
+    const list = (await zMapGet('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&accept-language=th&countrycodes=th&bounded=1&viewbox=' + Z_VIEWBOX + '&q=' + encodeURIComponent(name))).filter(x => !areaDs.length || areaDs.some(d => (x.display_name || '').includes(d)));      // (a hit has to lie in one of the districts the Trips work in: the box of the map is wider than that)
+    if (!list.length) { res.className = 'zrres warn'; res.textContent = T('OpenStreetMap ไม่มีร้านนี้ในพื้นที่ — ลองดูใน Google Maps (ลิงก์ด้านบน) แล้วเลือก Trip เอง'); return; }
+    let hit = list.find(x => (x.display_name || '').includes(sdn)) || null, same = !!hit; if (!hit) hit = list[0];
+    let road = (hit.address && (hit.address.road || hit.address.pedestrian)) || '';
+    if (!road) { await new Promise(r => setTimeout(r, 1100)); try { const rv = await zMapGet(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&accept-language=th&lat=${hit.lat}&lon=${hit.lon}`); road = (rv.address && (rv.address.road || rv.address.pedestrian)) || ''; } catch (_) {} }
+    const trip = road ? zTripOfRoad(road) : null, nm = (hit.name || hit.display_name.split(',')[0] || '').slice(0, 40), link = `https://www.openstreetmap.org/?mlat=${hit.lat}&mlon=${hit.lon}#map=18/${hit.lat}/${hit.lon}`;
+    const more = list.length > 1 ? ` · ${T('พบ {0} ที่ — ตรวจบนแผนที่', list.length)}` : '';
+    res.className = 'zrres ' + (trip != null && same && list.length === 1 ? 'ok' : 'warn');
+    res.innerHTML = `${esc(nm)} — ${road ? esc(road) : esc(T('ไม่พบชื่อถนน'))}${same ? '' : ' · ' + esc(T('ไม่ใช่แขวงนี้'))}${more} · ${trip != null ? esc(T('ถนนนี้อยู่ Trip {0} ตามตาราง', trip)) : esc(T('ถนนนี้ยังไม่อยู่ในตาราง'))} · <a href="${link}" target="_blank" rel="noopener">${esc(T('ดูบนแผนที่'))}</a>`;
+    if (trip != null && same) tr.querySelector('.zrtrip').value = String(trip);      // (the menu is filled in; "เพิ่ม" is still pressed by the person)
+  } catch (e) { res.className = 'zrres warn'; res.textContent = T('ค้นแผนที่ไม่ได้ — ตรวจอินเทอร์เน็ต'); }
+  finally { btn.disabled = false; }
 }
 function zAddShop(tr) {
   const name = tr.querySelector('.zrname').value.replace(/[\/|()（）,，]+/g, ' ').replace(/\s+/g, ' ').trim(), n = +tr.querySelector('.zrtrip').value;
@@ -3763,7 +3801,7 @@ function renderZones() {
   if (Z.useRoad) detail += `<p class="note"><b>ระดับถนน/ซอย:</b> ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน — ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง · ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว ${Z.back.ev.toLocaleString()} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย) — ทายตรงกับตาราง <b>${pct(Z.back.ok, Z.back.ev)}%</b> (วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)</p>`;
   h += '<h3 style="margin:14px 0 6px">แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)</h3><div id="ztTrips" class="tw"></div>';
   const rep = zRepeatShops();
-  if (rep.length) h += `<details class="zbox" id="zRepeat"><summary>ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip <span class="rcount">${rep.length}</span></summary><p class="muted" style="margin:6px 0;font-size:14px">ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง</p><div class="tw"><table class="cmp zt zrep"><tr><th>ร้าน / ลูกค้า</th><th>แขวง</th><th>ใบ</th><th>เพิ่มเป็นชื่อโซนของ Trip</th><th></th></tr>${rep.map((e, i) => `<tr data-i="${i}"><td style="text-align:left"><input class="zrname" type="text" value="${esc(e.nm)}" spellcheck="false" aria-label="${esc('ชื่อที่จะเพิ่ม')}"></td><td style="text-align:left">${esc(e.sd)}</td><td>${e.n}</td><td><select class="zrtrip" aria-label="Trip"><option value="">เลือก Trip</option>${Z.nums.map(n => `<option value="${n}">Trip ${n}</option>`).join('')}</select></td><td class="zx"><button type="button" class="zbtn zradd">เพิ่ม</button></td></tr>`).join('')}</table></div></details>`;
+  if (rep.length) h += `<details class="zbox" id="zRepeat"><summary>ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip <span class="rcount">${rep.length}</span></summary><p class="muted" style="margin:6px 0;font-size:14px">ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง · ร้านค้ามีปุ่ม "ค้นแผนที่" (ถาม OpenStreetMap ว่าร้านอยู่ถนนอะไร แล้วเติม Trip ตามตารางให้) และลิงก์เปิดแผนที่ดูเอง — ส่งแค่ชื่อร้านเมื่อกดเท่านั้น ชื่อบุคคลไม่ส่งไปที่ไหน</p><div class="tw"><table class="cmp zt zrep"><tr><th>ร้าน / ลูกค้า</th><th>แขวง</th><th>ใบ</th><th>เพิ่มเป็นชื่อโซนของ Trip</th><th></th></tr>${rep.map((e, i) => `<tr data-i="${i}" data-sd="${esc(e.sd)}"><td style="text-align:left"><input class="zrname" type="text" value="${esc(e.nm)}" spellcheck="false" aria-label="${esc('ชื่อที่จะเพิ่ม')}">${e.shop ? `<div class="zrtools"><button type="button" class="zrfind">ค้นแผนที่</button><a href="https://www.openstreetmap.org/search?query=${encodeURIComponent(e.nm + ' ' + e.sd)}" target="_blank" rel="noopener">OpenStreetMap ↗</a><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.nm + ' ' + e.sd + ' ' + e.d)}" target="_blank" rel="noopener">Google Maps ↗</a></div><div class="zrres muted"></div>` : ''}</td><td style="text-align:left">${esc(e.sd)}</td><td>${e.n}</td><td><select class="zrtrip" aria-label="Trip"><option value="">เลือก Trip</option>${Z.nums.map(n => `<option value="${n}">Trip ${n}</option>`).join('')}</select></td><td class="zx"><button type="button" class="zbtn zradd">เพิ่ม</button></td></tr>`).join('')}</table></div></details>`;
   h += '<details class="zbox"><summary>รายละเอียด: แขวงนอกโซน · ถนน/ซอยที่เรียนรู้ · ดาวน์โหลด</summary>' + detail;
   h += `<h3 style="margin:16px 0 6px">แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด</h3><div class="tw"><table class="cmp zt"><tr><th>แขวง</th><th>เขต</th><th>ใบ</th><th>ตามถนน/ซอย</th><th>ที่เหลือ → Trip</th><th>มั่นใจ</th><th>ถนน/ซอยที่พบ</th><th>เหตุผล</th></tr>`;
   rows.slice(0, 200).forEach(g => { h += `<tr><td>${esc(g.sd)}</td><td>${esc(g.d)}</td><td>${g.n}</td><td style="text-align:left;font-size:13px">${esc(roadSplit(g))}</td><td><select data-g="${esc(g.sd + '|' + g.d)}">${opts(g.pick)}</select></td><td><span class="tag ${g.conf === 'สูง' ? 'ok' : g.conf === 'ต่ำ' || g.conf === '—' ? 'warn' : ''}">${g.conf}</span></td><td style="text-align:left;font-size:13px">${esc([...g.roads].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ('+ c + ')' + roadHint(r)).join('  ·  '))}</td><td style="text-align:left;font-size:14px">${esc(g.why)}${g.link ? ` <a href="${g.link}" target="_blank" rel="noopener">ดูเส้นทางใน Google Maps</a>` : ''}</td></tr>`; });
@@ -3777,6 +3815,7 @@ function renderZones() {
   const el = $('zoneOut'), wasOpen = [...el.querySelectorAll('details')].map(d => d.open);      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
   el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach((d, i) => { if (wasOpen[i]) d.open = true; }); renderTripTable();
   el.querySelectorAll('#zRepeat .zradd').forEach(b => b.addEventListener('click', () => zAddShop(b.closest('tr'))));
+  el.querySelectorAll('#zRepeat .zrfind').forEach(b => b.addEventListener('click', () => zMapLookup(b.closest('tr'))));
   el.querySelectorAll('#zRepeat .zrname').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); i.closest('tr').querySelector('.zrtrip').focus(); } }));
   el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
@@ -5637,6 +5676,16 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ใส่ชื่อร้านที่จะเพิ่ม', 'Enter the shop name to add', 'ထည့်မည့် ဆိုင်အမည် ထည့်ပါ'],
   ['เลือก Trip ให้ร้านนี้ก่อน', 'Choose a Trip for this shop first', 'ဤဆိုင်အတွက် Trip ကို အရင်ရွေးပါ'],
   ['ไม่พบ Trip นี้ในตารางโซน', 'This Trip is not in the zone table', 'ဤ Trip သည် ဇုန်ဇယားထဲတွင် မရှိပါ'],
+  ['ค้นแผนที่', 'Search the map', 'မြေပုံတွင် ရှာရန်'],
+  ['กำลังค้นแผนที่ …', 'Searching the map …', 'မြေပုံတွင် ရှာနေသည် …'],
+  ['OpenStreetMap ไม่มีร้านนี้ในพื้นที่ — ลองดูใน Google Maps (ลิงก์ด้านบน) แล้วเลือก Trip เอง', 'OpenStreetMap does not have this shop in the area — try Google Maps (link above) and choose the Trip yourself', 'OpenStreetMap တွင် ဤဆိုင်ကို ဧရိယာအတွင်း မတွေ့ပါ — Google Maps (အပေါ်လင့်ခ်) တွင် ကြည့်ပြီး Trip ကို ကိုယ်တိုင်ရွေးပါ'],
+  ['ไม่พบชื่อถนน', 'no road name', 'လမ်းအမည် မတွေ့ပါ'],
+  ['ไม่ใช่แขวงนี้', 'not in this sub-district', 'ဤရပ်ကွက်တွင် မဟုတ်ပါ'],
+  ['พบ {0} ที่ — ตรวจบนแผนที่', '{0} found — check on the map', '{0} နေရာ တွေ့သည် — မြေပုံပေါ်တွင် စစ်ပါ'],
+  ['ถนนนี้อยู่ Trip {0} ตามตาราง', 'this road is Trip {0} in the table', 'ဤလမ်းသည် ဇယားအရ Trip {0} ဖြစ်သည်'],
+  ['ถนนนี้ยังไม่อยู่ในตาราง', 'this road is not in the table yet', 'ဤလမ်းသည် ဇယားထဲတွင် မရှိသေးပါ'],
+  ['ดูบนแผนที่', 'see on the map', 'မြေပုံပေါ်တွင် ကြည့်ရန်'],
+  ['ค้นแผนที่ไม่ได้ — ตรวจอินเทอร์เน็ต', 'The map cannot be searched — check the internet', 'မြေပုံကို ရှာ၍မရပါ — အင်တာနက်ကို စစ်ပါ'],
   ['บันทึกหรือยกเลิกแถวที่เปิดอยู่ก่อน', 'Save or cancel the row that is open first', 'ဖွင့်ထားသော အတန်းကို အရင် သိမ်းပါ သို့မဟုတ် ပယ်ဖျက်ပါ'],
   ['ใส่เลข Trip 1-99 (หรือ ดี4)', 'Enter a Trip number 1-99 (or ดี4)', 'Trip နံပါတ် ၁-၉၉ (သို့မဟုတ် ดี4) ထည့်ပါ'],
   ['มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น', 'A ดี4 row already exists — use a Trip number or edit that row', 'ดี4 အတန်း ရှိပြီးသားဖြစ်သည် — Trip နံပါတ်သုံးပါ သို့မဟုတ် ထိုအတန်းတွင် ပြင်ပါ'],
