@@ -1026,7 +1026,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
   body.has-print #printView{position:static;overflow:visible;background:#fff}
   .pvbar,#pvClose,#pvPrint{display:none!important}
 }
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90}
+.toast{position:fixed;left:50%;top:auto;right:auto;bottom:24px;width:auto;height:auto;margin:0;border:0;overflow:visible;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90;max-width:min(92vw,640px);text-align:center}      /* (a popover: shown in the top layer, so it is above an open window (a <dialog>) too) */
 .toast.show{opacity:.96}
 /* the zone check inside the Trip tab (section ค): result tables and chips, scoped to the section */
 #paneTrip .msg{margin-top:10px;font-weight:600}
@@ -1076,6 +1076,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip #ztTrips .zview{padding:4px 2px;font-weight:700;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 #paneTrip #ztTrips textarea.zcell{height:auto;min-height:64px;resize:vertical;font-family:inherit;font-size:inherit;font-weight:700;cursor:text}
 #paneTrip #ztTrips input.zenum{width:64px;text-align:center;font-weight:800}
+#paneTrip #ztTrips .zerr{margin-top:5px;font-size:13px;font-weight:700;color:var(--bad)}
 #paneTrip #ztTrips tr.zediting > td{background:color-mix(in srgb,var(--accent) 9%,transparent)}
 #paneTrip #ztTrips .zacts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
 #paneTrip #ztTrips .zbtn{height:32px;min-width:0;padding:0 12px;border-radius:9px;font-size:14px;font-weight:800;white-space:nowrap;cursor:pointer}
@@ -1586,7 +1587,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
     </div>
   </div>
 </dialog>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" popover="manual"></div>
 <script>
 (() => {
 'use strict';
@@ -1790,7 +1791,8 @@ function ask(msg) {
 
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+  try { if (t.showPopover && !t.matches(':popover-open')) t.showPopover(); } catch (_) {}      // (top layer: a toast was hidden behind the Update Data window, so "บันทึก" seemed to do nothing)
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.classList.remove('show'); setTimeout(() => { try { if (!t.classList.contains('show') && t.matches(':popover-open')) t.hidePopover(); } catch (_) {} }, 300); }, 2200);
 }
 
 /* shake the employee box when a badge is refused */
@@ -3667,24 +3669,29 @@ function zStartEdit(li) {
   zEditLi = li; renderTripTable(true);
   const ta = $('ztTrips').querySelector('.zetxt'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
 }
+function zRowErr(row, msg) {                          // a red line under the zones of the open row (and the toast, for the other windows)
+  let e = row.querySelector('.zerr'); if (!e) { e = document.createElement('div'); e.className = 'zerr'; e.setAttribute('role', 'alert'); (row.querySelector('.zetxt') || row).parentNode.appendChild(e); }
+  e.textContent = msg; toast(msg);
+}
 function zSaveRow(li) {
   const cur = zTripAt(li), row = $('ztTrips').querySelector('tr.zediting');
   if (!cur || !row) { toast('ตารางโซนเปลี่ยนไปแล้ว — โหลดผลใหม่ก่อนแก้'); zFinishEdit(); return; }
   const taEl = row.querySelector('.zetxt'), numEl = row.querySelector('.zenum'), txt = taEl.value.replace(/\s+/g, ' ').trim();
   let label = cur.t.label;
+  const bad = (msg, el, ...a) => { zRowErr(row, T(msg, ...a)); el.focus(); };      // (the refusal is written in the row itself: a toast alone was hidden behind the window)
   if (numEl) {                                       // the label of the row can be changed too: a Trip number (not onto the number of another Trip) or "ดี4" (the front-of-glass row, no orders matched to it)
     const raw = numEl.value.replace(/\s+/g, '');
-    if (/^ดี4$/.test(raw)) {
-      if (Z.zt.trips.some(t => t.special && t.li !== li)) { toast('มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น'); numEl.focus(); return; }
+    if (/^(ดี|ตี|d)4$/i.test(raw)) {                 // ("ตี 4" / "ดี 4" / "D4": the same row)
+      if (Z.zt.trips.some(t => t.special && t.li !== li)) { bad('มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น', numEl); return; }
       label = 'ดี4';
     } else {
       const n = /^\d{1,2}$/.test(raw) ? +raw : 0;
-      if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99 (หรือ ดี4)'); numEl.focus(); return; }
-      if (Z.zt.trips.some(t => t.num === n && t.li !== li)) { toast(`มี Trip ${n} อยู่แล้ว — ใช้เลขอื่น หรือแก้ที่แถวนั้น`); numEl.focus(); return; }
+      if (!(n >= 1 && n <= 99)) { bad('ใส่เลข Trip 1-99 (หรือ ดี4)', numEl); return; }
+      if (Z.zt.trips.some(t => t.num === n && t.li !== li)) { bad('มี Trip {0} อยู่แล้ว — ใช้เลขอื่น หรือแก้ที่แถวนั้น', numEl, n); return; }
       label = String(n);
     }
   }
-  if (!zHasName(txt)) { toast('ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"'); taEl.focus(); return; }
+  if (!zHasName(txt)) { bad('ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"', taEl); return; }
   if (label === cur.t.label && txt === zoneTextOf(cur.t)) { zFinishEdit(); return; }      // (nothing changed)
   cur.lines[li] = label + '\t' + txt; zEditLi = null; zRenderLater = false; zBlur(); zSaveZoneText(cur.lines.join('\n'));
 }
@@ -5665,6 +5672,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"', 'Enter at least one zone name — to take this Trip out, press "Delete"', 'ဇုန်အမည် အနည်းဆုံး ၁ ခု ထည့်ပါ — ဤ Trip ကို ဖယ်ရှားလိုပါက "ဖျက်ရန်" ကို နှိပ်ပါ'],
   ['ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip', 'Shops / customers that order again and have no Trip', 'ထပ်မံမှာယူပြီး Trip မရှိသေးသော ဆိုင် / ဖောက်သည်များ'],
   ['ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง',
     'The address of these orders is only a shop name (no road / soi) and their sub-district is not in one Trip, so it cannot be decided — choose the Trip for the shop once: the name is added to that Trip\'s row of the zone table and the shop\'s next orders go to that Trip by themselves',
