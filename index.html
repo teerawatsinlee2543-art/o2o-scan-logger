@@ -1089,7 +1089,15 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip #ztTrips .zplus{height:36px;padding:0 12px;border-radius:9px;font-weight:800;white-space:nowrap}
 #paneTrip #ztTrips tr.zadd td{border-bottom:0;padding-top:10px}
 #paneTrip #ztTrips th small{font-weight:500}
+@media (max-width:900px){      /* tablets: the row buttons are stacked and the headings may wrap, so the table does not run past its box */
+  #paneTrip #ztTrips .zacts{flex-direction:column;align-items:stretch}
+  #paneTrip #ztTrips th{white-space:normal}
+  #paneTrip #ztTrips td:nth-child(2){min-width:150px}
+}
 @media (max-width:640px){      /* phones: the per-Trip table keeps Trip | zones | total (the two middle counts are in the total) */
+  #paneTrip #ztTrips .zbtn{padding:0 6px;font-size:12px}
+  #paneTrip #ztTrips input.zenum,#paneTrip #ztTrips .znum{width:46px;padding:4px}
+  #paneTrip #ztTrips td:nth-child(2){min-width:120px}
   #paneTrip #ztTrips tr > :nth-child(3), #paneTrip #ztTrips tr > :nth-child(4){display:none}
   #paneTrip .zspn{display:block}
   #paneTrip #ztTrips td:nth-child(2){min-width:150px}      /* (room for the zone box: it is a field now, and a field of 96px is too narrow to type in) */
@@ -3624,6 +3632,7 @@ function zSaveZoneText(text) {
 }
 function zTripAt(li) { const t = Z.zt && Z.zt.trips.find(x => x.li === li), lines = $('zoneIn').value.split(/\r?\n/); return t && lines[li] != null && lines[li].trim() === t.line ? { t, lines } : null; }
 /* a row is READ-ONLY until its "แก้ไข" button is pressed; then the whole row opens (the Trip number and the zones) with "บันทึก" / "ยกเลิก" / "ลบ". One row at a time; the others' buttons wait. */
+$('rosterDlg').addEventListener('close', () => { if (zEditLi !== null) zFinishEdit(); });      // (the Update Data window is closed with a row still open: it is closed too — an open row holds back every automatic redraw of the table)
 const zBlur = () => { const a = document.activeElement; if (a && a.closest && a.closest('#ztTrips') && a.blur) a.blur(); };      // (a box of the table that still has the focus makes zEditing() true, and the table would not be drawn again)
 function zFinishEdit() { zEditLi = null; zBlur(); if (zRenderLater && Z.zt) { zRenderLater = false; renderZones(); } else if (Z.zt) renderTripTable(true); }
 function zStartEdit(li) {
