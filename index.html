@@ -1088,6 +1088,12 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip #ztTrips td:nth-child(3),#paneTrip #ztTrips td:nth-child(4),#paneTrip #ztTrips td:nth-child(5){white-space:nowrap;word-break:normal;text-align:right}      /* (the counts stay on one line: "278" was breaking into "27" / "8") */
 #paneTrip #ztTrips .zplus{height:36px;padding:0 12px;border-radius:9px;font-weight:800;white-space:nowrap}
 #paneTrip #ztTrips tr.zadd td{border-bottom:0;padding-top:10px}
+#paneTrip .zrep input.zrname{width:100%;min-width:170px;box-sizing:border-box;height:34px;font-weight:700}      /* shops that order again and have no Trip: the name to add (editable), the Trip, "เพิ่ม" */
+#paneTrip .zrep td{vertical-align:middle}
+#paneTrip .zrep td:nth-child(3){text-align:right;white-space:nowrap}
+#paneTrip .zrep .zbtn{height:32px;padding:0 14px;border-radius:9px;font-weight:800;white-space:nowrap;cursor:pointer;color:#fff;border-color:transparent;background:linear-gradient(135deg,#2f9e5f,#238a50)}
+#paneTrip .zrep .zbtn:hover{filter:brightness(1.08)}
+@media (max-width:640px){ #paneTrip .zrep input.zrname{min-width:130px} #paneTrip .zrep th:nth-child(2),#paneTrip .zrep td:nth-child(2){display:none} }
 #paneTrip #ztTrips th small{font-weight:500}
 @media (max-width:900px){      /* tablets: the row buttons are stacked and the headings may wrap, so the table does not run past its box */
   #paneTrip #ztTrips .zacts{flex-direction:column;align-items:stretch}
@@ -3681,6 +3687,32 @@ async function zDeleteRow(li) {
   const again = zTripAt(li); if (!again) return;
   again.lines.splice(li, 1); zEditLi = null; zRenderLater = false; zBlur(); zSaveZoneText(again.lines.join('\n'));
 }
+/* Shops / customers that order again and again but have no Trip: their address is only a shop name ("ร้าน เชสเตอร์สเต็ก สาขา มีนบุรี 1") and their sub-district is split over many Trips, so nothing can place them.
+   The person says the Trip once; the name goes into that Trip's row of the zone table (a name of 2+ words is matched against the Customer Name, any name against the address — see matchOrder). */
+const zShopName = s => {                               // "ร้าน เชสเตอร์สเต็ก สาขา มีนบุรี 1 ." -> "เชสเตอร์สเต็ก สาขา มีนบุรี" (no digits, no marks that the zone table uses as separators)
+  const t = String(s || '').replace(/[\d.\/|()（）,，;:"'*+\-]+/g, ' ').replace(/^\s*(ร้าน|บริษัท|บจก|หจก|คุณ|นาย|นาง|นางสาว)\s+/, '').replace(/\s+/g, ' ').trim();
+  return (t.match(/[A-Za-zก-๙]/g) || []).length >= 5 ? t : '';
+};
+function zRepeatShops() {
+  if (!Z.orders || !Z.nums || !Z.nums.length) return [];
+  const placedBy = new Map(); for (const o of Z.orders) if (o.zt != null && (o.zhow === 'soi' || o.zhow === 'road')) placedBy.set(o.d, (placedBy.get(o.d) || 0) + 1);
+  const area = new Set([...placedBy].filter(([, n]) => n >= 25).map(x => x[0]));      // (only districts the Trips really work in: a shop in another part of Bangkok has no Trip of this table)
+  const g = new Map();
+  for (const o of Z.orders) {
+    if (o.zt != null || !area.has(o.d)) continue;
+    const nm = zShopName(o.raw && o.raw.name); if (!nm) continue;
+    const k = fz(nm), e = g.get(k) || g.set(k, { nm, n: 0, sd: new Map() }).get(k); e.n++; e.sd.set(o.sd, (e.sd.get(o.sd) || 0) + 1);
+  }
+  return [...g.values()].filter(e => e.n >= 2).sort((a, b) => b.n - a.n).slice(0, 30).map(e => Object.assign(e, { sd: [...e.sd].sort((a, b) => b[1] - a[1])[0][0] }));
+}
+function zAddShop(tr) {
+  const name = tr.querySelector('.zrname').value.replace(/[\/|()（）,，]+/g, ' ').replace(/\s+/g, ' ').trim(), n = +tr.querySelector('.zrtrip').value;
+  if (!zHasName(name)) { toast('ใส่ชื่อร้านที่จะเพิ่ม'); tr.querySelector('.zrname').focus(); return; }
+  if (!n) { toast('เลือก Trip ให้ร้านนี้ก่อน'); tr.querySelector('.zrtrip').focus(); return; }
+  const lines = $('zoneIn').value.split(/\r?\n/), li = lines.findIndex(l => { const m = /^\s*(\d{1,2})(?!\d)/.exec(l); return m && +m[1] === n; });
+  if (li < 0) { toast('ไม่พบ Trip นี้ในตารางโซน'); return; }
+  lines[li] = lines[li].replace(/\s+$/, '') + ' / ' + name; zSaveZoneText(lines.join('\n'));
+}
 function zAddTrip() {
   const n = +$('zNewNum').value.replace(/\D/g, ''), txt = $('zNewZones').value.replace(/\s+/g, ' ').trim();
   if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99'); $('zNewNum').focus(); return; }
@@ -3730,6 +3762,8 @@ function renderZones() {
   if ([...groups.values()].some(g => g.link)) detail += '<p class="note">แขวงที่ยังไม่มีออเดอร์ของตัวเองในโซน (น้อยกว่า 10 ใบ) ใช้ <b>เวลาขับตามถนน</b> ไปยังแขวงที่มี Trip ดูแลอยู่แล้ว — <b>ไปถึงก่อน = อยู่ Trip นั้น</b> (เส้นทางจาก OpenStreetMap เทียบกับ Google Maps แล้ว; กด "ดูเส้นทางใน Google Maps" เพื่อเปิดดูเอง) ส่วนแขวงที่มีออเดอร์ในโซนอยู่แล้วเยอะ ใช้ Trip ที่ดูแลแขวงนั้นมากสุด</p>';
   if (Z.useRoad) detail += `<p class="note"><b>ระดับถนน/ซอย:</b> ออเดอร์ที่อยู่ในโซนแล้วบอกว่าถนน/ซอย/หมู่บ้านไหนไป Trip ไหน — ถ้าที่อยู่ของออเดอร์นอกตารางมีถนนที่หลักฐานชัด (อย่างน้อย 2 ใบ และ 60% ไปทางเดียวกัน) จะใช้ถนนตัดสินเป็นรายใบ ก่อนดูแขวง/เส้นทาง · ทดสอบย้อนหลัง: ออเดอร์ที่เข้าโซนแล้ว ${Z.back.ev.toLocaleString()} ใบมีถนนที่หลักฐานพอ (ตัดตัวมันเองออกจากหลักฐานก่อนทาย) — ทายตรงกับตาราง <b>${pct(Z.back.ok, Z.back.ev)}%</b> (วัดความสอดคล้องของถนน ไม่ใช่ความถูกต้องในโลกจริง)</p>`;
   h += '<h3 style="margin:14px 0 6px">แต่ละ Trip มีกี่ใบ (ตามตาราง + ที่แนะนำเพิ่ม)</h3><div id="ztTrips" class="tw"></div>';
+  const rep = zRepeatShops();
+  if (rep.length) h += `<details class="zbox" id="zRepeat"><summary>ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip <span class="rcount">${rep.length}</span></summary><p class="muted" style="margin:6px 0;font-size:14px">ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง</p><div class="tw"><table class="cmp zt zrep"><tr><th>ร้าน / ลูกค้า</th><th>แขวง</th><th>ใบ</th><th>เพิ่มเป็นชื่อโซนของ Trip</th><th></th></tr>${rep.map((e, i) => `<tr data-i="${i}"><td style="text-align:left"><input class="zrname" type="text" value="${esc(e.nm)}" spellcheck="false" aria-label="${esc('ชื่อที่จะเพิ่ม')}"></td><td style="text-align:left">${esc(e.sd)}</td><td>${e.n}</td><td><select class="zrtrip" aria-label="Trip"><option value="">เลือก Trip</option>${Z.nums.map(n => `<option value="${n}">Trip ${n}</option>`).join('')}</select></td><td class="zx"><button type="button" class="zbtn zradd">เพิ่ม</button></td></tr>`).join('')}</table></div></details>`;
   h += '<details class="zbox"><summary>รายละเอียด: แขวงนอกโซน · ถนน/ซอยที่เรียนรู้ · ดาวน์โหลด</summary>' + detail;
   h += `<h3 style="margin:16px 0 6px">แขวงที่อยู่นอกโซน → Trip ที่ใกล้ที่สุด</h3><div class="tw"><table class="cmp zt"><tr><th>แขวง</th><th>เขต</th><th>ใบ</th><th>ตามถนน/ซอย</th><th>ที่เหลือ → Trip</th><th>มั่นใจ</th><th>ถนน/ซอยที่พบ</th><th>เหตุผล</th></tr>`;
   rows.slice(0, 200).forEach(g => { h += `<tr><td>${esc(g.sd)}</td><td>${esc(g.d)}</td><td>${g.n}</td><td style="text-align:left;font-size:13px">${esc(roadSplit(g))}</td><td><select data-g="${esc(g.sd + '|' + g.d)}">${opts(g.pick)}</select></td><td><span class="tag ${g.conf === 'สูง' ? 'ok' : g.conf === 'ต่ำ' || g.conf === '—' ? 'warn' : ''}">${g.conf}</span></td><td style="text-align:left;font-size:13px">${esc([...g.roads].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ('+ c + ')' + roadHint(r)).join('  ·  '))}</td><td style="text-align:left;font-size:14px">${esc(g.why)}${g.link ? ` <a href="${g.link}" target="_blank" rel="noopener">ดูเส้นทางใน Google Maps</a>` : ''}</td></tr>`; });
@@ -3742,6 +3776,8 @@ function renderZones() {
   h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
   const el = $('zoneOut'), wasOpen = [...el.querySelectorAll('details')].map(d => d.open);      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
   el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach((d, i) => { if (wasOpen[i]) d.open = true; }); renderTripTable();
+  el.querySelectorAll('#zRepeat .zradd').forEach(b => b.addEventListener('click', () => zAddShop(b.closest('tr'))));
+  el.querySelectorAll('#zRepeat .zrname').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); i.closest('tr').querySelector('.zrtrip').focus(); } }));
   el.querySelectorAll('select[data-g]').forEach(s => s.addEventListener('change', () => { const gr = Z.groups.get(s.getAttribute('data-g')); if (gr) { gr.pick = s.value; renderTripTable(); } }));
   $('zCopy').onclick = async () => { try { await navigator.clipboard.writeText(extendedTable()); $('zCopy').textContent = 'คัดลอกแล้ว ✓'; } catch (_) { $('zCopy').textContent = 'คัดลอกไม่ได้ในเบราว์เซอร์นี้'; } };
   $('zApplyTrip').onclick = applyRoutes;
@@ -5590,6 +5626,17 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip', 'Shops / customers that order again and have no Trip', 'ထပ်မံမှာယူပြီး Trip မရှိသေးသော ဆိုင် / ဖောက်သည်များ'],
+  ['ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง',
+    'The address of these orders is only a shop name (no road / soi) and their sub-district is not in one Trip, so it cannot be decided — choose the Trip for the shop once: the name is added to that Trip\'s row of the zone table and the shop\'s next orders go to that Trip by themselves',
+    'ဤအော်ဒါများ၏ လိပ်စာတွင် ဆိုင်အမည်သာ ပါပြီး (လမ်း / ဆွိုင် မပါ) ရပ်ကွက်သည် Trip တစ်ခုတည်းတွင် မပါသဖြင့် ဆုံးဖြတ်မရပါ — ဆိုင်အတွက် Trip ကို တစ်ကြိမ်ရွေးပါ၊ ဆိုင်အမည်ကို ထို Trip ၏ ဇုန်ဇယားအတန်းထဲ ထည့်ပေးပြီး ဆိုင်၏ နောက်အော်ဒါများ ထို Trip သို့ ကိုယ်တိုင်ဝင်သည်'],
+  ['ร้าน / ลูกค้า', 'Shop / customer', 'ဆိုင် / ဖောက်သည်'],
+  ['เพิ่มเป็นชื่อโซนของ Trip', 'Add as a zone name of Trip', 'Trip ၏ ဇုန်အမည်အဖြစ် ထည့်ရန်'],
+  ['เลือก Trip', 'Choose a Trip', 'Trip ရွေးပါ'],
+  ['เพิ่ม', 'Add', 'ထည့်ရန်'],
+  ['ใส่ชื่อร้านที่จะเพิ่ม', 'Enter the shop name to add', 'ထည့်မည့် ဆိုင်အမည် ထည့်ပါ'],
+  ['เลือก Trip ให้ร้านนี้ก่อน', 'Choose a Trip for this shop first', 'ဤဆိုင်အတွက် Trip ကို အရင်ရွေးပါ'],
+  ['ไม่พบ Trip นี้ในตารางโซน', 'This Trip is not in the zone table', 'ဤ Trip သည် ဇုန်ဇယားထဲတွင် မရှိပါ'],
   ['บันทึกหรือยกเลิกแถวที่เปิดอยู่ก่อน', 'Save or cancel the row that is open first', 'ဖွင့်ထားသော အတန်းကို အရင် သိမ်းပါ သို့မဟုတ် ပယ်ဖျက်ပါ'],
   ['ใส่เลข Trip 1-99 (หรือ ดี4)', 'Enter a Trip number 1-99 (or ดี4)', 'Trip နံပါတ် ၁-၉၉ (သို့မဟုတ် ดี4) ထည့်ပါ'],
   ['มีแถว ดี4 อยู่แล้ว — ใช้เลข Trip หรือแก้ที่แถวนั้น', 'A ดี4 row already exists — use a Trip number or edit that row', 'ดี4 အတန်း ရှိပြီးသားဖြစ်သည် — Trip နံပါတ်သုံးပါ သို့မဟုတ် ထိုအတန်းတွင် ပြင်ပါ'],
