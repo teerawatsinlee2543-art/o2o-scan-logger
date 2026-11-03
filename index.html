@@ -3194,7 +3194,7 @@ function fuzzyHit0(t, M) {
   }
   return best && !tie ? best.w : null;
 }
-const EN_ALIAS_SRC = 'รามอินทรา=ramintra,ramindra,raminthra,rarmintra,ramintara,raminthara;รามคำแหง=ramkhamhaeng,ramkamhaeng,ramkhumhaeng,ramkhamheang,ramkamheang;นวมินทร์=nawamin,nawamintr;เสรีไทย=serithai,sereethai,seerithai,serrithai;หทัยราษฎร์=hathairat,hatairat,hathairaj,hathairatch;พระยาสุเรนทร์=phrayasuren,prayasuren,phrayasurin;นิมิตใหม่=nimitmai,nimitrmai,nimitmay,nimitrmay;ราษฎร์พัฒนา=ratphatthana,ratpattana,ratphattana,ratphatana;ราษฎร์อุทิศ=ratuthit,ratuthid,ratutit,ratuthis;สีหบุรานุกิจ=sihaburanukit,sihaburanukij,sihaburanukitch;ประเสริฐมนูกิจ=prasertmanukit,prasertmanukitch,prasoetmanukit,prasertmanukij,prasertmanukich;ลาดพร้าว=latphrao,ladprao,latprao,ladphrao;สุขาภิบาล=sukhaphiban,sukapiban,sukhapiban,sukaphiban;คู้บอน=khubon,kubon,khuubon;วัชรพล=watcharaphon,watcharapol,watcharaphol,watcharapon;ศรีนครินทร์=srinakarin,sinakharin,srinakharin,srinagarin;สุวินทวงศ์=suwinthawong,suwintawong;ร่มเกล้า=romklao,ramklao,romglao;เคหะร่มเกล้า=keharomklao;บึงขวาง=buengkhwang,buengkwang;คุ้มเกล้า=khumklao,kumklao,khoomklao;เทพรักษ์=theprak,theparak,thepparak;หนองระแหง=nongrahaeng,nongraheang,nongrahang;ไทยรามัญ=thairaman,thairamun;สวนสยาม=suansiam;กาญจนาภิเษก=kanchanaphisek,kanchanapisek;เลียบคลองสอง=liapkhlongsong,liabkhlongsong;สุเหร่าคลองหนึ่ง=suraokhlongnueng,suraokhlongneung;ถนอมมิตร=thanommit,thanommitr;ประชาร่วมใจ=pracharuamjai,prachaaruamjai;เจริญพัฒนา=charoenphatthana,charoenpattana;ราษฎร์นิมิตร=ratnimit,ratnimitr;ไมตรีจิต=maitrijit,maitreejit';      // (the roads of the zone table in Latin letters, no spaces / hyphens)
+const EN_ALIAS_SRC = 'รามอินทรา=ramintra,ramindra,raminthra,rarmintra,ramintara,raminthara;รามคำแหง=ramkhamhaeng,ramkamhaeng,ramkhumhaeng,ramkhamheang,ramkamheang;นวมินทร์=nawamin,nawamintr;เสรีไทย=serithai,sereethai,seerithai,serrithai;หทัยราษฎร์=hathairat,hatairat,hathairaj,hathairatch;พระยาสุเรนทร์=phrayasuren,prayasuren,phrayasurin;นิมิตใหม่=nimitmai,nimitrmai,nimitmay,nimitrmay;ราษฎร์พัฒนา=ratphatthana,ratpattana,ratphattana,ratphatana;ราษฎร์อุทิศ=ratuthit,ratuthid,ratutit,ratuthis;สีหบุรานุกิจ=sihaburanukit,sihaburanukij,sihaburanukitch;ประเสริฐมนูกิจ=prasertmanukit,prasertmanukitch,prasoetmanukit,prasertmanukij,prasertmanukich;ลาดพร้าว=latphrao,ladprao,latprao,ladphrao;สุขาภิบาล=sukhaphiban,sukapiban,sukhapiban,sukaphiban;คู้บอน=khubon,kubon,khuubon;วัชรพล=watcharaphon,watcharapol,watcharaphol,watcharapon;ศรีนครินทร์=srinakarin,sinakharin,srinakharin,srinagarin;สุวินทวงศ์=suwinthawong,suwintawong;ร่มเกล้า=romklao,ramklao,romglao;เคหะร่มเกล้า=keharomklao;บึงขวาง=buengkhwang,buengkwang;คุ้มเกล้า=khumklao,kumklao,khoomklao;เทพรักษ์=theprak,theparak,thepparak;หนองระแหง=nongrahaeng,nongraheang,nongrahang;ไทยรามัญ=thairaman,thairamun;สวนสยาม=suansiam;กาญจนาภิเษก=kanchanaphisek,kanchanapisek;เลียบคลองสอง=liapkhlongsong,liabkhlongsong;สุเหร่าคลองหนึ่ง=suraokhlongnueng,suraokhlongneung;ถนอมมิตร=thanommit,thanommitr;ประชาร่วมใจ=pracharuamjai,prachaaruamjai;เจริญพัฒนา=charoenphatthana,charoenpattana;ราษฎร์นิมิตร=ratnimit,ratnimitr;ไมตรีจิต=maitrijit,maitreejit;นวลจันทร์=nuanchan,nuanchun,nualchan';      // (the roads of the zone table in Latin letters, no spaces / hyphens)
 const EN_ALIAS = []; for (const part of EN_ALIAS_SRC.split(';')) { const [th, es] = part.split('='); for (const e of es.split(',')) EN_ALIAS.push([e.replace(/[^a-z]/g, ''), th]); }
 EN_ALIAS.sort((a, b) => b[0].length - a[0].length);
 const latinKey = s => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -3224,7 +3224,7 @@ function buildLex(orders, M) {      // the names that 4+ orders use (spelling by
   const cnt = new Map();
   for (const o of orders) for (const m of mentionsOf(o.addr)) { if (m.numOnly) continue; const c = cleanName(m.text); if (!c) continue; const disp = canonName(c.name, M, true), k = fz(disp), e = cnt.get(k) || cnt.set(k, { n: 0, disp }).get(k); e.n++; }
   const list = [...cnt].filter(([k, e]) => e.n >= 4 && k.length >= 6).sort((a, b) => b[1].n - a[1].n).map(([k, e]) => ({ k, disp: e.disp }));
-  LEX = { map: new Map(list.map(e => [e.k, e.disp])), list };
+  LEX = { map: new Map(list.map(e => [e.k, e.disp])), list, names: [...cnt.values()].filter(e => e.n >= 3) };      // (names = the Thai road / soi names that 3+ orders use: what an English spelling can be read as, see skIndex)
 }
 function lexName(k) {
   if (LEX.map.has(k)) return LEX.map.get(k); if (k.length < 7) return null;
@@ -3246,8 +3246,82 @@ function canonName(name, M, noLex) {      // the name as the zone table writes i
 const MENTION_RE = /(?:^|[\s,;(\[\-])(ซอย|ซ\.|ซ(?=\s)|ถนน|ถ\.|ถ(?=\s))\s*([^\s,;()\[\]]+(?:\s*\d+(?:[\/\-]\d+)*)?)/g;
 const EN_MENTION_RE = /\b(Soi|Alley|Lane|Thanon|Road|Rd)\b\.?\s*([A-Za-z][A-Za-z.\-]*(?:\s+[A-Za-z][A-Za-z.\-]*){0,3})(?:\s*(\d+(?:[\/\-]\d+)*))?/gi;
 const EN_BEFORE_RE = /((?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}(?:\s+(?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}){0,3})\s+(Road|Rd|Soi|Alley|Lane)\b\.?(?:\s*(\d+(?:[\/\-]\d+)*))?/gi;      // (the name is the words before Road / Soi, never Road / Soi themselves; word lengths are bounded so a very long run of letters cannot make the search slow)
+const EN_NUMALLEY_RE = /((?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}(?:\s+(?!(?:Road|Rd|Soi|Alley|Lane|Thanon)\b)[A-Za-z][A-Za-z.\-]{0,24}){0,3})\s+(\d+(?:[\/\-]\d+)*)\s+(?:Alley|Soi|Lane)\b/gi;
 const EN_SOINUM_RE = /\b(?:Soi|Alley|Lane)\s+(\d+(?:[\/\-]\d+)*)/gi;
 const MEMO = { m: new Map(), e: new Map() };      // (the same address is read several times — the match, the label, the guess — so each reading is kept; emptied when it grows large)
+/* ===== English spellings of Thai names: "Soi Sam wa 21" -> ซอย สามวา 21 =====
+   The roads of EN_ALIAS are known by their Latin spellings. Any other name written in Latin letters is read as the Thai name that SOUNDS like it: both spellings are cut down to the consonants
+   as they are heard ("สามวา" and "Sam wa" both -> smw; kh = k, ph = p, th = t, ch = j, ng = N, d = t, b = p, l = r) and the answer is a Thai name that the zone table or 3+ orders of the sheet use,
+   whose consonants are the same. Exact only, and only when ONE Thai name (or one Trip) has those consonants: a name that could be two different roads is not read. */
+const TH_CONS = { ก: 'k', ข: 'k', ฃ: 'k', ค: 'k', ฅ: 'k', ฆ: 'k', ง: 'N', จ: 'j', ฉ: 'j', ช: 'j', ฌ: 'j', ซ: 's', ศ: 's', ษ: 's', ส: 's', ญ: 'y', ย: 'y', ฎ: 't', ฏ: 't', ฐ: 't', ฑ: 't', ฒ: 't', ด: 't', ต: 't', ถ: 't', ท: 't', ธ: 't',
+  ณ: 'n', น: 'n', บ: 'p', ป: 'p', ผ: 'p', พ: 'p', ภ: 'p', ฝ: 'f', ฟ: 'f', ม: 'm', ร: 'r', ฤ: 'r', ล: 'r', ฦ: 'r', ฬ: 'r', ว: 'w', ห: 'h', ฮ: 'h' };
+const TH_SKIP = new Set('ะัาิีึืุูเแโใไ็่้๊๋ๆฯๅอ'.split(''));      // (vowels, tone marks and อ say nothing about the consonants)
+const skCollapse = s => s.replace(/(.)\1+/g, '$1');
+function thSkel(th) {      // "สามวา" -> "smw"
+  const s = String(th).replace(/[\s.\-]/g, ''); let out = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === 'ำ') { out.push('m'); continue; }
+    if (c === '์') { out.pop(); if (s[i - 1] === 'ร' && s[i - 2] === 'ท') out.pop(); continue; }      // (a silent letter: "จันทร์", "ราษฎร์")
+    if (TH_SKIP.has(c)) continue;
+    if (c === 'ห' && i === 0 && 'งญนมยรลว'.includes(s[1] || '-')) continue;      // (a leading ห only lifts the next letter: "หนอง" = nong)
+    const k = TH_CONS[c]; if (k) out.push(k);
+  }
+  return skCollapse(out.join(''));
+}
+function enSkel(text) {      // "Sam wa" -> "smw"
+  const s = String(text).toLowerCase().replace(/[^a-z]/g, ''); let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i], d = s[i + 1] || '';
+    if (c === 'k' && d === 'h' || c === 'p' && d === 'h' || c === 't' && d === 'h' || c === 'g' && d === 'h') { out += c === 'g' ? 'k' : c; i++; continue; }
+    if (c === 'c' && d === 'h' || c === 's' && d === 'h') { out += c === 'c' ? 'j' : 's'; i++; continue; }
+    if (c === 'n' && d === 'g') { out += 'N'; i++; continue; }
+    if (c === 'c' && d === 'k') { out += 'k'; i++; continue; }
+    if ('aeiou'.includes(c)) continue;
+    if (c === 'y') { if ('aeiou'.includes(d)) out += 'y'; continue; }
+    out += c === 'd' ? 't' : c === 'b' ? 'p' : c === 'l' ? 'r' : c === 'v' ? 'w' : c === 'z' ? 's' : c === 'q' ? 'k' : c === 'g' ? 'k' : c === 'j' ? 'j' : c === 'x' ? 'ks' : c === 'c' ? ('eiy'.includes(d) ? 's' : 'k') : c;
+  }
+  return skCollapse(out);
+}
+const skLoose = k => skCollapse(k.replace(/[wy]/g, ''));      // (w and y come and go in the Latin spellings: ruam = ร่วม, Pracha = ประชา)
+const SK = { M: null, lex: null, strict: new Map(), loose: new Map() };
+function skIndex() {      // the Thai names an English spelling can be read as: the names of the zone table + the road / soi names that 3+ orders of the sheet use, by their consonants
+  const M = zoneMatcher().M;
+  if (SK.M === M && SK.lex === LEX) return SK;
+  SK.M = M; SK.lex = LEX; SK.strict = new Map(); SK.loose = new Map(); MEMO.m.clear();      // (the readings kept so far were made without these names)
+  const seen = new Set(), add = (th, trip, n) => {
+    th = th.replace(/\s*\d.*$/, '').trim(); if ((th.match(/[ก-๙]/g) || []).length < 3 || /[A-Za-z]/.test(th)) return;
+    const key = th + '|' + (trip == null ? '' : trip); if (seen.has(key)) return; seen.add(key);
+    const st = thSkel(th); if (st.length < 3) return;
+    const e = { th, trip, n }, put = (m, k) => (m.get(k) || m.set(k, []).get(k)).push(e);
+    put(SK.strict, st); const lo = skLoose(st); if (lo.length >= 4) put(SK.loose, lo);
+  };
+  for (const w of M.kws) add(w.nm, w.trip, 0);
+  for (const e of (LEX.names || [])) add(e.disp, null, e.n);
+  return SK;
+}
+function skPick(list) {      // several Thai names with the same consonants: the zone table's (if all in one Trip), else the one most orders use (twice as many as the next); else none
+  if (!list) return null;
+  const zone = list.filter(e => e.trip != null);
+  if (zone.length) return new Set(zone.map(e => e.trip)).size === 1 ? zone[0].th : null;
+  const lex = list.filter(e => e.n).sort((a, b) => b.n - a.n);
+  return lex.length === 1 || (lex.length > 1 && lex[0].n >= 2 * lex[1].n) ? lex[0].th : null;
+}
+const EN_GENERIC = new Set('building condo condominium apartment apt village tower house home town townhouse school hospital market mall park garden hotel resort office factory company shop store center centre plaza place residence mansion court lake city land club golf gate front back near opposite behind next between floor room unit moo mu ban muban road street lane alley soi yaek yak thanon bangkok thailand khet khwaeng district tambon amphoe'.split(' '));
+function skName(words, before) {      // the words of a Latin name ("Sam wa 21" without the number) -> the Thai name they sound like, or null. The name starts the words when it follows Soi / Road and ends them when it comes before.
+  const ws = String(words).split(/\s+/).filter(w => /[A-Za-z]/.test(w) && !/^(null|undefined|none|nan)\.?$/i.test(w)); if (!ws.length) return null;      // (the sheet writes the empty fields of an address as "null")
+  const ix = skIndex();
+  for (let k = Math.min(ws.length, 4); k >= 1; k--) {      // (the longest run of words that has an answer)
+    const run = before ? ws.slice(ws.length - k) : ws.slice(0, k), joined = run.join(''), st = enSkel(joined), whole = k === ws.length;
+    if (st.length < 3 || joined.replace(/[^A-Za-z]/g, '').length < 4 || run.some(w => EN_GENERIC.has(w.toLowerCase().replace(/[^a-z]/g, '')))) continue;
+    // (a name that is only the START of the words ("Sam Wa" of "Sam Wa Tawan Tok", "Sanit Wong" of "Charan Sanit Wong") needs 5+ consonants and no loose match: short pieces of a longer name are too often a different road)
+    if (!whole && st.length < 5) continue;
+    let th = skPick(ix.strict.get(st)); if (th) return th;
+    const lo = skLoose(st); if (whole && lo.length >= 4 && (th = skPick(ix.loose.get(lo)))) return th;
+  }
+  return null;
+}
+const enName = (words, before, bySound) => enAlias(latinKey(words)) || (bySound !== false ? skName(words, before) : null);      // (bySound false: the words after "Road" / "Rd" / "Alley" are the sub-district that follows the road, not a name: "Phraya Suren Road Bang Chan")
 function mentionsOf(addr) {      // -> [{kind:'ซ'|'ถ', text, numOnly?}]
   const key = String(addr || ''), hit = MEMO.m.get(key); if (hit) return hit;
   if (MEMO.m.size > 20000) MEMO.m.clear();
@@ -3261,8 +3335,9 @@ function mentionsOf0(addr) {
     out.push({ kind, text: m[2] }); if (out.length >= 8) break;
   }
   if (/[A-Za-z]{3}/.test(s)) {
-    EN_MENTION_RE.lastIndex = 0; while ((m = EN_MENTION_RE.exec(s))) { const th = enAlias(latinKey(m[2])); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[1]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Soi Ramkhamhaeng 164 -> ซ รามคำแหง164)
-    EN_BEFORE_RE.lastIndex = 0; while ((m = EN_BEFORE_RE.exec(s))) { const th = enAlias(latinKey(m[1])); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[2]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Ram Inthra Road -> ถ รามอินทรา: the name before the word)
+    EN_MENTION_RE.lastIndex = 0; while ((m = EN_MENTION_RE.exec(s))) { const th = enName(m[2], false, /^(soi|thanon)$/i.test(m[1])); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[1]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Soi Ramkhamhaeng 164 -> ซ รามคำแหง164; Soi Sam wa 21 -> ซ สามวา21: a name that is not a road of the table is read by its sound)
+    EN_BEFORE_RE.lastIndex = 0; while ((m = EN_BEFORE_RE.exec(s))) { const th = enName(m[1], true); if (th) out.push({ kind: /^(soi|alley|lane)$/i.test(m[2]) ? 'ซ' : 'ถ', text: th + (m[3] || '') }); }      // (Ram Inthra Road -> ถ รามอินทรา: the name before the word)
+    EN_NUMALLEY_RE.lastIndex = 0; while ((m = EN_NUMALLEY_RE.exec(s))) { const th = enName(m[1], true); if (th) out.push({ kind: 'ซ', text: th + m[2] }); }      // (Sam Wa 7/1 Alley -> ซ สามวา7/1: Google writes the number before the word)
     EN_SOINUM_RE.lastIndex = 0; while ((m = EN_SOINUM_RE.exec(s))) out.push({ kind: 'ซ', text: m[1], numOnly: true });      // (Soi 8: a bare soi number)
   }
   return out;
@@ -3635,7 +3710,7 @@ $('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGU
    x = {sd, d, addr, zip} -> the Trip number, null = outside the table, undefined = there is no table to read. zoneVer() names the table text (and this matching): a number worked out under another version is not trusted. */
 let zmc = null;
 const zhash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m3|' + txt) : '' }; } return zmc; }
+function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m4|' + txt) : '' }; } return zmc; }
 function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '', name: x.name || '' }, z.M).trip; }
 async function applyRoutes(silent) {
   if (!Z.zt) return;
@@ -3659,7 +3734,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
