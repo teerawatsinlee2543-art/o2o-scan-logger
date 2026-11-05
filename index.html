@@ -4042,17 +4042,18 @@ function adSetBox(no, cls, html) {
 }
 function adPaint(no) {                                         // the answer of "หา Trip ใกล้สุด" (kept in adRes) with the current state of the pick
   const o = S.byNo && S.byNo.get(no), r = adRes.get(no); if (!o || !r) return;
-  const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no], rough = pt.how === 'area';
+  const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no], rough = pt.how === 'area', none = pt.how === 'none';      // (none = no point at all: the pin / road fields are the only way on)
   const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', place: 'จุดจากชื่อหมู่บ้าน/สถานที่ในที่อยู่ ใน OpenStreetMap (โดยประมาณ — กลางหมู่บ้าน ไม่ใช่หน้าบ้าน)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง' }[pt.how];
   const useBtn = t => `<button type="button" class="aduse primary" data-trip="${t}">${esc(T('ใช้ Trip {0}', t))}</button>`;
   const act = chosen ? `<div class="adsel">✅ <b>${esc(T('ใช้ Trip {0} แล้ว — พิมพ์บนใบปะหน้า', chosen))}</b> <button type="button" class="adundo">${esc(T('ยกเลิก'))}</button></div>`
-    : has || rough ? '' : `<div class="adsel">${useBtn(top[0].trip)} <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;      // (the middle of a sub-district is never offered: it picked the wrong Trip for a shop on Ram Khamhaeng road)
+    : has || rough || none ? '' : `<div class="adsel">${useBtn(top[0].trip)} <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;      // (the middle of a sub-district is never offered: it picked the wrong Trip for a shop on Ram Khamhaeng road)
   const ra = r.road ? `<div class="adsel">${esc(r.road.q)} — ${r.road.trip != null ? esc(T('ถนนนี้อยู่ Trip {0} ตามตาราง', r.road.trip)) + (chosen == r.road.trip || has ? '' : ' ' + useBtn(r.road.trip)) : `<span class="adwarn">${esc(T('ถนนนี้ยังไม่อยู่ในตาราง'))}</span>`}</div>` : '';
   const fix = pt.how === 'pin' ? '' : `<div class="adfix"><div class="muted" style="font-size:12.5px;margin-top:6px">${esc(T('ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น'))}</div><div class="adfr"><input class="adnpi" type="text" placeholder="${esc(T('พิกัด เช่น 13.85, 100.70 หรือลิงก์ Google Maps'))}" autocomplete="off"><button type="button" class="adnpsave">${esc(T('ปักหมุด + หา Trip ใหม่'))}</button></div><div class="adfr"><input class="adnroad" type="text" placeholder="${esc(T('ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง'))}" autocomplete="off"><button type="button" class="adnroadgo">${esc(T('หา Trip ของถนน'))}</button></div><div class="adnmsg muted" style="font-size:12.5px"></div>${ra}</div>`;
   adSetBox(no, pt.how === 'pin' || pt.how === 'addr' || pt.how === 'place' ? 'ok' : 'warn', (() => {
     const lst = top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : (rough ? '~' : '') + x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ');
+    if (none) return `<div class="adwarn">${esc(T('ไม่พบจุดของที่อยู่นี้ใน OpenStreetMap — ปักหมุดเอง แล้วกดใหม่'))}</div>`;
     return rough ? `<div class="adwarn">${esc(T('หาจุดของที่อยู่นี้ไม่เจอ — ยังบอก Trip ที่ใกล้สุดไม่ได้'))}</div><details style="margin:4px 0"><summary class="muted" style="cursor:pointer;font-size:12.5px">${esc(T('ดูตัวเลขที่วัดจากกลางแขวง (ไม่แม่น)'))}</summary>${lst}</details>` : `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ${lst}</div>`;
-  })() + `${act}${fix}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
+  })() + `${act}${fix}` + (none ? '' : `<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`));
 }
 async function adNearest(row) {
   const no = row.dataset.no, o = S.byNo && S.byNo.get(no); if (!o || adBusy.has(no)) return;
@@ -4062,7 +4063,7 @@ async function adNearest(row) {
   box.className = 'adnr'; box.innerHTML = `<span class="muted">${esc(T('กำลังหาจุดของที่อยู่ …'))}</span>`;
   try {
     const pt = await adLocate(o);
-    if (!pt) { box.innerHTML = `<span class="adwarn">${esc(T('ไม่พบจุดของที่อยู่นี้ใน OpenStreetMap — ปักหมุดเอง แล้วกดใหม่'))}</span>`; return; }
+    if (!pt) { adRes.set(no, { pt: { how: 'none' }, top: [], close: false, missing: 0, total: 0 }); adPaint(no); return; }
     await zgEnsure((d, n) => { box.innerHTML = `<span class="muted">${esc(T('กำลังโหลดตำแหน่งโซนจาก OpenStreetMap {0}/{1} (ครั้งเดียว แล้วจำไว้ในเบราว์เซอร์นี้)', d, n))}</span>`; });
     const list = zgNearest(pt.la, pt.lo), names = [...new Set(zgNames().map(x => x.nm))], missing = names.filter(n => !(zgCache[n] && zgCache[n].length)).length;
     if (!list.length) { box.innerHTML = `<span class="adwarn">${esc(T('OpenStreetMap ไม่มีรูปร่างของโซนเลย — เทียบไม่ได้'))}</span>`; return; }
