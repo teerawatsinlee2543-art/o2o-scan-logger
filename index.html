@@ -2932,7 +2932,17 @@ const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup', LS_ZONE
 let tripMap = {};
 try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') tripMap = r; } catch (_) {}
 const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} cloudTouch('trips'); };
-function tripCount() { return new Set(Object.values(tripMap).map(e => e.t)).size; }
+function tripCount() {      // the Trips that really run: those of the area table + those of the zone table, but not a Trip that is only a customer's name ("Trip 20 = พี่แดง ศุภลักษณ์")
+  const s = new Set(Object.values(tripMap).map(e => String(e.t))); let z = null;
+  try { z = window.O2OZone && window.O2OZone.tripNums ? window.O2OZone.tripNums() : null; } catch (_) { }
+  if (z) { for (const n of z.people) s.delete(String(n)); for (const n of z.nums) s.add(String(n)); }
+  return s.size;
+}
+function refreshTripBadges() {
+  const c = tripCount(), b = $('tabTripCnt'), t = $('tCount');
+  if (b) { b.textContent = `${c} Trip`; b.classList.toggle('zero', !c); }
+  try { if (t) t.textContent = T('{0} พื้นที่ · {1} Trip', Object.keys(tripMap).length, c); } catch (_) { }      // (T needs the language, which is not set yet when this runs during the start-up)
+}
 const normArea = s => String(s == null ? '' : s).toLowerCase().trim().replace(/^(เขต|แขวง|อำเภอ|ตำบล|จังหวัด|อ\.|ต\.|จ\.)\s*/, '').replace(/[\s._\-,()\/\\]/g, '');
 /* The Trip of ONE order is decided the way the Update Data → ค list decides it: the zone table (the same text as the table on the wall) read against the order's own address.
    It is worked out when the sheet is asked for the order: the address is used at that moment and thrown away, only the Trip number stays — in this browser only, with the version of the zone table it came from
@@ -3741,7 +3751,7 @@ const zEditing = () => { if (zEditLi !== null) return true; const a = document.a
 let zRenderLater = false;
 function zSaveZoneText(text) {
   $('zoneIn').value = text; try { localStorage.setItem(LS_ZONES, text); } catch (_) {}
-  zoneChanged(); autoCheck(true); toast('บันทึกตารางโซนแล้ว');
+  zoneChanged(); autoCheck(true); refreshTripBadges(); toast('บันทึกตารางโซนแล้ว');
 }
 function zTripAt(li) { const t = Z.zt && Z.zt.trips.find(x => x.li === li), lines = $('zoneIn').value.split(/\r?\n/); return t && lines[li] != null && lines[li].trim() === t.line ? { t, lines } : null; }
 /* a row is READ-ONLY until its "แก้ไข" button is pressed; then the whole row opens (the Trip number and the zones) with "บันทึก" / "ยกเลิก" / "ลบ". One row at a time; the others' buttons wait. */
@@ -4141,7 +4151,7 @@ function renderZones() {
   }
   h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
   const el = $('zoneOut'), dkey = d => d.id || (d.querySelector('summary') ? d.querySelector('summary').textContent.trim().slice(0, 12) : ''), wasOpen = new Set([...el.querySelectorAll('details')].filter(d => d.open).map(dkey));      // (by name, not by place: the box of the shops without a Trip comes and goes, and the others must not take its open / shut state)      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
-  el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach(d => { if (wasOpen.has(dkey(d))) d.open = true; }); renderTripTable(); renderAddr();
+  refreshTripBadges(); el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach(d => { if (wasOpen.has(dkey(d))) d.open = true; }); renderTripTable(); renderAddr();
   el.querySelectorAll('.zlist').forEach(b => b.addEventListener('click', () => { zListMode = zListMode === b.dataset.m ? '' : b.dataset.m; zListLimit = 100; el.querySelectorAll('.zlist').forEach(x => x.classList.toggle('on', x.dataset.m === zListMode)); zOrdersShow(); }));
   zOrdersShow();
   el.querySelectorAll('#zRepeat .zradd').forEach(b => b.addEventListener('click', () => zAddShop(b.closest('tr'))));
@@ -4311,7 +4321,13 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+function zTripNums() {      // the numbered Trips of the zone table; a Trip whose zones are all customers' names (two words, or a title like พี่ / คุณ / ป้า) is not an area Trip
+  const nums = [], people = [], isPerson = nm => (nm.split(/\s+/).length >= 2 && !/\d/.test(nm) && nm.replace(/\s/g, '').length >= 6) || /^(พี่|คุณ|นาย|นาง|ป้า|ลุง|น้า|ครู|หมอ)/.test(nm);
+  for (const t of parseZones($('zoneIn').value).trips) { if (t.special) continue; const names = t.zones.map(z => (z.names[0] || '').trim()).filter(Boolean); (names.length && names.every(isPerson) ? people : nums).push(t.num); }
+  return { nums, people };
+}
+window.O2OZone = { tripNums: zTripNums, loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+refreshTripBadges();      // (the Trip count of the badges now also reads the zone table, which is only known from here on)
 
 })();
 
