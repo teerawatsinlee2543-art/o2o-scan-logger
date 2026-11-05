@@ -3526,14 +3526,16 @@ function roadKeyOf(o, M) {      // the road of the order in its canonical spelli
   const c = cleanName(r.text); if (!c) return '';
   const k = fz(M ? canonName(c.name, M) : c.name); return k.length >= 3 ? k : '';
 }
+const tmsCode = t => (/^([A-Z]+\d+)-/.exec(String(t || '')) || [])[1] || '';      // "AXTRA050286-2026-10-16-1" -> "AXTRA050286": the route / driver code of the TMS Trip Id, without the day
+const rcKey = o => { const c = tmsCode(o.trip); return c ? o.sd + '|' + o.d + '|' + c : ''; };      // the same route code in the same sub-district: measured on the sheet it adds 18 % more orders at the same accuracy (see buildGuess)
 function buildGuess(orders, M) {
-  const rk = new Map(), tms = new Map(), sd = new Map(), add = (m, k, t) => { if (!k) return; const e = m.get(k) || m.set(k, new Map()).get(k); e.set(t, (e.get(t) || 0) + 1); };
-  for (const o of orders) if (o.zt != null && o.zhow !== 'name') { o._rk = roadKeyOf(o, M); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); }
+  const rk = new Map(), tms = new Map(), sd = new Map(), rc = new Map(), add = (m, k, t) => { if (!k) return; const e = m.get(k) || m.set(k, new Map()).get(k); e.set(t, (e.get(t) || 0) + 1); };
+  for (const o of orders) if (o.zt != null && o.zhow !== 'name') { o._rk = roadKeyOf(o, M); add(rk, o._rk, o.zt); add(tms, o.trip, o.zt); add(sd, o.sd + '|' + o.d, o.zt); add(rc, rcKey(o), o.zt); }
   const out = new Map();
   for (const o of orders) {
     if (o.zt != null) continue;
     const comb = new Map(), take = (m, k, w) => { const e = k && m.get(k); if (!e) return; let tot = 0; for (const n of e.values()) tot += n; for (const [t, n] of e) comb.set(t, (comb.get(t) || 0) + w * n / tot); };
-    take(rk, roadKeyOf(o, M), 3); take(tms, o.trip, 2); take(sd, o.sd + '|' + o.d, 1);
+    take(rk, roadKeyOf(o, M), 3); take(tms, o.trip, 2); take(rc, rcKey(o), 2); take(sd, o.sd + '|' + o.d, 1);
     if (!comb.size) continue;
     let best = null, sum = 0; for (const [t, n] of comb) { sum += n; if (!best || n > best[1]) best = [t, n]; }
     const share = best[1] / sum; if (share >= 0.6) out.set(o.no, { trip: best[0], share });
@@ -3576,10 +3578,29 @@ function roadSuggest(g, stat) {
   return { trip: n.trip, conf, link: `https://www.google.com/maps/dir/${p0[0]},${p0[1]}/${n.ll[0]},${n.ll[1]}`,
     why: `ยังไม่มีออเดอร์ของแขวงนี้ในโซน — ขับไปแขวง${n.sd}ถึงก่อน ~${n.min.toFixed(0)} นาที (${n.km.toFixed(1)} กม., ${src}) ซึ่ง Trip ${n.trip} ดูแลอยู่ ${Math.round(n.share * 100)}%${alt ? ' · รองลงมา: ' + alt : ''}` };
 }
+let zCal = null;                                                          // how often "the top Trip of the sub-district" is right, by the share of that Trip: measured on the orders of this sheet (see suggestFor)
+function zCalibrate(orders) {
+  const key = o => o.sd + '|' + o.d, by = new Map(), placed = orders.filter(o => o.zt != null && o.zhow !== 'name');
+  for (const o of placed) { const m = by.get(key(o)) || by.set(key(o), new Map()).get(key(o)); m.set(o.zt, (m.get(o.zt) || 0) + 1); }
+  const edges = [0.4, 0.6, 0.8], b = [[0, 0], [0, 0], [0, 0], [0, 0]];
+  for (const o of placed) {
+    const m = by.get(key(o)); let tot = 0, top = null;
+    for (const [t, n0] of m) { const n = t === o.zt ? n0 - 1 : n0; if (n <= 0) continue; tot += n; if (!top || n > top[1]) top = [t, n]; }
+    if (tot < 10 || !top) continue;                                        // (the order itself is taken out of the evidence first: a fair test)
+    const i = edges.filter(e => top[1] / tot >= e).length; b[i][1]++; if (top[0] === o.zt) b[i][0]++;
+  }
+  zCal = { edges, b };
+}
+const zAccOf = share => { if (!zCal) return null; const i = zCal.edges.filter(e => share >= e).length, [ok, n] = zCal.b[i]; return n >= 30 ? Math.round(100 * ok / n) : null; };
 function suggestFor(g, stat, geoOK, cent) {                           // g = {sd, d, n} an area outside the table; stat = what the matched orders say
   if (ownTotal(stat, g.sd + '|' + g.d) < 10) { const rs = roadSuggest(g, stat); if (rs) return rs; }      // (a few orders of its own say little: the nearest served area by road decides)
   const best = m => { let b = null; for (const [t, n] of m) if (!b || n > b[1]) b = [t, n]; return b; };
-  const bySd = stat.sd.get(g.sd + '|' + g.d); if (bySd && bySd.size) { const b = best(bySd), all = [...bySd].sort((x, y) => y[1] - x[1]), tot = all.reduce((x, y) => x + y[1], 0); return { trip: b[0], conf: all.length > 3 && b[1] < tot * 0.5 ? 'กลาง' : 'สูง', why: `แขวงเดียวกันที่เข้าโซนแล้ว ${tot} ใบ: ${all.slice(0, 3).map(([t, n]) => `Trip ${t} (${n})`).join('  ')}${all.length > 3 ? '  …' : ''}${all.length > 1 ? ' — แขวงนี้ถูกแบ่งหลาย Trip ดูถนนที่พบประกอบ' : ''}` }; }
+  const bySd = stat.sd.get(g.sd + '|' + g.d); if (bySd && bySd.size) {
+    const b = best(bySd), all = [...bySd].sort((x, y) => y[1] - x[1]), tot = all.reduce((x, y) => x + y[1], 0), share = b[1] / tot, acc = zAccOf(share);
+    /* The label follows the share of the top Trip, calibrated on the sheet itself (hide an order, guess it from the others of its sub-district): a top Trip with 80 %+ is right ~90 %, 60-80 % ~72 %, 40-60 % ~51 %, under 40 % ~33 %.
+       (It used to go by the number of Trips only, so "สูง" was right 66 % and "กลาง" 35 %.) Under 50 % the Trip is NOT put in the menu: it is shown, but left to the person. */
+    return { trip: b[0], conf: share >= 0.75 ? 'สูง' : share >= 0.5 ? 'กลาง' : 'ต่ำ', weak: share < 0.5,
+      why: `แขวงเดียวกันที่เข้าโซนแล้ว ${tot} ใบ: ${all.slice(0, 3).map(([t, n]) => `Trip ${t} ${Math.round(100 * n / tot)}%`).join('  ')}${all.length > 3 ? '  …' : ''}${acc != null ? ` — เลือก Trip ${b[0]} ทายถูกราว ${acc}% (วัดจากออเดอร์ของชีตนี้)` : ''}${all.length > 1 ? ' — แขวงนี้ถูกแบ่งหลาย Trip ดูถนนที่พบประกอบ' : ''}` }; }
   if (geoOK && geo.get(g.sd) && cent.size) { let b = null; for (const [t, c] of cent) { const dd = hav(geo.get(g.sd), c) * 1.35; if (!b || dd < b[1]) b = [t, dd]; } return { trip: b[0], conf: b[1] < 3 ? 'สูง' : b[1] < 8 ? 'กลาง' : 'ต่ำ', why: `ใกล้โซนของ Trip ${b[0]} ที่สุด ~${b[1].toFixed(1)} กม. (จากพิกัด)` }; }
   const byD = stat.d.get(g.d); if (byD && byD.size) { const b = best(byD); return { trip: b[0], conf: 'กลาง', why: `เขต${g.d}: Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; }
   for (let h = 1; h <= 3; h++) { const m = new Map(); for (const [d, tm] of stat.d) if (hops(g.d, d) === h) for (const [t, n] of tm) m.set(t, (m.get(t) || 0) + n); if (m.size) { const b = best(m); return { trip: b[0], conf: 'ต่ำ', why: `เขตที่ติดกัน (ข้าม ${h} เขต): Trip ${b[0]} มีออเดอร์มากสุด (${b[1]} ใบ)` }; } }
@@ -3624,7 +3645,8 @@ function runZones() {
   const areaKeys = new Set(orders.map(o => o.sd)); let withGeo = 0; for (const k of areaKeys) if (geo.has(k)) withGeo++; const geoOK = geo.size > 0 && withGeo / Math.max(1, areaKeys.size) >= 0.9;
   const cent = new Map(); if (geoOK) { const acc = new Map(); for (const o of orders) if (o.zt != null && o.zhow !== 'name' && geo.has(o.sd)) { const p = geo.get(o.sd), a = acc.get(o.zt) || [0, 0, 0]; a[0] += p[0]; a[1] += p[1]; a[2]++; acc.set(o.zt, a); } for (const [t, a] of acc) cent.set(t, [a[0] / a[2], a[1] / a[2]]); }
   const groups = new Map(); for (const o of out) { const k = o.sd + '|' + o.d; (groups.get(k) || groups.set(k, { sd: o.sd, d: o.d, n: 0, orders: [], roads: new Map() }).get(k)).n++; groups.get(k).orders.push(o); for (const r of roadsOf(o.addr)) groups.get(k).roads.set(r, (groups.get(k).roads.get(r) || 0) + 1); }
-  for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null ? '' : String(s.trip) }); }
+  zCalibrate(orders);
+  for (const gr of groups.values()) { const s = suggestFor(gr, stat, geoOK, cent); Object.assign(gr, s, { pick: s.trip == null || s.weak ? '' : String(s.trip) }); }      // (a Trip that is right less than half of the time is shown but not filled in)
   const useRoad = $('zRoad').checked; for (const o of out) o.rd = useRoad ? roadVerdict(o, roadVotes, null) : null;      // street level: a road / soi that the orders already in a zone use decides the order by itself
   let ev = 0, okN = 0; if (useRoad) for (const o of orders) if (o.zt != null && o.zhow !== 'weak' && o.zhow !== 'name') { const v = roadVerdict(o, roadVotes, o.zt); if (v) { ev++; if (v.trip === o.zt) okN++; } }
   Object.assign(Z, { zt, M, groups, roadVotes, nums, how, byTrip, orders, day: useAll ? 'ทุกวันในไฟล์' : day, geoOK, useRoad, back: { ev, ok: okN }, noAddr: orders.length && !orders.some(o => o.addr), guess: (buildLex(orders, M), buildGuess(orders, M)) });
