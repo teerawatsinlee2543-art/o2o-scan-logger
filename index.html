@@ -1511,7 +1511,8 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
         <div class="zset">
           <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
           <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
-          <label class="f"><input id="zGuess" type="checkbox" checked> เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน (มี ? ท้ายเลข)</label>
+          <label class="f"><input id="zGuess" type="checkbox" checked> เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน</label>
+          <label class="f"><input id="zGuessMark" type="checkbox"> ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)</label>
           <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
           <div class="row"><button id="btnZone" type="button" disabled>ตรวจโซน</button></div>
         </div>
@@ -2916,8 +2917,9 @@ function tripFor(inf, order) {
   const z = order ? ztGet(order) : undefined;
   if (z != null) return String(z);                                    // the zone table, by the order's own address
   for (const v of [inf.sd, inf.zip, inf.d, inf.pv]) { if (!v) continue; const e = tripMap[normArea(v)]; if (e && !e.am) return e.t; }      // the most specific area first; an automatic entry marked "am" (the area is split over several Trips) is skipped: a blank is better than a wrong Trip
-  const g = order && window.O2OZone && window.O2OZone.guessOf ? window.O2OZone.guessOf(order) : null;      // last: the system's guess from the same road / the same delivery route / the same area — marked "?" so nobody takes it for a sure number
-  return g ? g.trip + '?' : '';
+  const g = order && window.O2OZone && window.O2OZone.guessOf ? window.O2OZone.guessOf(order) : null;      // last: the system's guess from the same road / the same delivery route / the same area
+  let mark = false; try { mark = localStorage.getItem('o2o-zguessmark-v1') === '1'; } catch (_) {}      // (printed with a "?" only when Settings says so: the number alone was asked for)
+  return g ? g.trip + (mark ? '?' : '') : '';
 }
 const splitAreas = s => String(s == null ? '' : s).split(/[,;\n\/|]+/).map(x => x.trim()).filter(Boolean);
 function buildTripPending(rows, src) {
@@ -3971,7 +3973,9 @@ $('zoneOut').addEventListener('focusout', () => setTimeout(() => { if (zRenderLa
 if (IN_VIEWER || !srcReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
 try { if (localStorage.getItem(LS_ZGUESS) === '0') $('zGuess').checked = false; } catch (_) {}
-$('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGUESS, $('zGuess').checked ? '1' : '0'); } catch (_) {} toast($('zGuess').checked ? 'เปิดเลข Trip ที่ระบบเดา (มี ? ท้ายเลข)' : 'ปิดเลข Trip ที่ระบบเดา'); });
+$('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGUESS, $('zGuess').checked ? '1' : '0'); } catch (_) {} toast($('zGuess').checked ? 'เปิดเลข Trip ที่ระบบเดา' : 'ปิดเลข Trip ที่ระบบเดา'); try { window.O2O.render(); } catch (_) {} });
+try { $('zGuessMark').checked = localStorage.getItem('o2o-zguessmark-v1') === '1'; } catch (_) {}      // (the "?" after a guessed Trip is OFF unless it is switched on here: tripFor reads the same key)
+$('zGuessMark').addEventListener('change', () => { try { localStorage.setItem('o2o-zguessmark-v1', $('zGuessMark').checked ? '1' : '0'); } catch (_) {} toast($('zGuessMark').checked ? 'ใส่ ? ท้ายเลข Trip ที่ระบบเดา' : 'ไม่ใส่ ? ท้ายเลข Trip ที่ระบบเดา'); try { window.O2O.render(); } catch (_) {} });
 /* the result becomes the route table (area -> Trip) that the cover sheet prints: for every sub-district of the file the Trip that most of its orders go to (the zone table first, then the road verdict, then the area suggestion);
    the English spellings of those sub-districts get the same Trip. It is added to the table above (the same area written the same way is replaced, the rest stays) and "ย้อนกลับครั้งล่าสุด" brings the old table back. */
 /* One order at a time (the cover sheet): the same zone-table text and the same matching as the list above, so a slip says what the list counts.
@@ -5694,6 +5698,12 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน', 'Fill in the Trip that the system guesses for sheets outside the zones', 'ဇုန်ပြင်ပရှိ စာရွက်များအတွက် စနစ်က ခန့်မှန်းသော Trip နံပါတ်ကို ဖြည့်ရန်'],
+  ['ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)', 'Put a ? after a Trip that the system guesses (unticked = printed as a plain number, like any other)', 'စနစ်က ခန့်မှန်းသော Trip နံပါတ်နောက်တွင် ? ထည့်ရန် (မတိုက်ပါက သာမန်နံပါတ်အတိုင်း ပုံနှိပ်သည်)'],
+  ['เปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is on', 'ခန့်မှန်း Trip ဖွင့်ထားသည်'],
+  ['ปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is off', 'ခန့်မှန်း Trip ပိတ်ထားသည်'],
+  ['ใส่ ? ท้ายเลข Trip ที่ระบบเดา', 'A ? is put after a guessed Trip', 'ခန့်မှန်း Trip နောက်တွင် ? ထည့်မည်'],
+  ['ไม่ใส่ ? ท้ายเลข Trip ที่ระบบเดา', 'No ? after a guessed Trip', 'ခန့်မှန်း Trip နောက်တွင် ? မထည့်ပါ'],
   ['ใส่ชื่อโซนอย่างน้อย 1 ชื่อ — ถ้าจะเอา Trip นี้ออก กดปุ่ม "ลบ"', 'Enter at least one zone name — to take this Trip out, press "Delete"', 'ဇုန်အမည် အနည်းဆုံး ၁ ခု ထည့်ပါ — ဤ Trip ကို ဖယ်ရှားလိုပါက "ဖျက်ရန်" ကို နှိပ်ပါ'],
   ['ร้าน/ลูกค้าที่สั่งซ้ำและยังไม่มี Trip', 'Shops / customers that order again and have no Trip', 'ထပ်မံမှာယူပြီး Trip မရှိသေးသော ဆိုင် / ဖောက်သည်များ'],
   ['ที่อยู่ของออเดอร์เหล่านี้มีแค่ชื่อร้าน (ไม่มีถนน/ซอย) และแขวงไม่ได้อยู่ใน Trip เดียว จึงตัดสินให้ไม่ได้ — เลือก Trip ให้ร้านครั้งเดียว ชื่อร้านจะถูกเพิ่มในแถวของ Trip นั้นในตารางโซน และออเดอร์ต่อ ๆ ไปของร้านนี้จะเข้า Trip นั้นเอง',
