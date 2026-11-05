@@ -3352,7 +3352,8 @@ function parseZones(text) {
     const line = srcLines[li]; if (!line.trim()) continue;
     const m = /^\s*(ดี\s*4|\d{1,2})\s*(?:[\t:|.\-]|\s)\s*(.+)$/.exec(line); if (!m) { errs.push(line.trim().slice(0, 30)); continue; }
     const label = m[1].replace(/\s+/g, ''), num = /^\d+$/.test(label) ? +label : null, extras = [];
-    const base = m[2].replace(/[(（]([^)）]*)[)）]/g, (_, x) => { x.split(/[,，]/).forEach(s => s.trim() && extras.push(s.trim())); return ' '; });
+    const base = m[2].replace(/[(（]([^)）]*)[)）]/g, (_, x) => { x.split(/[,，;；\t]+/).forEach(s => s.trim() && extras.push(s.trim())); return ' '; })      // (the extras in brackets are separated by a comma, ; or a TAB: a tab that came in when the table was copied between Excel / a page must not hide the names behind it)
+      .replace(/\t+/g, ' / ');                                    // a TAB outside the brackets (a second column copied with the row) separates zones like " / " does
     const zones = base.split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean).concat(extras).map(z => ({ raw: z, names: z.split('|').map(s => s.trim()).filter(Boolean) }));
     trips.push({ label, num, line: line.trim(), li, zones, special: num === null });
   }
@@ -3362,8 +3363,10 @@ function buildMatcher(zt) {
   const kws = [], kmap = new Map(), dups = [], people = [];
   for (const t of zt.trips) if (!t.special) for (const z of t.zones) for (const nm of z.names) {
     const k = nk(nm); if (k.length < 2) continue;
-    const words = nm.trim().split(/\s+/).map(fz).filter(Boolean);      // a zone written as two or more words with no digits ("พี่แดง ศุภลักษณ์") can be a CUSTOMER: the Customer Name column is looked at too (see matchOrder); a road with a number ("สุขาภิบาล 5") never is
-    if (words.length >= 2 && !/\d/.test(nm) && words.join('').length >= 6 && !people.some(p => p.key === words.join(' '))) people.push({ words, key: words.join(' '), trip: t.num, nm: nm.trim() });
+    const words0 = nm.trim().split(/\s+/).map(fz).filter(Boolean);      // a zone written as two or more words with no digits ("พี่แดง ศุภลักษณ์") can be a CUSTOMER: the Customer Name column is looked at too (see matchOrder); a road with a number ("สุขาภิบาล 5") never is
+    /* A word that begins with "ทุก" is a wildcard: "CP ทุกโรง" = every customer whose name has CP (or ซีพี) and a "โรง…" (โรงงาน, โรงพิมพ์ …) in it — "ทุกโรง" is dropped to "โรง"; "CP" is read as ซีพี too */
+    const words = nm.trim().split(/\s+/).map(w => { const f = fz(w.replace(/^ทุก(?=\S{2,})/, '')); return f === 'cp' ? { cp: true } : f; }).filter(x => x && (x.cp || x.length));
+    if (words0.length >= 2 && !/\d/.test(nm) && words0.join('').length >= 6 && !people.some(p => p.key === words0.join(' '))) people.push({ words, key: words0.join(' '), trip: t.num, nm: nm.trim() });
     if (kmap.has(k)) { if (kmap.get(k) !== t.num) dups.push(`"${nm}" อยู่ทั้ง Trip ${kmap.get(k)} และ ${t.num} (ใช้ Trip ${kmap.get(k)})`); continue; }
     kmap.set(k, t.num); kws.push({ k, trip: t.num, weak: WEAK.has(k), nm: nm.trim() });      // (nm = the name as the table writes it: the cover slip prints it when the address names no road)
   }
@@ -3566,7 +3569,8 @@ const adminCleaner = o => { const sdk = nk(o.sd), dk = nk(o.d), zip = String(o.z
 function matchOrder(o, M) {                                          // -> {trip, how} ; how: soi / road (a zone name in the soi, the road or elsewhere in the address) / sd (the sub-district is a zone) / weak (a big road or the district) / '' (outside)
   const sdk = nk(o.sd), dk = nk(o.d), clean = adminCleaner(o);
   if (M.people.length) {      // 0. a zone that is a CUSTOMER's name ("Trip 20 = พี่แดง ศุภลักษณ์"): every word of it in the Customer Name — the first thing asked, nothing else is read for that customer
-    const cn = fz(o.name != null ? o.name : (o.raw && o.raw.name) || ''); if (cn) for (const p of M.people) if (p.words.every(w => cn.includes(w))) return { trip: p.trip, how: 'name' };
+    const rawName = String(o.name != null ? o.name : (o.raw && o.raw.name) || ''), cn = fz(rawName), isCp = /(^|[^A-Za-z])c\.?\s?p(?![A-Za-z])|ซีพี/i.test(rawName);      // ("CP" = the letters C P standing alone, "C.P." or ซีพี — not the two letters inside another word)
+    if (cn) for (const p of M.people) if (p.words.every(w => w.cp ? isCp : cn.includes(w))) return { trip: p.trip, how: 'name' };
   }
   const hit = (txt, strongOnly) => { for (const w of M.kws) if ((!strongOnly || !w.weak) && txt.includes(w.k)) return w; return null; };
   const ms = mentionsOf(o.addr);
@@ -4303,7 +4307,7 @@ $('zGuessMark').addEventListener('change', () => { try { localStorage.setItem('o
    x = {sd, d, addr, zip} -> the Trip number, null = outside the table, undefined = there is no table to read. zoneVer() names the table text (and this matching): a number worked out under another version is not trusted. */
 let zmc = null;
 const zhash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m4|' + txt) : '' }; } return zmc; }
+function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== txt) { const M = buildMatcher(parseZones(txt)); zmc = { txt, M, v: M.kws.length ? zhash('m5|' + txt) : '' }; /* (m5: a TAB inside the brackets / between zones is read — Trips worked out under m4 are worked out again) */ } return zmc; }
 function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '', name: x.name || '' }, z.M).trip; }
 async function applyRoutes(silent) {
   if (!Z.zt) return;
