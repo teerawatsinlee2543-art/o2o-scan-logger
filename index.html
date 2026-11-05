@@ -2949,8 +2949,10 @@ function tripFor(inf, order) {
   const z = order ? ztGet(order) : undefined;
   if (z != null) return String(z);                                    // the zone table, by the order's own address
   for (const v of [inf.sd, inf.zip, inf.d, inf.pv]) { if (!v) continue; const e = tripMap[normArea(v)]; if (e && !e.am) return e.t; }      // the most specific area first; an automatic entry marked "am" (the area is split over several Trips) is skipped: a blank is better than a wrong Trip
-  const g = order && window.O2OZone && window.O2OZone.guessOf ? window.O2OZone.guessOf(order) : null;      // last: the system's guess from the same road / the same delivery route / the same area
   let mark = false; try { mark = localStorage.getItem('o2o-zguessmark-v1') === '1'; } catch (_) {}      // (printed with a "?" only when Settings says so: the number alone was asked for)
+  const mp = order && window.O2OZone && window.O2OZone.adTripOf ? window.O2OZone.adTripOf(order) : null;      // the nearest Trip picked from the map for this order (Trip pane, box ค)
+  if (mp) return String(mp) + (mark ? '?' : '');
+  const g = order && window.O2OZone && window.O2OZone.guessOf ? window.O2OZone.guessOf(order) : null;      // last: the system's guess from the same road / the same delivery route / the same area
   return g ? g.trip + (mark ? '?' : '') : '';
 }
 const splitAreas = s => String(s == null ? '' : s).split(/[,;\n\/|]+/).map(x => x.trim()).filter(Boolean);
@@ -3876,7 +3878,7 @@ function renderAddr() {
   box.innerHTML = `<div class="muted" style="margin:6px 0;font-size:13px">${esc(T('พบ {0} ใบ — แสดง {1} ใบแรก', total, list.length))}</div>` + list.map(o => {
     const t = tripOf(o), g = o.zt == null && Z.guess ? Z.guess.get(o.no) : null, pin = adPinOf(o);
     const area = encodeURIComponent(`${o.sd || ''} ${o.d || ''} กรุงเทพมหานคร`.replace(/\s+/g, ' ').trim());
-    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span>${pin ? `<span class="adpinned">📍 <span>${esc(T('หมุดที่ยืนยันแล้ว'))}</span></span>` : adExact(o) ? '' : `<span class="adapprox">≈ <span>${esc(T('ที่อยู่ไม่มีเลขที่ — แผนที่แสดงแค่แถวแขวงนี้'))}</span></span>`}<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adQuery(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a>${pin ? '' : `<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${area}" target="_blank" rel="noopener">${esc(T('ดูเฉพาะแขวง'))} ↗</a>`}<button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button><button type="button" class="adnear">${esc(T('หา Trip ใกล้สุด'))}</button></div>${adNr.has(o.no) ? `<div class="adnr ${adNr.get(o.no).cls}">${adNr.get(o.no).html}</div>` : ''}</div>`;
+    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : adTrips[o.no] ? 'Trip ' + adTrips[o.no] + ' <span class="muted" style="font-weight:600">(' + esc(T('เลือกจากแผนที่')) + ')</span>' : esc(T('ยังไม่มี Trip'))}${g && t == null && !adTrips[o.no] ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span>${pin ? `<span class="adpinned">📍 <span>${esc(T('หมุดที่ยืนยันแล้ว'))}</span></span>` : adExact(o) ? '' : `<span class="adapprox">≈ <span>${esc(T('ที่อยู่ไม่มีเลขที่ — แผนที่แสดงแค่แถวแขวงนี้'))}</span></span>`}<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adQuery(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a>${pin ? '' : `<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${area}" target="_blank" rel="noopener">${esc(T('ดูเฉพาะแขวง'))} ↗</a>`}<button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button><button type="button" class="adnear">${esc(T('หา Trip ใกล้สุด'))}</button></div>${adNr.has(o.no) ? `<div class="adnr ${adNr.get(o.no).cls}">${adNr.get(o.no).html}</div>` : ''}</div>`;
   }).join('');
 }
 $('adQ').addEventListener('input', () => renderAddr()); $('adOnly').addEventListener('change', () => renderAddr());
@@ -3892,6 +3894,10 @@ $('adList').addEventListener('click', e => {
   const row = e.target.closest('.adrow'); if (!row) return;
   const o = (S.byNo && S.byNo.get(row.dataset.no)); if (!o) return;
   if (e.target.closest('.adnear')) { adNearest(row); return; }
+  if (e.target.closest('.aduse') || e.target.closest('.adundo')) {      // pick (or drop) the nearest Trip for this order
+    const use = e.target.closest('.aduse'); if (use) adTrips[row.dataset.no] = +use.dataset.trip; else delete adTrips[row.dataset.no];
+    adTripSave(); adPaint(row.dataset.no); renderAddr(); try { window.O2O.render(); } catch (_) { } toast(use ? 'เลือก Trip แล้ว' : 'ยกเลิก Trip ที่เลือกแล้ว'); return;
+  }
   if (e.target.closest('.adshow')) {
     const old = row.querySelector('iframe.admap');
     if (old) { old.remove(); const d = row.querySelector('.adpin'); if (d) d.remove(); row.querySelector('.adshow').textContent = T('แสดงแผนที่'); return; }
@@ -3985,10 +3991,27 @@ async function adLocate(o) {                                 // the point of an 
   }
   return null;
 }
-const adNr = new Map(), adBusy = new Set();                   // the answer of each order is kept here: the list is redrawn now and then (a refresh), and the answer must survive that
+const adNr = new Map(), adBusy = new Set(), adRes = new Map();                   // the answer of each order is kept here: the list is redrawn now and then (a refresh), and the answer must survive that
+/* The Trip picked from the map for an order that no table gives a Trip (saved in this browser only: o2o-adtrip-v1; the slip uses it after the zone table / area table and before the system's guess — see tripFor).
+   With a pin or an address found on the map it is picked by itself when "หา Trip ใกล้สุด" is pressed; with only the middle of the sub-district it is offered ("ใช้ Trip N") and picked by the person. */
+const AD_TRIP_KEY = 'o2o-adtrip-v1';
+let adTrips = (() => { try { return JSON.parse(localStorage.getItem(AD_TRIP_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+const adTripSave = () => { const ks = Object.keys(adTrips); if (ks.length > 3000) ks.slice(0, ks.length - 2500).forEach(k => delete adTrips[k]); try { localStorage.setItem(AD_TRIP_KEY, JSON.stringify(adTrips)); } catch (e) { } };
+function adSetBox(no, cls, html) {
+  adNr.set(no, { cls, html }); const r = [...$('adList').children].find(x => x.dataset && x.dataset.no === no); if (!r) return;
+  let b = r.querySelector('.adnr'); if (!b) { b = document.createElement('div'); r.appendChild(b); } b.className = 'adnr ' + cls; b.innerHTML = html;
+}
+function adPaint(no) {                                         // the answer of "หา Trip ใกล้สุด" (kept in adRes) with the current state of the pick
+  const o = S.byNo && S.byNo.get(no), r = adRes.get(no); if (!o || !r) return;
+  const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no];
+  const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)' }[pt.how];
+  const act = chosen ? `<div class="adsel">✅ <b>${esc(T('ใช้ Trip {0} แล้ว — พิมพ์บนใบปะหน้า', chosen))}</b> <button type="button" class="adundo">${esc(T('ยกเลิก'))}</button></div>`
+    : has ? '' : `<div class="adsel"><button type="button" class="aduse primary" data-trip="${top[0].trip}">${esc(T('ใช้ Trip {0}', top[0].trip))}</button> <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;
+  adSetBox(no, pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn', `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div>${act}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
+}
 async function adNearest(row) {
   const no = row.dataset.no, o = S.byNo && S.byNo.get(no); if (!o || adBusy.has(no)) return;
-  const box = { set className(c) { this._c = c.replace(/^adnr\s*/, ''); this._p(); }, set innerHTML(h) { this._h = h; this._p(); }, _c: '', _h: '', _p() { adNr.set(no, { cls: this._c, html: this._h }); const r = [...$('adList').children].find(x => x.dataset && x.dataset.no === no); if (!r) return; let b = r.querySelector('.adnr'); if (!b) { b = document.createElement('div'); r.appendChild(b); } b.className = 'adnr ' + this._c; b.innerHTML = this._h; } };
+  const box = { set className(c) { this._c = c.replace(/^adnr\s*/, ''); this._p(); }, set innerHTML(h) { this._h = h; this._p(); }, _c: '', _h: '', _p() { adSetBox(no, this._c, this._h); } };
   if (!Z.zt || !zgNames().length) { box.innerHTML = `<span class="muted">${esc(T('ยังไม่มีตารางโซนให้เทียบ'))}</span>`; return; }
   adBusy.add(no); const btn = { set disabled(v) { if (!v) adBusy.delete(no); } };
   box.className = 'adnr'; box.innerHTML = `<span class="muted">${esc(T('กำลังหาจุดของที่อยู่ …'))}</span>`;
@@ -3998,10 +4021,11 @@ async function adNearest(row) {
     await zgEnsure((d, n) => { box.innerHTML = `<span class="muted">${esc(T('กำลังโหลดตำแหน่งโซนจาก OpenStreetMap {0}/{1} (ครั้งเดียว แล้วจำไว้ในเบราว์เซอร์นี้)', d, n))}</span>`; });
     const list = zgNearest(pt.la, pt.lo), names = [...new Set(zgNames().map(x => x.nm))], missing = names.filter(n => !(zgCache[n] && zgCache[n].length)).length;
     if (!list.length) { box.innerHTML = `<span class="adwarn">${esc(T('OpenStreetMap ไม่มีรูปร่างของโซนเลย — เทียบไม่ได้'))}</span>`; return; }
-    const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)' }[pt.how];
     const top = list.slice(0, 3), close = top.length > 1 && top[1].km - top[0].km < 0.3;
-    box.className = 'adnr ' + (pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn');
-    box.innerHTML = `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div><div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, names.length)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`;
+    adRes.set(no, { pt, top, close, missing, total: names.length });
+    const has = (Z.zt ? finalOf(o) : o.zt) != null;
+    if (!has && adTrips[no] == null && pt.how !== 'area') { adTrips[no] = top[0].trip; adTripSave(); try { window.O2O.render(); } catch (_) { } renderAddr(); }      // (a point that is a pin / an address: the nearest Trip is picked at once; the middle of a sub-district only offers it)
+    adPaint(no);
   } catch (e) { box.className = 'adnr warn'; box.innerHTML = `<span class="adwarn">${esc(T('ค้น OpenStreetMap ไม่ได้ — ตรวจอินเทอร์เน็ต แล้วกดใหม่ (ที่โหลดแล้วถูกจำไว้)'))}</span>`; }
   finally { btn.disabled = false; }
 }
@@ -4229,7 +4253,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
@@ -5961,6 +5985,13 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ซ่อนแผนที่', 'Hide map', 'မြေပုံဖျောက်ရန်'],
   ['หมุดที่ยืนยันแล้ว', 'confirmed pin', 'အတည်ပြုပြီးသော မြေပုံပင်'],
   ['หา Trip ใกล้สุด', 'Find nearest Trip', 'အနီးဆုံး Trip ရှာရန်'],
+  ['ใช้ Trip {0} แล้ว — พิมพ์บนใบปะหน้า', 'Trip {0} is used — printed on the cover slip', 'Trip {0} ကို သုံးပြီး — အဖုံးစလစ်တွင် ပုံနှိပ်မည်'],
+  ['ยกเลิก', 'Undo', 'ပယ်ဖျက်ရန်'],
+  ['ใช้ Trip {0}', 'Use Trip {0}', 'Trip {0} ကို သုံးရန်'],
+  ['ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน', 'Not picked yet — this point is rough, check the map first', 'မရွေးရသေး — ဤနေရာ ကြမ်းသည်၊ မြေပုံကို အရင်စစ်ပါ'],
+  ['เลือกจากแผนที่', 'picked from the map', 'မြေပုံမှ ရွေးထားသည်'],
+  ['เลือก Trip แล้ว', 'Trip picked', 'Trip ရွေးပြီး'],
+  ['ยกเลิก Trip ที่เลือกแล้ว', 'Picked Trip undone', 'ရွေးထားသော Trip ကို ပယ်ဖျက်ပြီး'],
   ['Trip ใกล้สุด', 'Nearest Trip', 'အနီးဆုံး Trip'],
   ['ยังไม่มีตารางโซนให้เทียบ', 'No zone table to compare with yet', 'နှိုင်းယှဉ်ရန် ဇုန်ဇယား မရှိသေးပါ'],
   ['กำลังหาจุดของที่อยู่ …', 'Finding the point of the address …', 'လိပ်စာ၏နေရာကို ရှာနေသည် …'],
