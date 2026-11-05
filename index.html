@@ -2930,7 +2930,12 @@ $('rExport').addEventListener('click', () => {
    when the Call Center file imported in the green box has those columns; a "Trip Id" in that file wins. The Trip is printed on the cover sheet. */
 const LS_TRIP = 'o2o-tripmap-v1', LS_TRIP_BAK = 'o2o-tripmap-v1-backup', LS_ZONES_BAK = 'o2o-lane-zones-v1-backup';
 let tripMap = {};
-try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') tripMap = r; } catch (_) {}
+/* A row of the area table whose "area" is a long text (a pasted zone table / a whole paragraph came in as ONE area) is not an area: a sub-district / district name is short. Such rows are dropped
+   when the table is read, from the cloud too, and a long text is no longer taken as an area when a table is imported. */
+const TRIP_AREA_MAX = 60;
+function tripClean(m) { const out = {}; let n = 0; for (const [k, e] of Object.entries(m || {})) { if (!e || String(e.a == null ? k : e.a).length > TRIP_AREA_MAX || String(k).length > TRIP_AREA_MAX) n++; else out[k] = e; } return { map: out, n }; }
+let tripJunkN = 0;
+try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') { const c = tripClean(r); tripMap = c.map; tripJunkN = c.n; } } catch (_) {}
 const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} cloudTouch('trips'); };
 function tripCount() {      // the Trips that really run: those of the area table + those of the zone table, but not a Trip that is only a customer's name ("Trip 20 = พี่แดง ศุภลักษณ์")
   const s = new Set(Object.values(tripMap).map(e => String(e.t))); let z = null;
@@ -2979,7 +2984,7 @@ function buildTripPending(rows, src) {
   rows = rows.filter(r => r.some(x => cellS(x)));
   if (!rows.length) return { error: 'ไม่พบข้อมูลในไฟล์/ข้อความที่วาง', src };
   const entries = new Map(), trips = new Set(); let conflicts = 0, layout = null;
-  const add = (area, trip) => { const k = normArea(area); if (!k || !trip) return; const old = entries.get(k); if (old && old.t !== trip) conflicts++; entries.set(k, { a: area, t: trip }); trips.add(trip); };
+  const add = (area, trip) => { const k = normArea(area); if (!k || !trip || String(area).length > TRIP_AREA_MAX) return; const old = entries.get(k); if (old && old.t !== trip) conflicts++; entries.set(k, { a: area, t: trip }); trips.add(trip); };
   for (let r = 0; r < Math.min(rows.length, 10) && !layout; r++) {                // wide: the column headers are Trip names ("Trip 1", "Trip 2" ...), the areas are listed below
     const hs = rows[r].map(cellS), cols = hs.map((h, c) => /^(trip|เส้นทาง|สาย|รอบ)\s*[-_.]?\s*\S+/i.test(h) && /\d/.test(h) ? c : -1).filter(c => c >= 0);
     if (cols.length >= 2) { layout = { how: 'wide', n: cols.length }; for (let i = r + 1; i < rows.length; i++) cols.forEach(c => splitAreas(rows[i][c]).forEach(a => add(a, hs[c]))); }
@@ -4328,6 +4333,7 @@ function zTripNums() {      // the numbered Trips of the zone table; a Trip whos
 }
 window.O2OZone = { tripNums: zTripNums, loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 refreshTripBadges();      // (the Trip count of the badges now also reads the zone table, which is only known from here on)
+if (tripJunkN) setTimeout(() => { try { saveTrip(); renderTrip(); toast('ลบแถวพื้นที่ที่ผิดปกติ ' + tripJunkN + ' แถวออกจากตารางเส้นทางแล้ว'); } catch (_) { } }, 2500);      // (the long-text rows dropped at start-up: saved, so they are gone from the cloud copy too)
 
 })();
 
@@ -6794,7 +6800,7 @@ const CLOUD_SETS = {
                 for (const [id, p] of Object.entries(ptime)) { const q = inc[id]; if (q && p && !q.id13 && p.id13 && q.name === p.name && ptCodeOk(id, p.id13)) { q.id13 = p.id13; keep = true; } }      // (the incoming copy has no ID number for a person this computer has one for: keep ours, and send it)
                 ptime = inc; cloudLs(LS_PT, ptime); if (keep) setTimeout(() => cloudTouch('parttime'), 0);
               } },
-  trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? v : {}; cloudLs(LS_TRIP, tripMap); } },
+  trips:    { get: () => tripMap, empty: () => !Object.keys(tripMap).length, set: v => { tripMap = v && typeof v === 'object' ? tripClean(v).map : {}; cloudLs(LS_TRIP, tripMap); } },
   sheet:    { get: () => sheetCfgs[0], empty: () => !sheetCfgs[0], set: v => { sheetCfgs[0] = v && v.id && v.cols && v.cols.order ? v : null; sheetIdxs[0] = null; cloudLs(LS_SHEETS[0], sheetCfgs[0] || undefined); } },
   sheet2:   { get: () => sheetCfgs[1], empty: () => !sheetCfgs[1], set: v => { sheetCfgs[1] = v && v.id && v.cols && v.cols.order ? v : null; sheetIdxs[1] = null; cloudLs(LS_SHEETS[1], sheetCfgs[1] || undefined); } },      // (the second Google Sheet, box ข)
   xl:       { get: () => xlCfg, empty: () => !xlCfg, set: v => { xlCfg = v && v.url ? v : null; cloudLs(LS_XL, xlCfg || undefined); if (window.O2OZone) window.O2OZone.xlClear(); } },      // (the Excel / CSV link of the second source: every computer reads the file itself)
