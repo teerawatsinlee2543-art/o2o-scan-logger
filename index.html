@@ -4331,7 +4331,7 @@ function zTripNums() {      // the numbered Trips of the zone table; a Trip whos
   for (const t of parseZones($('zoneIn').value).trips) { if (t.special) continue; const names = t.zones.map(z => (z.names[0] || '').trim()).filter(Boolean); (names.length && names.every(isPerson) ? people : nums).push(t.num); }
   return { nums, people };
 }
-window.O2OZone = { tripNums: zTripNums, loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { tripNums: zTripNums, relang: () => { try { zOrdersShow(); renderAddr(); for (const no of [...adRes.keys()]) adPaint(no); } catch (_) { } }, loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, adTripOf: no => adTrips[no] || null, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 refreshTripBadges();      // (the Trip count of the badges now also reads the zone table, which is only known from here on)
 if (tripJunkN) setTimeout(() => { try { saveTrip(); renderTrip(); toast('ลบแถวพื้นที่ที่ผิดปกติ ' + tripJunkN + ' แถวออกจากตารางเส้นทางแล้ว'); } catch (_) { } }, 2500);      // (the long-text rows dropped at start-up: saved, so they are gone from the cloud copy too)
 
@@ -6711,7 +6711,7 @@ function setLang(l) {
   if (pending) refreshPreview();                           // parts built with T() are rebuilt in the new language
   renderImport();
   if (tPending) refreshTripPreview();
-  if (rosterDlg.open) { renderRoster(); if (!$('paneTrip').hidden) renderTrip(); }
+  if (rosterDlg.open) { renderRoster(); if (!$('paneTrip').hidden) { renderTrip(); try { window.O2OZone.relang(); } catch (_) { } } }      // (the order list, the nearest-Trip answers and the order list under the number boxes are built with T(): drawn again in the new language)
 }
 function initLang() {
   document.querySelectorAll('.flag[data-flag]').forEach(el => { el.innerHTML = FLAGS[el.dataset.flag]; });
