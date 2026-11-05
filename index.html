@@ -1097,6 +1097,13 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip .adb{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}
 #paneTrip .adb a{color:var(--accent);font-weight:700;white-space:nowrap}
 #paneTrip .adb .adshow{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+#paneTrip .adb .adnear{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+#paneTrip .adnr{margin-top:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);line-height:1.5}
+#paneTrip .adnr.ok{border-color:#2ea043}
+#paneTrip .adnr.warn{border-color:#d9822b}
+#paneTrip .adnr .adnt{white-space:nowrap;margin-right:8px;font-weight:700}
+#paneTrip .adnr .adnt.first{font-size:1.08em;color:var(--accent);font-weight:800}
+#paneTrip .adwarn{color:#d9822b;font-weight:700}
 #paneTrip .adapprox{font-weight:700;color:#d9822b}
 #paneTrip .adpinned{font-weight:800;color:#2ea043;white-space:nowrap}
 #paneTrip .adpin .row{gap:6px;flex-wrap:wrap}
@@ -3832,7 +3839,7 @@ function renderAddr() {
   box.innerHTML = `<div class="muted" style="margin:6px 0;font-size:13px">${esc(T('พบ {0} ใบ — แสดง {1} ใบแรก', total, list.length))}</div>` + list.map(o => {
     const t = tripOf(o), g = o.zt == null && Z.guess ? Z.guess.get(o.no) : null, pin = adPinOf(o);
     const area = encodeURIComponent(`${o.sd || ''} ${o.d || ''} กรุงเทพมหานคร`.replace(/\s+/g, ' ').trim());
-    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span>${pin ? `<span class="adpinned">📍 <span>${esc(T('หมุดที่ยืนยันแล้ว'))}</span></span>` : adExact(o) ? '' : `<span class="adapprox">≈ <span>${esc(T('ที่อยู่ไม่มีเลขที่ — แผนที่แสดงแค่แถวแขวงนี้'))}</span></span>`}<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adQuery(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a>${pin ? '' : `<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${area}" target="_blank" rel="noopener">${esc(T('ดูเฉพาะแขวง'))} ↗</a>`}<button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button></div></div>`;
+    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span>${pin ? `<span class="adpinned">📍 <span>${esc(T('หมุดที่ยืนยันแล้ว'))}</span></span>` : adExact(o) ? '' : `<span class="adapprox">≈ <span>${esc(T('ที่อยู่ไม่มีเลขที่ — แผนที่แสดงแค่แถวแขวงนี้'))}</span></span>`}<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adQuery(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a>${pin ? '' : `<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${area}" target="_blank" rel="noopener">${esc(T('ดูเฉพาะแขวง'))} ↗</a>`}<button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button><button type="button" class="adnear">${esc(T('หา Trip ใกล้สุด'))}</button></div>${adNr.has(o.no) ? `<div class="adnr ${adNr.get(o.no).cls}">${adNr.get(o.no).html}</div>` : ''}</div>`;
   }).join('');
 }
 $('adQ').addEventListener('input', () => renderAddr()); $('adOnly').addEventListener('change', () => renderAddr());
@@ -3847,6 +3854,7 @@ function adShow(row) {
 $('adList').addEventListener('click', e => {
   const row = e.target.closest('.adrow'); if (!row) return;
   const o = (S.byNo && S.byNo.get(row.dataset.no)); if (!o) return;
+  if (e.target.closest('.adnear')) { adNearest(row); return; }
   if (e.target.closest('.adshow')) {
     const old = row.querySelector('iframe.admap');
     if (old) { old.remove(); const d = row.querySelector('.adpin'); if (d) d.remove(); row.querySelector('.adshow').textContent = T('แสดงแผนที่'); return; }
@@ -3859,6 +3867,107 @@ $('adList').addEventListener('click', e => {
     adPins[adKey(o)] = [Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]; adSavePins(); reopen(); toast('บันทึกหมุดแล้ว');
   } else if (e.target.closest('.adpdel')) { delete adPins[adKey(o)]; adSavePins(); reopen(); toast('ลบหมุดแล้ว'); }
 });
+/* Trip NEAREST to a point. The point is the confirmed pin (nothing is sent anywhere) or, with no pin, the address looked up on OpenStreetMap (sent only when "หา Trip ใกล้สุด" is pressed).
+   The zone names of the table are looked up on OpenStreetMap ONCE (public place / road names only — nothing about a customer), their shapes (a road = a line, a sub-district = an area) are kept in this browser (o2o-zgeo-v2),
+   and the distance from the point to each zone's shape is measured: the Trips are listed nearest first. It is a hint to look at, never written into the Trip of an order. */
+const ZG_KEY = 'o2o-zgeo-v2';
+let zgCache = (() => { try { return JSON.parse(localStorage.getItem(ZG_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+const zgSave = () => { try { localStorage.setItem(ZG_KEY, JSON.stringify(zgCache)); } catch (e) { } };
+const zgWait = ms => new Promise(r => setTimeout(r, ms));
+function zgNames() {                                         // [{trip, nm}] one primary name per zone; shops / people ("two words, no number") are skipped: OpenStreetMap does not know them and they are not places
+  const out = []; if (!Z.zt) return out;
+  for (const t of Z.zt.trips) { if (t.special) continue; for (const z of t.zones) { const nm = (z.names[0] || '').trim(); if (nm.length < 3 || ZSHOP_RE.test(nm) || (!/\d/.test(nm) && nm.split(/\s+/).length >= 2)) continue; out.push({ trip: t.num, nm }); } }
+  return out;
+}
+function zgShapes(g) {                                       // GeoJSON -> [{k:'l'|'p', c:[[lat,lon]…]}], at most ~80 points each
+  const out = [], sw = a => a.map(p => [Math.round(p[1] * 1e5) / 1e5, Math.round(p[0] * 1e5) / 1e5]), dec = a => { if (a.length <= 80) return a; const r = [], s = a.length / 80; for (let i = 0; i < 80; i++) r.push(a[Math.floor(i * s)]); r.push(a[a.length - 1]); return r; };
+  if (!g) return out;
+  if (g.type === 'Point') out.push({ k: 'l', c: sw([g.coordinates]) });
+  else if (g.type === 'LineString') out.push({ k: 'l', c: sw(dec(g.coordinates)) });
+  else if (g.type === 'MultiLineString') g.coordinates.forEach(l => out.push({ k: 'l', c: sw(dec(l)) }));
+  else if (g.type === 'Polygon') out.push({ k: 'p', c: sw(dec(g.coordinates[0])) });
+  else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => out.push({ k: 'p', c: sw(dec(p[0])) }));
+  return out;
+}
+async function zgFetchName(nm) {                           // a zone is mostly a road ("ถนน"+name: all its pieces inside the area of the Trips), else a place / sub-district area; wrong-size areas (a whole district) are dropped
+  const areaDs = [...zAreaDistricts()];
+  const get = async q => (await zMapGet('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=40&addressdetails=0&accept-language=th&countrycodes=th&bounded=1&polygon_geojson=1&polygon_threshold=0.00005&viewbox=' + Z_VIEWBOX + '&q=' + encodeURIComponent(q)))
+    .filter(x => (!areaDs.length || areaDs.some(d => (x.display_name || '').includes(d))) && String(x.name || x.display_name || '').includes(nm));
+  const small = x => { const b = x.boundingbox; return b && b[1] - b[0] < 0.12 && b[3] - b[2] < 0.12; };
+  let list = /\d/.test(nm) ? [] : (await get('ถนน' + nm)).filter(x => (x.category || x.class) === 'highway');
+  if (!list.length) { if (!/\d/.test(nm)) await zgWait(1100); list = (await get(nm)).filter(x => (x.category || x.class) === 'highway' || (/^(place|boundary|landuse)$/.test(x.category || x.class || '') && small(x))); }
+  const sh = []; list.forEach(x => sh.push(...zgShapes(x.geojson)));
+  return sh.slice(0, 60);
+}
+let zgBusy = null;
+function zgEnsure(progress) {                                // every zone name's shape, one question a second (the OpenStreetMap rule), only the missing ones; a name that fails twice is skipped (asked again next time), 3 failures in a row stop it
+  if (zgBusy) return zgBusy;
+  const names = [...new Set(zgNames().map(x => x.nm))], todo = names.filter(n => !(n in zgCache));
+  zgBusy = (async () => {
+    let done = 0, fails = 0;
+    for (const nm of todo) {
+      progress && progress(names.length - todo.length + done, names.length);
+      let ok = false;
+      for (let tr = 0; tr < 2 && !ok; tr++) { try { zgCache[nm] = await zgFetchName(nm); ok = true; fails = 0; } catch (e) { await zgWait(2500); } }
+      if (!ok && ++fails >= 3) { zgSave(); throw new Error('osm'); }
+      zgSave(); done++; await zgWait(1100);
+    }
+    progress && progress(names.length, names.length);
+  })().finally(() => { zgBusy = null; });
+  return zgBusy;
+}
+function zgDist(la, lo, shapes) {                            // km from the point to the nearest part of the shapes (0 inside an area)
+  const kx = 111.32 * Math.cos(la * Math.PI / 180), ky = 110.57; let best = Infinity;
+  const X = p => (p[1] - lo) * kx, Y = p => (p[0] - la) * ky;
+  const seg = (a, b) => { const ax = X(a), ay = Y(a), dx = X(b) - ax, dy = Y(b) - ay, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0; return Math.hypot(ax + t * dx, ay + t * dy); };
+  for (const s of shapes) {
+    const c = s.c; if (!c.length) continue;
+    if (s.k === 'p' && c.length > 2) { let ins = false; for (let i = 0, j = c.length - 1; i < c.length; j = i++) { const yi = c[i][0], xi = c[i][1], yj = c[j][0], xj = c[j][1]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) ins = !ins; } if (ins) return 0; }
+    if (c.length === 1) { best = Math.min(best, Math.hypot(X(c[0]), Y(c[0]))); continue; }
+    for (let i = 0; i < c.length - 1; i++) best = Math.min(best, seg(c[i], c[i + 1]));
+    if (s.k === 'p') best = Math.min(best, seg(c[c.length - 1], c[0]));
+  }
+  return best;
+}
+function zgNearest(la, lo) {                                 // -> [{trip, nm, km}] nearest first, one line per Trip
+  const per = new Map();
+  for (const { trip, nm } of zgNames()) { const sh = zgCache[nm]; if (!sh || !sh.length) continue; const km = zgDist(la, lo, sh); if (!per.has(trip) || km < per.get(trip).km) per.set(trip, { trip, nm, km }); }
+  return [...per.values()].sort((a, b) => a.km - b.km);
+}
+async function adLocate(o) {                                 // the point of an order: the pin, else the address on OpenStreetMap (a number-less address only gets the middle of its sub-district)
+  const pin = adPinOf(o); if (pin) return { la: pin[0], lo: pin[1], how: 'pin' };
+  const base = String(o.addr || '').replace(/,?\s*Thailand\s*$/i, '').replace(/\bnull\b/gi, ' ').replace(/\b\d{5}\b/g, ' ').replace(/กรุงเทพมหานคร|กรุงเทพฯ?/g, ' ').replace(/[,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const road = (/((?:ซอย|ซ\.|ถนน|ถ\.)\s*[^\s,]+(?:\s*\d+(?:\/\d+)?)?)/.exec(base) || [])[1];
+  const tries = [[base, 'addr'], road ? [`${road} ${o.sd || ''} ${o.d || ''}`.trim(), 'road'] : null, (o.sd || o.d) ? [`${o.sd || ''} ${o.d || ''}`.trim(), 'area'] : null].filter(Boolean);
+  for (let i = 0; i < tries.length; i++) {
+    if (i) await zgWait(1100);
+    try {
+      const r = await zMapGet('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0&accept-language=th&countrycodes=th&bounded=1&viewbox=' + Z_VIEWBOX + '&q=' + encodeURIComponent(tries[i][0]));
+      if (r && r[0]) return { la: +r[0].lat, lo: +r[0].lon, how: tries[i][1] };
+    } catch (e) { if (i === tries.length - 1) throw e; }
+  }
+  return null;
+}
+const adNr = new Map(), adBusy = new Set();                   // the answer of each order is kept here: the list is redrawn now and then (a refresh), and the answer must survive that
+async function adNearest(row) {
+  const no = row.dataset.no, o = S.byNo && S.byNo.get(no); if (!o || adBusy.has(no)) return;
+  const box = { set className(c) { this._c = c.replace(/^adnr\s*/, ''); this._p(); }, set innerHTML(h) { this._h = h; this._p(); }, _c: '', _h: '', _p() { adNr.set(no, { cls: this._c, html: this._h }); const r = [...$('adList').children].find(x => x.dataset && x.dataset.no === no); if (!r) return; let b = r.querySelector('.adnr'); if (!b) { b = document.createElement('div'); r.appendChild(b); } b.className = 'adnr ' + this._c; b.innerHTML = this._h; } };
+  if (!Z.zt || !zgNames().length) { box.innerHTML = `<span class="muted">${esc(T('ยังไม่มีตารางโซนให้เทียบ'))}</span>`; return; }
+  adBusy.add(no); const btn = { set disabled(v) { if (!v) adBusy.delete(no); } };
+  box.className = 'adnr'; box.innerHTML = `<span class="muted">${esc(T('กำลังหาจุดของที่อยู่ …'))}</span>`;
+  try {
+    const pt = await adLocate(o);
+    if (!pt) { box.innerHTML = `<span class="adwarn">${esc(T('ไม่พบจุดของที่อยู่นี้ใน OpenStreetMap — ปักหมุดเอง แล้วกดใหม่'))}</span>`; return; }
+    await zgEnsure((d, n) => { box.innerHTML = `<span class="muted">${esc(T('กำลังโหลดตำแหน่งโซนจาก OpenStreetMap {0}/{1} (ครั้งเดียว แล้วจำไว้ในเบราว์เซอร์นี้)', d, n))}</span>`; });
+    const list = zgNearest(pt.la, pt.lo), names = [...new Set(zgNames().map(x => x.nm))], missing = names.filter(n => !(zgCache[n] && zgCache[n].length)).length;
+    if (!list.length) { box.innerHTML = `<span class="adwarn">${esc(T('OpenStreetMap ไม่มีรูปร่างของโซนเลย — เทียบไม่ได้'))}</span>`; return; }
+    const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)' }[pt.how];
+    const top = list.slice(0, 3), close = top.length > 1 && top[1].km - top[0].km < 0.3;
+    box.className = 'adnr ' + (pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn');
+    box.innerHTML = `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div><div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, names.length)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`;
+  } catch (e) { box.className = 'adnr warn'; box.innerHTML = `<span class="adwarn">${esc(T('ค้น OpenStreetMap ไม่ได้ — ตรวจอินเทอร์เน็ต แล้วกดใหม่ (ที่โหลดแล้วถูกจำไว้)'))}</span>`; }
+  finally { btn.disabled = false; }
+}
 function zAddTrip() {
   const n = +$('zNewNum').value.replace(/\D/g, ''), txt = $('zNewZones').value.replace(/\s+/g, ' ').trim();
   if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99'); $('zNewNum').focus(); return; }
@@ -5791,6 +5900,23 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แสดงแผนที่', 'Show map', 'မြေပုံပြရန်'],
   ['ซ่อนแผนที่', 'Hide map', 'မြေပုံဖျောက်ရန်'],
   ['หมุดที่ยืนยันแล้ว', 'confirmed pin', 'အတည်ပြုပြီးသော မြေပုံပင်'],
+  ['หา Trip ใกล้สุด', 'Find nearest Trip', 'အနီးဆုံး Trip ရှာရန်'],
+  ['Trip ใกล้สุด', 'Nearest Trip', 'အနီးဆုံး Trip'],
+  ['ยังไม่มีตารางโซนให้เทียบ', 'No zone table to compare with yet', 'နှိုင်းယှဉ်ရန် ဇုန်ဇယား မရှိသေးပါ'],
+  ['กำลังหาจุดของที่อยู่ …', 'Finding the point of the address …', 'လိပ်စာ၏နေရာကို ရှာနေသည် …'],
+  ['ไม่พบจุดของที่อยู่นี้ใน OpenStreetMap — ปักหมุดเอง แล้วกดใหม่', 'This address is not on OpenStreetMap — pin it yourself, then press again', 'ဤလိပ်စာကို OpenStreetMap တွင် မတွေ့ပါ — ကိုယ်တိုင်ပင်ထိုးပြီး ထပ်နှိပ်ပါ'],
+  ['กำลังโหลดตำแหน่งโซนจาก OpenStreetMap {0}/{1} (ครั้งเดียว แล้วจำไว้ในเบราว์เซอร์นี้)', 'Loading the zone positions from OpenStreetMap {0}/{1} (once, then remembered in this browser)', 'ဇုန်နေရာများကို OpenStreetMap မှ ဆွဲနေသည် {0}/{1} (တစ်ကြိမ်သာ၊ ဤဘရောက်ဇာတွင် မှတ်ထားမည်)'],
+  ['OpenStreetMap ไม่มีรูปร่างของโซนเลย — เทียบไม่ได้', 'OpenStreetMap has no shape for any zone — cannot compare', 'OpenStreetMap တွင် ဇုန်ပုံသဏ္ဍာန် လုံးဝမရှိ — နှိုင်းယှဉ်၍မရပါ'],
+  ['ใช้หมุดที่ยืนยันแล้ว', 'Using the confirmed pin', 'အတည်ပြုပြီးသော ပင်ကို သုံးသည်'],
+  ['จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', 'Point from the address on OpenStreetMap (approximate)', 'OpenStreetMap ပေါ်ရှိ လိပ်စာမှ နေရာ (ခန့်မှန်း)'],
+  ['จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', 'Point from the soi / road of the address (approximate — not the door)', 'လိပ်စာရှိ လမ်းကြား/လမ်းမှ နေရာ (ခန့်မှန်း — အိမ်ရှေ့မဟုတ်)'],
+  ['กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)', 'Only the middle of the sub-district (very rough — a pin is more exact)', 'ရပ်ကွက်အလယ်သာ (အလွန်ကြမ်း — ပင်ထိုးလျှင် ပိုမှန်သည်)'],
+  ['อยู่ในโซน', 'inside the zone', 'ဇုန်အတွင်း'],
+  ['กม.', 'km', 'ကီလို'],
+  ['2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ', 'The first 2 Trips are close — check the map', 'ပထမ Trip ၂ ခု နီးစပ်သည် — မြေပုံကိုပါ ကြည့်ပါ'],
+  ['ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', '{0} of {1} zone names are not on OpenStreetMap (not counted)', 'ဇုန်အမည် {1} ခုအနက် {0} ခုသည် OpenStreetMap တွင်မရှိ (မရေတွက်ပါ)'],
+  ['ดูจุดบน OpenStreetMap', 'See the point on OpenStreetMap', 'OpenStreetMap ပေါ်တွင် နေရာကြည့်ရန်'],
+  ['ค้น OpenStreetMap ไม่ได้ — ตรวจอินเทอร์เน็ต แล้วกดใหม่ (ที่โหลดแล้วถูกจำไว้)', 'Cannot reach OpenStreetMap — check the internet and press again (what was loaded is kept)', 'OpenStreetMap သို့ မရောက်ပါ — အင်တာနက်စစ်ပြီး ထပ်နှိပ်ပါ (ဆွဲပြီးသည်များ မှတ်ထားသည်)'],
   ['ที่อยู่ไม่มีเลขที่ — แผนที่แสดงแค่แถวแขวงนี้', 'No house number in the address — the map shows only this sub-district', 'လိပ်စာတွင် အိမ်အမှတ်မပါ — မြေပုံသည် ဤရပ်ကွက်ဧရိယာကိုသာ ပြသည်'],
   ['ดูเฉพาะแขวง', 'Sub-district only', 'ရပ်ကွက်သာ ကြည့်ရန်'],
   ['หมุดนี้ถูกบันทึกไว้ในเบราว์เซอร์นี้ — ใช้กับออเดอร์ที่ที่อยู่เดียวกันทุกใบ', 'This pin is saved in this browser — used for every order with the same address', 'ဤပင်ကို ဤဘရောက်ဇာတွင် သိမ်းထားသည် — လိပ်စာတူသော အော်ဒါအားလုံးတွင် သုံးသည်'],
