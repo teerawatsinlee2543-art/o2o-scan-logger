@@ -607,7 +607,9 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .panel.zoomed .pzoom .zt{display:inline}
 @media (max-width:760px),(pointer:coarse){ .pzoom{width:38px;height:38px} .plist li button{min-width:36px;min-height:32px} }      /* finger-sized */
 .panel.zoomed input[type=text]{height:clamp(60px,9vh,84px);font-size:clamp(26px,3.4vw,40px);border-radius:16px;padding:0 18px}
-.panel.zoomed input[type=text]::placeholder{font-size:clamp(17px,2vw,26px)}
+.panel.zoomed input[type=text]{--phs0:clamp(18px,2.8vw,40px)}      /* the hint: as big as the box allows (initPhFit shrinks it, one size for the fields of a box, when the longest one would not fit) */
+.panel.zoomed input[type=text]::placeholder{font-size:var(--phfs,var(--phs0))}
+.panel.zoomed input[type=text]:not(#assignWho):placeholder-shown{padding-bottom:max(0px,calc((1em - var(--phfs,var(--phs0)))*.7))}      /* a hint smaller than the typed text sat low in the box (it shares the baseline of the big type): lifted back to the middle */
 .panel.zoomed .pmode{font-size:15px;padding:8px 8px 8px 14px}
 .panel.zoomed .pmsg{font-size:18px;min-height:44px;padding-top:6px;padding-bottom:6px}
 .panel.zoomed .phint{font-size:16px}
@@ -6527,7 +6529,11 @@ function initPhFit() {
   function fitAll() {
     raf = 0;
     const els = [...document.querySelectorAll('input[placeholder]')].filter(e => e.type === 'text' || e.type === 'search');
-    els.forEach(e => { if (ro) ro.observe(e); e.removeAttribute('data-phfit'); });      // first the natural size is read for all of them…
+    els.forEach(e => {
+      if (ro) ro.observe(e); e.removeAttribute('data-phfit'); e.style.removeProperty('--phfs');
+      const cnt = e.parentElement && e.parentElement.classList.contains('infield') ? e.parentElement.querySelector('.cnt') : null;      // the counter badge of a many-orders field: in the full-page view the room kept for it is just its own width (the hint gets the rest)
+      if (cnt) { if (ro) ro.observe(cnt); if (e.closest('.panel.zoomed') && cnt.offsetWidth) e.style.paddingRight = Math.ceil(cnt.offsetWidth + (parseFloat(getComputedStyle(cnt).right) || 0) + 12) + 'px'; else e.style.paddingRight = ''; }
+    });      // first the natural size is read for all of them…
     const jobs = els.map(e => {
       if (!e.placeholder || e.clientWidth < 20) return null;
       const cs = getComputedStyle(e), ph = getComputedStyle(e, '::placeholder'), nat = parseFloat(ph.fontSize);
