@@ -1109,6 +1109,9 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip .adwarn{color:#d9822b;font-weight:700}
 #paneTrip .adapprox{font-weight:700;color:#d9822b}
 #paneTrip .adpinned{font-weight:800;color:#2ea043;white-space:nowrap}
+#paneTrip .adfr{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+#paneTrip .adfr input{flex:1 1 220px;min-width:0;height:34px}
+#paneTrip .adfr button{height:34px;padding:0 12px;border-radius:9px;font-weight:800}
 #paneTrip .adpin .row{gap:6px;flex-wrap:wrap}
 #paneTrip .adpin .adpi{flex:1 1 220px;min-width:0;height:34px}
 #paneTrip .adpin button{height:34px;padding:0 12px;border-radius:9px;font-weight:800}
@@ -3898,6 +3901,16 @@ $('adList').addEventListener('click', e => {
     const use = e.target.closest('.aduse'); if (use) adTrips[row.dataset.no] = +use.dataset.trip; else delete adTrips[row.dataset.no];
     adTripSave(); adPaint(row.dataset.no); renderAddr(); try { window.O2O.render(); } catch (_) { } toast(use ? 'เลือก Trip แล้ว' : 'ยกเลิก Trip ที่เลือกแล้ว'); return;
   }
+  if (e.target.closest('.adnpsave')) {                                  // a pin pasted under the answer: saved for this address, then the nearest Trip is found again from it (the pin wins over an earlier pick)
+    const raw = row.querySelector('.adnpi').value, p = adParse(raw), msg = row.querySelector('.adnmsg');
+    if (!p) { msg.textContent = /goo\.gl|maps\.app/i.test(raw) ? T('ลิงก์สั้นอ่านพิกัดไม่ได้ — เปิดลิงก์ในแท็บใหม่ แล้วคัดลอกลิงก์ยาวจากแถบที่อยู่มาวาง') : T('อ่านพิกัดไม่ได้ — ต้องเป็นจุดในประเทศไทย เช่น 13.85, 100.70 หรือลิงก์ Google Maps ที่มี @13.85,100.70'); msg.style.color = '#e5484d'; return; }
+    adPins[adKey(o)] = [Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]; adSavePins(); delete adTrips[o.no]; adTripSave(); adRes.delete(o.no); adNr.delete(o.no);
+    renderAddr(); toast('บันทึกหมุดแล้ว'); const r2 = [...$('adList').children].find(x => x.dataset && x.dataset.no === o.no); if (r2) adNearest(r2); return;
+  }
+  if (e.target.closest('.adnroadgo')) {                                 // the road the person sees on the map -> the Trip the zone table gives that road (no coordinates needed)
+    const q = row.querySelector('.adnroad').value.replace(/\s+/g, ' ').trim(), rs = adRes.get(o.no); if (!q || !rs) return;
+    rs.road = { q, trip: zTripOfRoad(q) }; adPaint(o.no); return;
+  }
   if (e.target.closest('.adshow')) {
     const old = row.querySelector('iframe.admap');
     if (old) { old.remove(); const d = row.querySelector('.adpin'); if (d) d.remove(); row.querySelector('.adshow').textContent = T('แสดงแผนที่'); return; }
@@ -4003,11 +4016,14 @@ function adSetBox(no, cls, html) {
 }
 function adPaint(no) {                                         // the answer of "หา Trip ใกล้สุด" (kept in adRes) with the current state of the pick
   const o = S.byNo && S.byNo.get(no), r = adRes.get(no); if (!o || !r) return;
-  const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no];
-  const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)' }[pt.how];
+  const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no], rough = pt.how === 'area';
+  const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง' }[pt.how];
+  const useBtn = t => `<button type="button" class="aduse primary" data-trip="${t}">${esc(T('ใช้ Trip {0}', t))}</button>`;
   const act = chosen ? `<div class="adsel">✅ <b>${esc(T('ใช้ Trip {0} แล้ว — พิมพ์บนใบปะหน้า', chosen))}</b> <button type="button" class="adundo">${esc(T('ยกเลิก'))}</button></div>`
-    : has ? '' : `<div class="adsel"><button type="button" class="aduse primary" data-trip="${top[0].trip}">${esc(T('ใช้ Trip {0}', top[0].trip))}</button> <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;
-  adSetBox(no, pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn', `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div>${act}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
+    : has || rough ? '' : `<div class="adsel">${useBtn(top[0].trip)} <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;      // (the middle of a sub-district is never offered: it picked the wrong Trip for a shop on Ram Khamhaeng road)
+  const ra = r.road ? `<div class="adsel">${esc(r.road.q)} — ${r.road.trip != null ? esc(T('ถนนนี้อยู่ Trip {0} ตามตาราง', r.road.trip)) + (chosen == r.road.trip || has ? '' : ' ' + useBtn(r.road.trip)) : `<span class="adwarn">${esc(T('ถนนนี้ยังไม่อยู่ในตาราง'))}</span>`}</div>` : '';
+  const fix = pt.how === 'pin' ? '' : `<div class="adfix"><div class="muted" style="font-size:12.5px;margin-top:6px">${esc(T('ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น'))}</div><div class="adfr"><input class="adnpi" type="text" placeholder="${esc(T('พิกัด เช่น 13.85, 100.70 หรือลิงก์ Google Maps'))}" autocomplete="off"><button type="button" class="adnpsave">${esc(T('ปักหมุด + หา Trip ใหม่'))}</button></div><div class="adfr"><input class="adnroad" type="text" placeholder="${esc(T('ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง'))}" autocomplete="off"><button type="button" class="adnroadgo">${esc(T('หา Trip ของถนน'))}</button></div><div class="adnmsg muted" style="font-size:12.5px"></div>${ra}</div>`;
+  adSetBox(no, pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn', `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : (rough ? '~' : '') + x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div>${act}${fix}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
 }
 async function adNearest(row) {
   const no = row.dataset.no, o = S.byNo && S.byNo.get(no); if (!o || adBusy.has(no)) return;
@@ -6001,7 +6017,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ใช้หมุดที่ยืนยันแล้ว', 'Using the confirmed pin', 'အတည်ပြုပြီးသော ပင်ကို သုံးသည်'],
   ['จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', 'Point from the address on OpenStreetMap (approximate)', 'OpenStreetMap ပေါ်ရှိ လိပ်စာမှ နေရာ (ခန့်မှန်း)'],
   ['จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', 'Point from the soi / road of the address (approximate — not the door)', 'လိပ်စာရှိ လမ်းကြား/လမ်းမှ နေရာ (ခန့်မှန်း — အိမ်ရှေ့မဟုတ်)'],
-  ['กลางแขวงเท่านั้น (หยาบมาก — ปักหมุดจะแม่นกว่า)', 'Only the middle of the sub-district (very rough — a pin is more exact)', 'ရပ်ကွက်အလယ်သာ (အလွန်ကြမ်း — ပင်ထိုးလျှင် ပိုမှန်သည်)'],
+  ['หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง', 'This address is not on OpenStreetMap — the km are measured from the middle of the sub-district, not from the shop (do not trust them). Pin it or enter the road below', 'ဤလိပ်စာကို OpenStreetMap တွင် မတွေ့ပါ — km များသည် ရပ်ကွက်အလယ်မှ တိုင်းထားခြင်းဖြစ်ပြီး ဆိုင်မှမဟုတ်ပါ (မယုံပါနှင့်)။ အောက်တွင် ပင်ထိုးပါ သို့မဟုတ် လမ်းအမည်ထည့်ပါ'],
+  ['ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น', 'Where is the shop really? Find it in Google Maps, then paste the coordinates / long link, or type the road you see', 'ဆိုင်က တကယ် ဘယ်မှာလဲ? Google Maps တွင် ရှာပြီး ကိုဩဒိနိတ်/လင့်ရှည်ကို ကူးထည့်ပါ သို့မဟုတ် မြင်ရသော လမ်းအမည်ကို ရိုက်ပါ'],
+  ['ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง', 'Road seen on the map, e.g. รามคำแหง', 'မြေပုံတွင် မြင်ရသော လမ်း၊ ဥပမာ รามคำแหง'],
+  ['ปักหมุด + หา Trip ใหม่', 'Pin it + find the Trip again', 'ပင်ထိုးပြီး Trip ပြန်ရှာရန်'],
+  ['หา Trip ของถนน', 'Trip of this road', 'ဤလမ်း၏ Trip ရှာရန်'],
   ['อยู่ในโซน', 'inside the zone', 'ဇုန်အတွင်း'],
   ['กม.', 'km', 'ကီလို'],
   ['2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ', 'The first 2 Trips are close — check the map', 'ပထမ Trip ၂ ခု နီးစပ်သည် — မြေပုံကိုပါ ကြည့်ပါ'],
