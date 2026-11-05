@@ -1041,6 +1041,11 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip .chip{padding:8px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
 #paneTrip .chip b{font-size:20px;display:block;line-height:1.2}
 #paneTrip .chip small{color:var(--muted)}
+#paneTrip .zol{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:2px 12px;margin:6px 0;max-height:420px;overflow:auto}
+#paneTrip .zorow{padding:8px 0;border-top:1px solid var(--line);line-height:1.45} #paneTrip .zorow:first-child{border-top:0}
+#paneTrip .zorow .zot{font-weight:700;color:var(--accent);margin-left:6px} #paneTrip .zorow .zoa{overflow-wrap:anywhere}
+#paneTrip .zogrp{position:sticky;top:0;background:var(--soft);margin:0 -12px;padding:4px 12px;font-weight:800;font-size:13px}
+#paneTrip .zorow a{color:var(--accent);font-weight:700} #paneTrip .zomore,#paneTrip .zoclose{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
 #paneTrip .muted{color:var(--muted)}
 #paneTrip .tag{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);margin-right:4px}
 #paneTrip .tag.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
@@ -4090,13 +4095,33 @@ function renderTripTable(force) {
   $('zNewNum').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('zNewZones').focus(); } });
   $('zNewZones').addEventListener('keydown', addEnter); $('zNewAdd').addEventListener('click', zAddTrip);
 }
+/* The number boxes above the table are buttons: a press lists those orders right under them (all / in a zone / outside / by sub-district / decided by road-soi), 100 at a time,
+   each with the Trip it has (or is suggested) and a link that opens the order in the address / map box below. Nothing is sent anywhere. */
+let zListMode = '', zListLimit = 100;
+function zOrdersShow() {
+  const box = $('zOrders'); if (!box) return;
+  const m = zListMode; if (!m || !Z.orders) { box.innerHTML = ''; return; }
+  const outs = [...Z.groups.values()].sort((a, b) => b.n - a.n).flatMap(g => g.orders.map(o => ({ o, g })));
+  const items = m === 'all' ? Z.orders.map(o => ({ o })) : m === 'in' ? Z.orders.filter(o => o.zt != null).map(o => ({ o })) : m === 'road' ? outs.filter(x => x.o.rd) : outs;
+  const how = { name: 'ชื่อลูกค้า', soi: 'ซอย', road: 'ชื่อถนน/ชุมชน', sd: 'แขวง', weak: 'หลักฐานอ่อน' };
+  const lab = o => { const t = finalOf(o); return o.zt != null ? `Trip ${o.zt} · ${T(how[o.zhow] || '')}` : o.rd ? `${T('แนะนำ Trip {0}', o.rd.trip)} · ${T('ถนน/ซอย')} ${o.rd.road}` : t != null ? `${T('แนะนำ Trip {0}', t)} · ${T('แขวง/เส้นทาง')}` : T('ยังไม่มี Trip'); };
+  let rows = '', last = null;
+  for (const x of items.slice(0, zListLimit)) {
+    if (m === 'sd' && x.g !== last) { last = x.g; rows += `<div class="zogrp">${esc(T('{0} — {1} ใบ', x.g.sd + (x.g.d ? ' (' + x.g.d + ')' : ''), x.g.n))}</div>`; }
+    const o = x.o;
+    rows += `<div class="zorow"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="zot">${esc(lab(o))}</span><div class="zoa">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="muted" style="font-size:12.5px">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''} · <a href="#" class="zogo" data-no="${esc(o.no)}">${esc(T('ดูที่อยู่/แผนที่ ↓'))}</a></div></div>`;
+  }
+  const more = items.length > zListLimit;
+  box.innerHTML = `<div class="zol">${rows || `<div class="muted" style="padding:8px 0">${esc(T('ไม่มีออเดอร์'))}</div>`}</div><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(T('แสดง {0} ใบแรกจาก {1} ใบ', Math.min(zListLimit, items.length), items.length))} ${more ? `<button type="button" class="zomore">${esc(T('แสดงเพิ่ม'))}</button> ` : ''}<button type="button" class="zoclose">${esc(T('ปิดรายการ'))}</button></div>`;
+}
 function renderZones() {
   if (zEditing()) { zRenderLater = true; return; }      // (a zone box of the per-Trip table is being typed in: the table is built again when the person leaves it)
   const { how, groups, orders } = Z, outN = how.none, tot = orders.length, inN = tot - outN, rows = [...groups.values()].sort((a, b) => b.n - a.n);
   const opts = pick => '<option value="">ไม่เพิ่ม</option>' + Z.nums.map(n => `<option value="${n}"${String(n) === pick ? ' selected' : ''}>Trip ${n}</option>`).join('');
   const roadN = rows.reduce((a, g) => a + g.orders.filter(o => o.rd).length, 0);
-  let h = `<div class="sum" style="margin-top:12px"><div class="chip"><b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small></div><div class="chip"><b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small></div>
-    <div class="chip"><b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small></div><div class="chip"><b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small></div>${Z.useRoad ? `<div class="chip"><b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small></div>` : ''}</div>
+  const chip = (m, inner) => `<button type="button" class="chip zlist${zListMode === m ? ' on' : ''}" data-m="${m}" title="${esc(T('กดเพื่อดูรายการออเดอร์'))}" style="text-align:left">${inner}</button>`;
+  let h = `<div class="sum" style="margin-top:12px">${chip('all', `<b>${tot.toLocaleString()}</b><small>ออเดอร์ที่ตรวจ</small>`)}${chip('in', `<b>${inN.toLocaleString()} <small>(${pct(inN, tot)}%)</small></b><small>เข้าโซนในตารางแล้ว</small>`)}
+    ${chip('out', `<b>${outN.toLocaleString()} <small>(${pct(outN, tot)}%)</small></b><small>อยู่นอกโซน</small>`)}${chip('sd', `<b>${rows.length}</b><small>แขวงที่อยู่นอกโซน</small>`)}${Z.useRoad ? chip('road', `<b>${roadN.toLocaleString()}</b><small>ตัดสินด้วยถนน/ซอย</small>`) : ''}</div><div id="zOrders"></div>
     <p class="muted" style="margin:0 0 6px;font-size:14px">เข้าโซนด้วยซอยในที่อยู่ ${how.soi.toLocaleString()} ใบ · ด้วยชื่อถนน/ชุมชนในที่อยู่ ${how.road.toLocaleString()} ใบ · ด้วยแขวง ${how.sd.toLocaleString()} ใบ · ด้วยถนนสายใหญ่/เขต (หลักฐานอ่อน) ${how.weak.toLocaleString()} ใบ${how.name ? ` · ด้วยชื่อลูกค้า ${how.name.toLocaleString()} ใบ` : ''}</p>`;
   if (Z.noAddr) h += '<p class="note">ข้อมูลที่อ่านมาไม่มีคอลัมน์ "Shipping Address" จึงจับโซนได้เฉพาะจากแขวง/เขต — ใช้ไฟล์ที่มีที่อยู่เต็มจะแม่นกว่า</p>';
   let detail = '';      // (the long explanations, the outside-zone areas, the learned roads and the downloads go under one folded line: the first thing seen is the numbers and the Trips)
@@ -4117,6 +4142,8 @@ function renderZones() {
   h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
   const el = $('zoneOut'), dkey = d => d.id || (d.querySelector('summary') ? d.querySelector('summary').textContent.trim().slice(0, 12) : ''), wasOpen = new Set([...el.querySelectorAll('details')].filter(d => d.open).map(dkey));      // (by name, not by place: the box of the shops without a Trip comes and goes, and the others must not take its open / shut state)      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
   el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach(d => { if (wasOpen.has(dkey(d))) d.open = true; }); renderTripTable(); renderAddr();
+  el.querySelectorAll('.zlist').forEach(b => b.addEventListener('click', () => { zListMode = zListMode === b.dataset.m ? '' : b.dataset.m; zListLimit = 100; el.querySelectorAll('.zlist').forEach(x => x.classList.toggle('on', x.dataset.m === zListMode)); zOrdersShow(); }));
+  zOrdersShow();
   el.querySelectorAll('#zRepeat .zradd').forEach(b => b.addEventListener('click', () => zAddShop(b.closest('tr'))));
   el.querySelectorAll('#zRepeat .zrfind').forEach(b => b.addEventListener('click', () => zMapLookup(b.closest('tr'))));
   el.querySelectorAll('#zRepeat .zrname').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); i.closest('tr').querySelector('.zrtrip').focus(); } }));
@@ -4241,6 +4268,12 @@ setTimeout(() => autoRun(true), 1500);      // (a moment after the program start
 $('zoneIn').value = (() => { try { return localStorage.getItem(LS_ZONES) || DEFAULT_ZONES; } catch (_) { return DEFAULT_ZONES; } })();
 $('btnZoneReset').addEventListener('click', () => { setZoneText(null); zoneChanged(); });
 $('btnZone').addEventListener('click', runZones);
+$('zoneOut').addEventListener('click', e => {
+  const go = e.target.closest('.zogo');
+  if (go) { e.preventDefault(); $('adQ').value = go.dataset.no; $('adOnly').checked = false; renderAddr(); $('adList').scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }      // (the order is found in the address / map box below by its number)
+  if (e.target.closest('.zomore')) { zListLimit += 100; zOrdersShow(); return; }
+  if (e.target.closest('.zoclose')) { zListMode = ''; $('zoneOut').querySelectorAll('.zlist').forEach(x => x.classList.remove('on')); zOrdersShow(); }
+});
 $('zoneOut').addEventListener('focusout', () => setTimeout(() => { if (zRenderLater && !zEditing()) { zRenderLater = false; if (Z.zt) renderZones(); } }, 0));      // (a check that finished while a zone box was being typed in is shown now)
 if (IN_VIEWER || !srcReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
@@ -6030,6 +6063,20 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['จุดจากชื่อหมู่บ้าน/สถานที่ในที่อยู่ ใน OpenStreetMap (โดยประมาณ — กลางหมู่บ้าน ไม่ใช่หน้าบ้าน)', 'Point from the village / place name of the address on OpenStreetMap (approximate — the middle of the village, not the door)', 'လိပ်စာပါ ရွာ/နေရာအမည်မှ OpenStreetMap ပေါ်ရှိ နေရာ (ခန့်မှန်း — ရွာအလယ်၊ အိမ်ရှေ့မဟုတ်)'],
   ['หาจุดของที่อยู่นี้ไม่เจอ — ยังบอก Trip ที่ใกล้สุดไม่ได้', 'The point of this address was not found — the nearest Trip cannot be told yet', 'ဤလိပ်စာ၏ နေရာကို မတွေ့ပါ — အနီးဆုံး Trip ကို မပြောနိုင်သေးပါ'],
   ['ดูตัวเลขที่วัดจากกลางแขวง (ไม่แม่น)', 'Show the figures measured from the middle of the sub-district (not exact)', 'ရပ်ကွက်အလယ်မှ တိုင်းထားသော ကိန်းဂဏန်းများ ကြည့်ရန် (မမှန်ပါ)'],
+  ['กดเพื่อดูรายการออเดอร์', 'Press to list these orders', 'ဤအော်ဒါများစာရင်းကြည့်ရန် နှိပ်ပါ'],
+  ['แนะนำ Trip {0}', 'Suggested Trip {0}', 'အကြံပြု Trip {0}'],
+  ['ถนน/ซอย', 'Road / soi', 'လမ်း / ဆွိုင်'],
+  ['แขวง/เส้นทาง', 'Sub-district / route', 'ရပ်ကွက် / လမ်းကြောင်း'],
+  ['ชื่อลูกค้า', 'Customer name', 'ဖောက်သည်အမည်'],
+  ['ซอย', 'Soi', 'ဆွိုင်'],
+  ['ชื่อถนน/ชุมชน', 'Road / community name', 'လမ်း / အသိုင်းအဝိုင်းအမည်'],
+  ['แขวง', 'Sub-district', 'ရပ်ကွက်'],
+  ['หลักฐานอ่อน', 'Weak evidence', 'အထောက်အထား အားနည်း'],
+  ['{0} — {1} ใบ', '{0} — {1} orders', '{0} — အော်ဒါ {1} ခု'],
+  ['ดูที่อยู่/แผนที่ ↓', 'Address / map ↓', 'လိပ်စာ / မြေပုံ ↓'],
+  ['แสดง {0} ใบแรกจาก {1} ใบ', 'Showing the first {0} of {1}', '{1} ခုအနက် ပထမ {0} ခု ပြနေသည်'],
+  ['แสดงเพิ่ม', 'Show more', 'ထပ်ပြရန်'],
+  ['ปิดรายการ', 'Close the list', 'စာရင်းပိတ်ရန်'],
   ['ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น', 'Where is the shop really? Find it in Google Maps, then paste the coordinates / long link, or type the road you see', 'ဆိုင်က တကယ် ဘယ်မှာလဲ? Google Maps တွင် ရှာပြီး ကိုဩဒိနိတ်/လင့်ရှည်ကို ကူးထည့်ပါ သို့မဟုတ် မြင်ရသော လမ်းအမည်ကို ရိုက်ပါ'],
   ['ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง', 'Road seen on the map, e.g. รามคำแหง', 'မြေပုံတွင် မြင်ရသော လမ်း၊ ဥပမာ รามคำแหง'],
   ['ปักหมุด + หา Trip ใหม่', 'Pin it + find the Trip again', 'ပင်ထိုးပြီး Trip ပြန်ရှာရန်'],
