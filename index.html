@@ -657,14 +657,14 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
    and the preview side is a little wider than the scanning side. (A narrow screen keeps the stacked layout.) */
 @media (min-width:1100px){
   .panel.purple.zoomed{grid-template-columns:minmax(0,.74fr) minmax(0,1.26fr)}
-  .panel.purple.zoomed .rpview{display:grid;grid-template-columns:minmax(0,1fr) clamp(150px,14vw,200px);grid-template-rows:auto auto 1fr auto;grid-template-areas:"box head" "box note" "box ." "box foot";column-gap:12px;padding:8px 12px}
+  .panel.purple.zoomed .rpview{display:grid;grid-template-columns:minmax(0,1fr) clamp(160px,15vw,210px);grid-template-rows:auto auto 1fr auto;grid-template-areas:"box head" "box note" "box ." "box foot";column-gap:12px;padding:8px 12px}
   .panel.purple.zoomed .rphead{grid-area:head;align-self:start}
   .panel.purple.zoomed .rphead b{white-space:normal;overflow:visible;overflow-wrap:anywhere}
   .panel.purple.zoomed .rpnote{grid-area:note}
   .panel.purple.zoomed .rpbox{grid-area:box}
   .panel.purple.zoomed .rpfoot{grid-area:foot;flex-direction:column;align-items:stretch;gap:10px;padding-top:0}
-  .panel.purple.zoomed #rpPrint{width:100%;justify-content:center;gap:8px;padding:12px 10px;font-size:clamp(18px,1.7vw,24px)}
-  .panel.purple.zoomed #rpPrint svg{width:24px;height:24px}
+  .panel.purple.zoomed #rpPrint{width:100%;justify-content:center;gap:8px;padding:22px 8px;font-size:clamp(20px,2vw,28px);border-radius:18px}      /* (the print button is the biggest thing of the column: tall, wide as the column, large type) */
+  .panel.purple.zoomed #rpPrint svg{width:clamp(22px,2vw,28px);height:clamp(22px,2vw,28px)}
   /* .rpc (set by fitRpView when the screen is wide enough): the page stands in the MIDDLE of the whole frame as it always did, and the column (title, note, print button) lies over the free space at its right */
   .panel.purple.zoomed .rpview.rpc{grid-template-areas:none}
   .panel.purple.zoomed .rpview.rpc .rpbox{grid-area:1 / 1 / 5 / 3}
