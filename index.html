@@ -3994,12 +3994,17 @@ async function adLocate(o) {                                 // the point of an 
   const pin = adPinOf(o); if (pin) return { la: pin[0], lo: pin[1], how: 'pin' };
   const base = String(o.addr || '').replace(/,?\s*Thailand\s*$/i, '').replace(/\bnull\b/gi, ' ').replace(/\b\d{5}\b/g, ' ').replace(/กรุงเทพมหานคร|กรุงเทพฯ?/g, ' ').replace(/[,]+/g, ' ').replace(/\s+/g, ' ').trim();
   const road = (/((?:ซอย|ซ\.|ถนน|ถ\.)\s*[^\s,]+(?:\s*\d+(?:\/\d+)?)?)/.exec(base) || [])[1];
-  const tries = [[base, 'addr'], road ? [`${road} ${o.sd || ''} ${o.d || ''}`.trim(), 'road'] : null, (o.sd || o.d) ? [`${o.sd || ''} ${o.d || ''}`.trim(), 'area'] : null].filter(Boolean);
+  let place = base.replace(/(^|\s)(?:เลขที่|บ้านเลขที่|บ้านเลขที|เลขที)?\s*[\d\/\-]+(?=\s|$)/g, ' ');      // the name of the place without house numbers: "40/20 เสนาวิล่า4 สามวาตะวันตก คลองสามวา" -> "เสนาวิล่า 4" (OpenStreetMap knows the village, not the house)
+  for (const x of [o.sd, o.d]) if (x && x.length > 1) place = place.split(x).join(' ');
+  place = place.replace(/([ก-๙A-Za-z])(\d)/g, '$1 $2').replace(/\s+/g, ' ').trim();
+  const tries = [[base, 'addr'], place.length >= 4 && place !== base && !/^(ซอย|ซ\.|ถนน|ถ\.)/.test(place) ? [place, 'place'] : null, road ? [`${road} ${o.sd || ''} ${o.d || ''}`.trim(), 'road'] : null, (o.sd || o.d) ? [`${o.sd || ''} ${o.d || ''}`.trim(), 'area'] : null].filter(Boolean);
   for (let i = 0; i < tries.length; i++) {
     if (i) await zgWait(1100);
     try {
-      const r = await zMapGet('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0&accept-language=th&countrycodes=th&bounded=1&viewbox=' + Z_VIEWBOX + '&q=' + encodeURIComponent(tries[i][0]));
-      if (r && r[0]) return { la: +r[0].lat, lo: +r[0].lon, how: tries[i][1] };
+      const strict = tries[i][1] === 'place';      // (a place name is only taken when the hit lies in the sub-district / district of the order: the same village name exists all over the city)
+      const r = await zMapGet('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=' + (strict ? 8 : 1) + '&addressdetails=0&accept-language=th&countrycodes=th&bounded=1&viewbox=' + Z_VIEWBOX + '&q=' + encodeURIComponent(tries[i][0]));
+      const h = strict ? ((r || []).find(x => o.sd && String(x.display_name || '').includes(o.sd)) || (r || []).find(x => o.d && String(x.display_name || '').includes(o.d))) : r && r[0];
+      if (h) return { la: +h.lat, lo: +h.lon, how: tries[i][1] };
     } catch (e) { if (i === tries.length - 1) throw e; }
   }
   return null;
@@ -4017,13 +4022,13 @@ function adSetBox(no, cls, html) {
 function adPaint(no) {                                         // the answer of "หา Trip ใกล้สุด" (kept in adRes) with the current state of the pick
   const o = S.byNo && S.byNo.get(no), r = adRes.get(no); if (!o || !r) return;
   const { pt, top, close, missing, total } = r, has = (Z.zt ? finalOf(o) : o.zt) != null, chosen = adTrips[no], rough = pt.how === 'area';
-  const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง' }[pt.how];
+  const how = { pin: 'ใช้หมุดที่ยืนยันแล้ว', addr: 'จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', place: 'จุดจากชื่อหมู่บ้าน/สถานที่ในที่อยู่ ใน OpenStreetMap (โดยประมาณ — กลางหมู่บ้าน ไม่ใช่หน้าบ้าน)', road: 'จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', area: 'หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง' }[pt.how];
   const useBtn = t => `<button type="button" class="aduse primary" data-trip="${t}">${esc(T('ใช้ Trip {0}', t))}</button>`;
   const act = chosen ? `<div class="adsel">✅ <b>${esc(T('ใช้ Trip {0} แล้ว — พิมพ์บนใบปะหน้า', chosen))}</b> <button type="button" class="adundo">${esc(T('ยกเลิก'))}</button></div>`
     : has || rough ? '' : `<div class="adsel">${useBtn(top[0].trip)} <span class="muted">${esc(T('ยังไม่ได้เลือก — จุดนี้หยาบ ตรวจแผนที่ก่อน'))}</span></div>`;      // (the middle of a sub-district is never offered: it picked the wrong Trip for a shop on Ram Khamhaeng road)
   const ra = r.road ? `<div class="adsel">${esc(r.road.q)} — ${r.road.trip != null ? esc(T('ถนนนี้อยู่ Trip {0} ตามตาราง', r.road.trip)) + (chosen == r.road.trip || has ? '' : ' ' + useBtn(r.road.trip)) : `<span class="adwarn">${esc(T('ถนนนี้ยังไม่อยู่ในตาราง'))}</span>`}</div>` : '';
   const fix = pt.how === 'pin' ? '' : `<div class="adfix"><div class="muted" style="font-size:12.5px;margin-top:6px">${esc(T('ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น'))}</div><div class="adfr"><input class="adnpi" type="text" placeholder="${esc(T('พิกัด เช่น 13.85, 100.70 หรือลิงก์ Google Maps'))}" autocomplete="off"><button type="button" class="adnpsave">${esc(T('ปักหมุด + หา Trip ใหม่'))}</button></div><div class="adfr"><input class="adnroad" type="text" placeholder="${esc(T('ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง'))}" autocomplete="off"><button type="button" class="adnroadgo">${esc(T('หา Trip ของถนน'))}</button></div><div class="adnmsg muted" style="font-size:12.5px"></div>${ra}</div>`;
-  adSetBox(no, pt.how === 'pin' || pt.how === 'addr' ? 'ok' : 'warn', `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : (rough ? '~' : '') + x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div>${act}${fix}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
+  adSetBox(no, pt.how === 'pin' || pt.how === 'addr' || pt.how === 'place' ? 'ok' : 'warn', `<div><b>${esc(T('Trip ใกล้สุด'))}:</b> ` + top.map((x, i) => `<span class="adnt${i ? '' : ' first'}">Trip ${x.trip} <span class="muted">(${esc(x.nm)} · ${x.km < 0.05 ? esc(T('อยู่ในโซน')) : (rough ? '~' : '') + x.km.toFixed(1) + ' ' + esc(T('กม.'))})</span></span>`).join(' ') + `</div>${act}${fix}<div class="muted" style="font-size:12.5px">${esc(T(how))}${close ? ' · ' + esc(T('2 Trip แรกใกล้เคียงกัน — ดูแผนที่ประกอบ')) : ''}${missing ? ' · ' + esc(T('ชื่อโซน {0} จาก {1} ไม่มีใน OpenStreetMap (ไม่ถูกนับ)', missing, total)) : ''} · <a href="https://www.openstreetmap.org/?mlat=${pt.la}&mlon=${pt.lo}#map=17/${pt.la}/${pt.lo}" target="_blank" rel="noopener">${esc(T('ดูจุดบน OpenStreetMap'))}</a></div>`);
 }
 async function adNearest(row) {
   const no = row.dataset.no, o = S.byNo && S.byNo.get(no); if (!o || adBusy.has(no)) return;
@@ -4040,7 +4045,7 @@ async function adNearest(row) {
     const top = list.slice(0, 3), close = top.length > 1 && top[1].km - top[0].km < 0.3;
     adRes.set(no, { pt, top, close, missing, total: names.length });
     const has = (Z.zt ? finalOf(o) : o.zt) != null;
-    if (!has && adTrips[no] == null && pt.how !== 'area') { adTrips[no] = top[0].trip; adTripSave(); try { window.O2O.render(); } catch (_) { } renderAddr(); }      // (a point that is a pin / an address: the nearest Trip is picked at once; the middle of a sub-district only offers it)
+    if (!has && adTrips[no] == null && pt.how !== 'area' && (pt.how === 'pin' || !close)) { adTrips[no] = top[0].trip; adTripSave(); try { window.O2O.render(); } catch (_) { } renderAddr(); }      // (a point that is a pin / an address: the nearest Trip is picked at once; the middle of a sub-district only offers it)
     adPaint(no);
   } catch (e) { box.className = 'adnr warn'; box.innerHTML = `<span class="adwarn">${esc(T('ค้น OpenStreetMap ไม่ได้ — ตรวจอินเทอร์เน็ต แล้วกดใหม่ (ที่โหลดแล้วถูกจำไว้)'))}</span>`; }
   finally { btn.disabled = false; }
@@ -6018,6 +6023,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['จุดจากที่อยู่ใน OpenStreetMap (โดยประมาณ)', 'Point from the address on OpenStreetMap (approximate)', 'OpenStreetMap ပေါ်ရှိ လိပ်စာမှ နေရာ (ခန့်မှန်း)'],
   ['จุดจากซอย/ถนนในที่อยู่ (โดยประมาณ — ไม่ใช่หน้าบ้าน)', 'Point from the soi / road of the address (approximate — not the door)', 'လိပ်စာရှိ လမ်းကြား/လမ်းမှ နေရာ (ခန့်မှန်း — အိမ်ရှေ့မဟုတ်)'],
   ['หาตำแหน่งของที่อยู่นี้ใน OpenStreetMap ไม่เจอ — ตัวเลข กม. วัดจากกลางแขวง ไม่ใช่จากร้าน (อย่าเชื่อ) ปักหมุดหรือใส่ชื่อถนนด้านล่าง', 'This address is not on OpenStreetMap — the km are measured from the middle of the sub-district, not from the shop (do not trust them). Pin it or enter the road below', 'ဤလိပ်စာကို OpenStreetMap တွင် မတွေ့ပါ — km များသည် ရပ်ကွက်အလယ်မှ တိုင်းထားခြင်းဖြစ်ပြီး ဆိုင်မှမဟုတ်ပါ (မယုံပါနှင့်)။ အောက်တွင် ပင်ထိုးပါ သို့မဟုတ် လမ်းအမည်ထည့်ပါ'],
+  ['จุดจากชื่อหมู่บ้าน/สถานที่ในที่อยู่ ใน OpenStreetMap (โดยประมาณ — กลางหมู่บ้าน ไม่ใช่หน้าบ้าน)', 'Point from the village / place name of the address on OpenStreetMap (approximate — the middle of the village, not the door)', 'လိပ်စာပါ ရွာ/နေရာအမည်မှ OpenStreetMap ပေါ်ရှိ နေရာ (ခန့်မှန်း — ရွာအလယ်၊ အိမ်ရှေ့မဟုတ်)'],
   ['ร้านอยู่ตรงไหนจริง? เปิด Google Maps หาร้าน แล้วคัดลอกพิกัด/ลิงก์ยาวมาวาง หรือพิมพ์ชื่อถนนที่เห็น', 'Where is the shop really? Find it in Google Maps, then paste the coordinates / long link, or type the road you see', 'ဆိုင်က တကယ် ဘယ်မှာလဲ? Google Maps တွင် ရှာပြီး ကိုဩဒိနိတ်/လင့်ရှည်ကို ကူးထည့်ပါ သို့မဟုတ် မြင်ရသော လမ်းအမည်ကို ရိုက်ပါ'],
   ['ชื่อถนนที่เห็นในแผนที่ เช่น รามคำแหง', 'Road seen on the map, e.g. รามคำแหง', 'မြေပုံတွင် မြင်ရသော လမ်း၊ ဥပမာ รามคำแหง'],
   ['ปักหมุด + หา Trip ใหม่', 'Pin it + find the Trip again', 'ပင်ထိုးပြီး Trip ပြန်ရှာရန်'],
