@@ -3920,8 +3920,8 @@ $('adList').addEventListener('click', e => {
   if (e.target.closest('.adpsave')) {
     const raw = row.querySelector('.adpi').value, p = adParse(raw), msg = row.querySelector('.adpmsg');
     if (!p) { msg.textContent = /goo\.gl|maps\.app/i.test(raw) ? T('ลิงก์สั้นอ่านพิกัดไม่ได้ — เปิดลิงก์ในแท็บใหม่ แล้วคัดลอกลิงก์ยาวจากแถบที่อยู่มาวาง') : T('อ่านพิกัดไม่ได้ — ต้องเป็นจุดในประเทศไทย เช่น 13.85, 100.70 หรือลิงก์ Google Maps ที่มี @13.85,100.70'); msg.style.color = '#e5484d'; return; }
-    adPins[adKey(o)] = [Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]; adSavePins(); reopen(); toast('บันทึกหมุดแล้ว');
-  } else if (e.target.closest('.adpdel')) { delete adPins[adKey(o)]; adSavePins(); reopen(); toast('ลบหมุดแล้ว'); }
+    adPins[adKey(o)] = [Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]; adSavePins(); adRes.delete(o.no); adNr.delete(o.no); reopen(); toast('บันทึกหมุดแล้ว');      // (the old answer was measured from another point: dropped, "หา Trip ใกล้สุด" asks again)
+  } else if (e.target.closest('.adpdel')) { delete adPins[adKey(o)]; adSavePins(); adRes.delete(o.no); adNr.delete(o.no); reopen(); toast('ลบหมุดแล้ว'); }
 });
 /* Trip NEAREST to a point. The point is the confirmed pin (nothing is sent anywhere) or, with no pin, the address looked up on OpenStreetMap (sent only when "หา Trip ใกล้สุด" is pressed).
    The zone names of the table are looked up on OpenStreetMap ONCE (public place / road names only — nothing about a customer), their shapes (a road = a line, a sub-district = an area) are kept in this browser (o2o-zgeo-v2),
@@ -3997,7 +3997,8 @@ async function adLocate(o) {                                 // the point of an 
   let place = base.replace(/(^|\s)(?:เลขที่|บ้านเลขที่|บ้านเลขที|เลขที)?\s*[\d\/\-]+(?=\s|$)/g, ' ');      // the name of the place without house numbers: "40/20 เสนาวิล่า4 สามวาตะวันตก คลองสามวา" -> "เสนาวิล่า 4" (OpenStreetMap knows the village, not the house)
   for (const x of [o.sd, o.d]) if (x && x.length > 1) place = place.split(x).join(' ');
   place = place.replace(/([ก-๙A-Za-z])(\d)/g, '$1 $2').replace(/\s+/g, ' ').trim();
-  const tries = [[base, 'addr'], place.length >= 4 && place !== base && !/^(ซอย|ซ\.|ถนน|ถ\.)/.test(place) ? [place, 'place'] : null, road ? [`${road} ${o.sd || ''} ${o.d || ''}`.trim(), 'road'] : null, (o.sd || o.d) ? [`${o.sd || ''} ${o.d || ''}`.trim(), 'area'] : null].filter(Boolean);
+  const named = place.replace(/[^A-Za-zก-๙]/g, '').length >= 3;      // (an address that is only numbers + its own sub-district / district names says nothing: a search for it lands on a random place or the middle of the area, and must not count as a found address)
+  const tries = [named ? [base, 'addr'] : null, named && place.length >= 4 && place !== base && !/^(ซอย|ซ\.|ถนน|ถ\.)/.test(place) ? [place, 'place'] : null, road ? [`${road} ${o.sd || ''} ${o.d || ''}`.trim(), 'road'] : null, (o.sd || o.d) ? [`${o.sd || ''} ${o.d || ''}`.trim(), 'area'] : null].filter(Boolean);
   for (let i = 0; i < tries.length; i++) {
     if (i) await zgWait(1100);
     try {
