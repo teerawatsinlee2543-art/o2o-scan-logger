@@ -1097,6 +1097,10 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip .adb{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}
 #paneTrip .adb a{color:var(--accent);font-weight:700;white-space:nowrap}
 #paneTrip .adb .adshow{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+#paneTrip .adpinned{font-weight:800;color:#2ea043;white-space:nowrap}
+#paneTrip .adpin .row{gap:6px;flex-wrap:wrap}
+#paneTrip .adpin .adpi{flex:1 1 220px;min-width:0;height:34px}
+#paneTrip .adpin button{height:34px;padding:0 12px;border-radius:9px;font-weight:800}
 #paneTrip iframe.admap{display:block;width:100%;height:260px;border:0;border-radius:10px;margin-top:8px;background:var(--card)}
 #paneTrip .zrep td{vertical-align:top}
 #paneTrip .zrep .zrtools{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:4px;font-size:13px}
@@ -3798,6 +3802,18 @@ function zAddShop(tr) {
 }
 /* Box ค: the address of a customer, with a Google Maps link. Read from the orders in memory (S.orders: the sheet / file as read); nothing is saved, nothing is sent anywhere until a map button is pressed. */
 const adMapQ = o => encodeURIComponent(String(o.addr || '').replace(/,?\s*Thailand\s*$/i, '').replace(/\s+null\b/g, ''));
+/* A pin the person has confirmed for an address (the sheet has no coordinates, so a text search can land on the wrong shop): saved in this browser only, reused for every order with the same address. */
+const adKey = o => String(o.addr || '').toLowerCase().replace(/,?\s*thailand\s*$/, '').replace(/[\s,]+/g, '');
+let adPins = (() => { try { return JSON.parse(localStorage.getItem('o2o-adpin-v1') || '{}') || {}; } catch (e) { return {}; } })();
+const adSavePins = () => { try { localStorage.setItem('o2o-adpin-v1', JSON.stringify(adPins)); } catch (e) { } };
+function adParse(s) {                      // "13.85, 100.70" or a Google Maps link carrying the point (!3d..!4d.. / @lat,lng / ?q=lat,lng) -> [lat, lng] inside Thailand, else null
+  s = String(s || '').trim(); try { s = decodeURIComponent(s); } catch (e) { }
+  const m = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(s) || /@(-?\d+\.\d+),\s*(-?\d+\.\d+)/.exec(s) || /[?&](?:q|ll|query|destination|center)=\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i.exec(s) || /^\s*(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)\s*$/.exec(s);
+  if (!m) return null; const la = +m[1], ln = +m[2];
+  return la >= 5.5 && la <= 20.6 && ln >= 97.3 && ln <= 105.8 ? [la, ln] : null;
+}
+const adPinOf = o => adPins[adKey(o)] || null;
+const adQuery = o => { const p = adPinOf(o); return p ? `${p[0]},${p[1]}` : adMapQ(o); };
 function renderAddr() {
   const box = $('adList'); if (!box) return;
   const q = $('adQ').value.trim().toLowerCase(), only = $('adOnly').checked;
@@ -3809,18 +3825,34 @@ function renderAddr() {
   const total = list.length; list = list.slice().sort((a, b) => dateNum(b.date) - dateNum(a.date)).slice(0, 25);
   if (!total) { box.innerHTML = `<div class="empty">${esc(T('ไม่พบออเดอร์'))}</div>`; return; }
   box.innerHTML = `<div class="muted" style="margin:6px 0;font-size:13px">${esc(T('พบ {0} ใบ — แสดง {1} ใบแรก', total, list.length))}</div>` + list.map(o => {
-    const t = tripOf(o), g = o.zt == null && Z.guess ? Z.guess.get(o.no) : null;
-    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span><a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adMapQ(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a><button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button></div></div>`;
+    const t = tripOf(o), g = o.zt == null && Z.guess ? Z.guess.get(o.no) : null, pin = adPinOf(o);
+    const area = encodeURIComponent(`${o.sd || ''} ${o.d || ''} กรุงเทพมหานคร`.replace(/\s+/g, ' ').trim());
+    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span>${pin ? `<span class="adpinned">📍 <span>${esc(T('หมุดที่ยืนยันแล้ว'))}</span></span>` : ''}<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adQuery(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a>${pin ? '' : `<a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${area}" target="_blank" rel="noopener">${esc(T('ดูเฉพาะแขวง'))} ↗</a>`}<button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button></div></div>`;
   }).join('');
 }
 $('adQ').addEventListener('input', () => renderAddr()); $('adOnly').addEventListener('change', () => renderAddr());
-$('adList').addEventListener('click', e => {
-  const b = e.target.closest('.adshow'); if (!b) return;
-  const row = b.closest('.adrow'), old = row.querySelector('iframe.admap');
-  if (old) { old.remove(); b.textContent = T('แสดงแผนที่'); return; }
+function adShow(row) {
   const o = (S.byNo && S.byNo.get(row.dataset.no)); if (!o) return;
-  const f = document.createElement('iframe'); f.className = 'admap'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer'; f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-  f.src = `https://maps.google.com/maps?q=${adMapQ(o)}&hl=th&z=16&output=embed`; row.appendChild(f); b.textContent = T('ซ่อนแผนที่');
+  const pin = adPinOf(o), f = document.createElement('iframe'); f.className = 'admap'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer'; f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  f.src = `https://maps.google.com/maps?q=${adQuery(o)}&hl=th&z=${pin ? 18 : 16}&output=embed`; row.appendChild(f);
+  const d = document.createElement('div'); d.className = 'adpin';
+  d.innerHTML = `<div class="muted" style="font-size:12.5px;margin:6px 0 4px">${esc(pin ? T('หมุดนี้ถูกบันทึกไว้ในเบราว์เซอร์นี้ — ใช้กับออเดอร์ที่ที่อยู่เดียวกันทุกใบ') : T('หมุดไม่ตรงร้าน? เปิดใน Maps หา/แตะจุดที่ถูกต้อง แล้ววางพิกัดหรือลิงก์ยาวของจุดนั้นที่นี่ — ระบบจะจำจุดนี้ให้ที่อยู่นี้'))}</div><div class="row"><input class="adpi" type="text" placeholder="${esc(T('พิกัด เช่น 13.85, 100.70 หรือลิงก์ Google Maps'))}" autocomplete="off"><button type="button" class="adpsave">${esc(T('ปักหมุดนี้'))}</button>${pin ? `<button type="button" class="adpdel">${esc(T('ลบหมุด'))}</button>` : ''}</div><div class="adpmsg muted" style="font-size:12.5px;margin-top:4px"></div>`;
+  row.appendChild(d); row.querySelector('.adshow').textContent = T('ซ่อนแผนที่');
+}
+$('adList').addEventListener('click', e => {
+  const row = e.target.closest('.adrow'); if (!row) return;
+  const o = (S.byNo && S.byNo.get(row.dataset.no)); if (!o) return;
+  if (e.target.closest('.adshow')) {
+    const old = row.querySelector('iframe.admap');
+    if (old) { old.remove(); const d = row.querySelector('.adpin'); if (d) d.remove(); row.querySelector('.adshow').textContent = T('แสดงแผนที่'); return; }
+    adShow(row); return;
+  }
+  const reopen = () => { const k = row.dataset.no; renderAddr(); const r = [...$('adList').children].find(x => x.dataset && x.dataset.no === k); if (r) adShow(r); };
+  if (e.target.closest('.adpsave')) {
+    const raw = row.querySelector('.adpi').value, p = adParse(raw), msg = row.querySelector('.adpmsg');
+    if (!p) { msg.textContent = /goo\.gl|maps\.app/i.test(raw) ? T('ลิงก์สั้นอ่านพิกัดไม่ได้ — เปิดลิงก์ในแท็บใหม่ แล้วคัดลอกลิงก์ยาวจากแถบที่อยู่มาวาง') : T('อ่านพิกัดไม่ได้ — ต้องเป็นจุดในประเทศไทย เช่น 13.85, 100.70 หรือลิงก์ Google Maps ที่มี @13.85,100.70'); msg.style.color = '#e5484d'; return; }
+    adPins[adKey(o)] = [Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]; adSavePins(); reopen(); toast('บันทึกหมุดแล้ว');
+  } else if (e.target.closest('.adpdel')) { delete adPins[adKey(o)]; adSavePins(); reopen(); toast('ลบหมุดแล้ว'); }
 });
 function zAddTrip() {
   const n = +$('zNewNum').value.replace(/\D/g, ''), txt = $('zNewZones').value.replace(/\s+/g, ' ').trim();
@@ -5753,6 +5785,17 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['Google Maps', 'Google Maps', 'Google Maps'],
   ['แสดงแผนที่', 'Show map', 'မြေပုံပြရန်'],
   ['ซ่อนแผนที่', 'Hide map', 'မြေပုံဖျောက်ရန်'],
+  ['หมุดที่ยืนยันแล้ว', 'confirmed pin', 'အတည်ပြုပြီးသော မြေပုံပင်'],
+  ['ดูเฉพาะแขวง', 'Sub-district only', 'ရပ်ကွက်သာ ကြည့်ရန်'],
+  ['หมุดนี้ถูกบันทึกไว้ในเบราว์เซอร์นี้ — ใช้กับออเดอร์ที่ที่อยู่เดียวกันทุกใบ', 'This pin is saved in this browser — used for every order with the same address', 'ဤပင်ကို ဤဘရောက်ဇာတွင် သိမ်းထားသည် — လိပ်စာတူသော အော်ဒါအားလုံးတွင် သုံးသည်'],
+  ['หมุดไม่ตรงร้าน? เปิดใน Maps หา/แตะจุดที่ถูกต้อง แล้ววางพิกัดหรือลิงก์ยาวของจุดนั้นที่นี่ — ระบบจะจำจุดนี้ให้ที่อยู่นี้', 'Pin on the wrong shop? Open in Maps, find / tap the right spot, then paste its coordinates or long link here — the system will remember it for this address', 'ပင်က ဆိုင်မှားနေလား? Maps တွင်ဖွင့်ပြီး မှန်သောနေရာကို ရှာ/နှိပ်ကာ ၎င်း၏ကိုဩဒိနိတ် သို့မဟုတ် လင့်ခ်ရှည်ကို ဤနေရာတွင် ကူးထည့်ပါ — ဤလိပ်စာအတွက် စနစ်က မှတ်ထားမည်'],
+  ['พิกัด เช่น 13.85, 100.70 หรือลิงก์ Google Maps', 'Coordinates e.g. 13.85, 100.70 or a Google Maps link', 'ကိုဩဒိနိတ် ဥပမာ 13.85, 100.70 သို့မဟုတ် Google Maps လင့်ခ်'],
+  ['ปักหมุดนี้', 'Pin this', 'ဤနေရာကို ပင်ထိုးရန်'],
+  ['ลบหมุด', 'Remove pin', 'ပင်ဖျက်ရန်'],
+  ['ลิงก์สั้นอ่านพิกัดไม่ได้ — เปิดลิงก์ในแท็บใหม่ แล้วคัดลอกลิงก์ยาวจากแถบที่อยู่มาวาง', 'A short link cannot be read — open it in a new tab and paste the long link from the address bar', 'လင့်ခ်တိုကို ဖတ်၍မရပါ — တက်ဘ်အသစ်တွင်ဖွင့်ပြီး လိပ်စာဘားမှ လင့်ခ်ရှည်ကို ကူးထည့်ပါ'],
+  ['อ่านพิกัดไม่ได้ — ต้องเป็นจุดในประเทศไทย เช่น 13.85, 100.70 หรือลิงก์ Google Maps ที่มี @13.85,100.70', 'Cannot read the coordinates — must be a point in Thailand, e.g. 13.85, 100.70 or a Google Maps link containing @13.85,100.70', 'ကိုဩဒိနိတ် ဖတ်၍မရပါ — ထိုင်းနိုင်ငံအတွင်းနေရာဖြစ်ရမည် ဥပမာ 13.85, 100.70 သို့မဟုတ် @13.85,100.70 ပါသော Google Maps လင့်ခ်'],
+  ['บันทึกหมุดแล้ว', 'Pin saved', 'ပင်သိမ်းပြီး'],
+  ['ลบหมุดแล้ว', 'Pin removed', 'ပင်ဖျက်ပြီး'],
   ['เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน', 'Fill in the Trip that the system guesses for sheets outside the zones', 'ဇုန်ပြင်ပရှိ စာရွက်များအတွက် စနစ်က ခန့်မှန်းသော Trip နံပါတ်ကို ဖြည့်ရန်'],
   ['ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)', 'Put a ? after a Trip that the system guesses (unticked = printed as a plain number, like any other)', 'စနစ်က ခန့်မှန်းသော Trip နံပါတ်နောက်တွင် ? ထည့်ရန် (မတိုက်ပါက သာမန်နံပါတ်အတိုင်း ပုံနှိပ်သည်)'],
   ['เปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is on', 'ခန့်မှန်း Trip ဖွင့်ထားသည်'],
