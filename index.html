@@ -1600,7 +1600,10 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <p class="dtitle"><span class="dnum">ค</span>ลิงก์ไฟล์ Excel / CSV <span class="rcount">ทำงานเองทันที</span></p>
       <input id="xlLink" class="rsearch" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ตรงไปที่ไฟล์ .xlsx หรือ .csv — วางแล้วเชื่อมต่อให้เอง">
       <p class="hint">แหล่งข้อมูลออเดอร์ที่ 2 — ใช้เมื่อเลขออเดอร์ที่สแกนไม่อยู่ในชีต (ชีตมาก่อนเสมอ). โปรแกรมโหลดไฟล์มาอ่านอย่างเดียว ไม่แก้ไฟล์ แล้วเก็บไว้ในหน่วยความจำของเบราว์เซอร์นี้ (อ่านใหม่ทุก 5 นาที และเมื่อเจอเลขออเดอร์ที่ยังไม่มี) ไม่ส่งเลขออเดอร์ไปที่ไหน. ต้องเป็นลิงก์ที่เปิดตัวไฟล์ได้ตรง ๆ (ลิงก์แชร์ของ OneDrive / SharePoint / Google Drive ธรรมดาอ่านไม่ได้) และไฟล์ต้องมีหัวคอลัมน์เหมือนชีต: Order Number, Customer Name, Original Expected Date / Time, Sub District, District, Post Code, Shipping Address</p>
+      <p class="hint">หรือถ้าไฟล์อยู่ในเครื่องนี้ (เช่น โฟลเดอร์ OneDrive ที่ซิงค์ลงคอมพิวเตอร์) กด "เลือกไฟล์ในเครื่อง" แล้วเลือกไฟล์นั้นครั้งเดียว — โปรแกรมอ่านตรงจากเครื่อง ไม่ต้องใช้ลิงก์และไม่ต้องล็อกอิน (Chrome / Edge) เปิดเบราว์เซอร์ใหม่แล้วอาจถามขออนุญาตอ่านอีกครั้ง</p>
       <div class="row dact">
+        <button id="xlPick" type="button" class="primary">📁 เลือกไฟล์ในเครื่อง</button>
+        <button id="xlPickOff" type="button" class="danger" hidden>เลิกใช้ไฟล์ในเครื่อง</button>
         <button id="xlOff" type="button" class="danger" hidden>ตัดการเชื่อมต่อ</button>
       </div>
       <div id="xlStatus" class="preview" hidden></div>
@@ -3194,7 +3197,34 @@ async function ordersFromSheet(dateTexts, cfg) {
    It is read again every 5 minutes, and when a scanned order is in neither source (at most once a minute). The link is saved in this browser like the sheet link (and shared with the other computers); it is not in this file. */
 const LS_XL = 'o2o-xl-v1', XL_MS = 5 * 60 * 1000;
 const XL = { byNo: new Map(), orders: [], at: 0, tried: 0, sig: '', busy: null, err: '', info: null };
-const xlCfgNow = () => { if (IN_VIEWER) return null; try { const c = JSON.parse(localStorage.getItem(LS_XL) || 'null'); return c && c.url ? c : null; } catch (_) { return null; } };
+/* The file on THIS computer (e.g. the OneDrive folder that is synced to it): picked once in the browser's own file window, the browser keeps the "handle" (IndexedDB) and the program reads the file from it — no link, no sign-in, always the synced copy. Chrome / Edge only.
+   Per computer: it is never sent to the cloud copy of the settings. After the browser was closed it may ask once for permission again ("xlf-perm"). */
+const LS_XLF = 'o2o-xlfile-v1', XLF_URL = 'file:local';
+const xlfName = () => { if (IN_VIEWER) return ''; try { const c = JSON.parse(localStorage.getItem(LS_XLF) || 'null'); return c && c.name ? String(c.name) : ''; } catch (_) { return ''; } };
+const xlfDb = () => new Promise((res, rej) => { const q = indexedDB.open('o2o-xlfile', 1); q.onupgradeneeded = () => q.result.createObjectStore('h'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+async function xlfGet() { const db = await xlfDb(); return new Promise((res, rej) => { const r = db.transaction('h').objectStore('h').get('file'); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error); }); }
+async function xlfPut(h) { const db = await xlfDb(); return new Promise((res, rej) => { const tx = db.transaction('h', 'readwrite'); h ? tx.objectStore('h').put(h, 'file') : tx.objectStore('h').delete('file'); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); }
+async function xlfBytes() {
+  const h = await xlfGet(); if (!h) throw new Error('xlf-gone');
+  let p = 'prompt'; try { p = await h.queryPermission({ mode: 'read' }); } catch (_) { }
+  if (p !== 'granted') throw new Error('xlf-perm');
+  let f; try { f = await h.getFile(); } catch (_) { throw new Error('xlf-gone'); }
+  return new Uint8Array(await f.arrayBuffer());
+}
+async function xlfClear() { try { localStorage.removeItem(LS_XLF); } catch (_) { } try { await xlfPut(null); } catch (_) { } xlClear(); }
+async function xlPickLocal(handle) {      // the picker (or a handle given by a test); the file is read once before it is kept — if it cannot be read as the order file, nothing is kept
+  if (IN_VIEWER) throw new Error('viewer');
+  if (!handle) {
+    if (!window.showOpenFilePicker) throw new Error('xlf-unsupported');
+    [handle] = await window.showOpenFilePicker({ multiple: false, types: [{ description: 'Excel / CSV', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'text/csv': ['.csv'] } }] });
+  }
+  const before = xlfName();
+  await xlfPut(handle); try { localStorage.setItem(LS_XLF, JSON.stringify({ name: handle.name })); } catch (_) { }
+  try { const res = await xlLoad(XLF_URL, false); xlSet(res, Date.now()); XL.tried = Date.now(); xlFire(); return Object.assign({ url: XLF_URL, name: handle.name }, res.info); }
+  catch (e) { if (!before) await xlfClear(); throw e; }
+}
+async function xlfAllow() { const h = await xlfGet(); if (!h) return false; let p = 'denied'; try { p = await h.requestPermission({ mode: 'read' }); } catch (_) { } if (p !== 'granted') return false; XL.tried = 0; XL.at = 0; return xlRefresh(true); }      // (needs a click: called from the button)
+const xlCfgNow = () => { if (IN_VIEWER) return null; if (xlfName()) return { url: XLF_URL, link: xlfName(), local: true }; try { const c = JSON.parse(localStorage.getItem(LS_XL) || 'null'); return c && c.url ? c : null; } catch (_) { return null; } };
 const xlNorm = link => { const m = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)$/i.exec(link); return m ? `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}` : link; };      // (the page of a file on GitHub -> the file itself)
 const xlNo = s => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f\s]/g, '').toUpperCase().replace(/\.0+$/, '');      // (Excel may keep an all-digit order number as a number: 6044892718.0)
 const xlDate = v => {      // a date that Excel keeps as a number (46330) or as 2026-11-04 -> "04-Nov-2026", the way the sheet writes it
@@ -3210,12 +3240,16 @@ function xlFixCells(rows) {
   return rows;
 }
 async function xlLoad(url, keep) {      // downloads and reads the file; throws when it cannot. keep: the same file as the last read -> nothing to do (null)
-  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 60000); let u8;
-  try {
-    const r = await hooks.fetch(url, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    u8 = new Uint8Array(await r.arrayBuffer());
-  } finally { clearTimeout(timer); }
+  let u8;
+  if (url === XLF_URL) u8 = await xlfBytes();
+  else {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      const r = await hooks.fetch(url, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      u8 = new Uint8Array(await r.arrayBuffer());
+    } finally { clearTimeout(timer); }
+  }
   if (!u8.length) throw new Error('ไฟล์ว่าง');
   let h = u8.length; for (let i = 0; i < u8.length; i += 61) h = (Math.imul(h, 31) + u8[i]) | 0;      // (a cheap fingerprint: the same bytes as last time are not read again)
   const sig = u8.length + ':' + (h >>> 0).toString(36);
@@ -4194,7 +4228,7 @@ async function applyRoutes(silent) {
   for (const [k, e] of entries) if (!hand(k)) tripMap[k] = e;
   saveTrip(); renderTrip(); render(); toast(silent ? `อัปเดตเส้นทางอัตโนมัติ: เพิ่ม/แก้ ${changed} พื้นที่` : `ใส่เส้นทางแล้ว: ${bySd.size} แขวง / ${tripsN} Trip`);
 }
-window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, xlConnect, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
+window.O2OZone = { loadFile, setOrders, runZones, finalOf, applyRoutes, syncSheet, autoRun, sdThai, tripOfOrder, localRec, guessOf, xlConnect, xlPickLocal, xlfAllow, xlfClear, xlfName, xlRefresh, xlReady, xlClear, xlRec, xlHas: no => XL.byNo.has(no), xlFresh: () => XL.at > 0 && Date.now() - XL.at < 2 * XL_MS, xlInfo: () => XL.info && { n: XL.byNo.size, at: XL.at, err: XL.err, from: XL.info.from, to: XL.info.to }, read: { mentionsOf, cleanName, canonName, fuzzyHit, enNamesOf, skName, enSkel, thSkel }, roadOf: x => roadLabel({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '' }), zoneVer: () => zoneMatcher().v, zoneText: () => $('zoneIn').value, zoneIsDefault, setZoneText, Z, S };
 
 })();
 
@@ -4214,7 +4248,8 @@ const DB_IDS = [{ link: 'dbLink', off: 'dbOff', status: 'dbStatus' }, { link: 'd
 const LS_XL = 'o2o-xl-v1';
 let xlCfg = null;                              // {url, link}: the Excel / CSV link of the second source (box ข), saved in this browser only; the file itself is read and kept by O2OZone (xlRec / xlHas)
 try { const r = JSON.parse(localStorage.getItem(LS_XL) || 'null'); if (r && r.url) xlCfg = r; } catch (_) {}
-const xlUsable = () => !!xlCfg && !IN_VIEWER;
+const xlLocalName = () => { try { return (window.O2OZone && window.O2OZone.xlfName && window.O2OZone.xlfName()) || ''; } catch (_) { return ''; } };      // the file picked on this computer (it wins over the link here; never sent to the cloud)
+const xlUsable = () => (!!xlCfg || !!xlLocalName()) && !IN_VIEWER;
 const xlHas = o => !!(window.O2OZone && window.O2OZone.xlHas && window.O2OZone.xlHas(o));
 async function netUp() {                         // is Google reachable at all? (any answer, even an error page, counts; only a missing connection fails)
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 6000);
@@ -4391,7 +4426,8 @@ function renderDb() {
   const on = dbUsable();
   $('tabDbCnt').textContent = on ? T('เชื่อมต่อแล้ว') : T('ยังไม่เชื่อม'); $('tabDbCnt').classList.toggle('zero', !on); $('tabDbCnt').classList.toggle('live', on);   // green when connected, no colour when not
   for (const i of [0, 1]) { const ids = DB_IDS[i]; $(ids.off).hidden = !sheetCfgs[i]; $(ids.link).value = $(ids.link).value || (sheetCfgs[i] ? sheetCfgs[i].link : ''); $(ids.link).disabled = IN_VIEWER; }
-  $('xlOff').hidden = !xlCfg; $('xlLink').value = $('xlLink').value || (xlCfg ? xlCfg.link : '');
+  $('xlOff').hidden = !xlCfg; $('xlLink').value = $('xlLink').value || (xlCfg ? xlCfg.link : ''); $('xlPickOff').hidden = !xlLocalName(); $('xlPick').disabled = IN_VIEWER;
+  { const nm = xlLocalName(), b = $('xlPick'); b.innerHTML = nm ? `📁 <span>${xesc(T('เลือกไฟล์อื่น'))}</span> <span class="muted">(${xesc(nm)})</span>` : `📁 <span>${xesc(T('เลือกไฟล์ในเครื่อง'))}</span>`; }
   $('xlLink').disabled = IN_VIEWER; $('dbTestGo').disabled = !on;
   if (IN_VIEWER) { for (const id of [DB_IDS[0].status, DB_IDS[1].status, 'xlStatus']) { $(id).hidden = false; $(id).innerHTML = `<span class="err">${T('หน้าเว็บของ Claude ต่อ Google Sheet ตรงไม่ได้ — ใช้ลิงก์ GitHub Pages หรือไฟล์ในเครื่อง')}</span>`; } }
 }
@@ -4434,9 +4470,12 @@ const xlWhy = (e, link) => {
   const m = String(e && e.message || e), host = (/^https?:\/\/([^/]+)/i.exec(link) || [])[1] || '';
   if (m === 'xl-gsheet') return 'นี่คือลิงก์ Google Sheet — ใส่ในช่อง ก หรือ ข ด้านบน';
   if (m === 'bad-link') return 'ลิงก์ไม่ถูกต้อง — ต้องขึ้นต้นด้วย https://';
+  if (m === 'xlf-unsupported') return 'เบราว์เซอร์นี้เลือกไฟล์แบบจำไว้ไม่ได้ — ใช้ Chrome หรือ Edge บนคอมพิวเตอร์';
+  if (m === 'xlf-gone') return 'ไม่พบไฟล์ที่เลือกไว้แล้ว (ย้ายหรือลบ?) — กด "เลือกไฟล์ในเครื่อง" เลือกใหม่';
+  if (m === 'xlf-perm') return 'ต้องอนุญาตให้อ่านไฟล์อีกครั้ง (เบราว์เซอร์ถามทุกครั้งที่เปิดใหม่) — กดปุ่ม "อนุญาตอ่านไฟล์"';
   if (/^HTTP (\d+)/.test(m)) return T('เปิดลิงก์ไม่ได้ ({0}) — ตรวจว่าลิงก์ยังใช้ได้และเปิดให้ทุกคนดาวน์โหลด', m.slice(5));
   if (e && (e.name === 'TypeError' || e.name === 'AbortError' || /Failed to fetch|NetworkError|abort/i.test(m)))
-    return /1drv\.ms|onedrive\.live\.com|sharepoint\.com|drive\.google\.com|dropbox\.com/i.test(host) ? 'ลิงก์แชร์ของ OneDrive / SharePoint / Google Drive / Dropbox อ่านตรง ๆ ไม่ได้ — ต้องเป็นลิงก์ตรงไปที่ตัวไฟล์ บนเว็บที่ให้โปรแกรมอ่านได้' : 'อ่านไฟล์ไม่ได้ — เว็บที่เก็บไฟล์ไม่ให้โปรแกรมอ่านตรง ๆ หรืออินเทอร์เน็ตมีปัญหา';
+    return /1drv\.ms|onedrive\.live\.com|sharepoint\.com|drive\.google\.com|dropbox\.com/i.test(host) ? 'ลิงก์ของ OneDrive / SharePoint / Google Drive / Dropbox อ่านจากเว็บไม่ได้ (ต้องล็อกอิน และเว็บเหล่านี้ไม่ให้โปรแกรมอื่นอ่านตรง ๆ) — ถ้าไฟล์ซิงค์ลงเครื่องนี้ ให้กดปุ่ม "เลือกไฟล์ในเครื่อง" ด้านล่างแทน' : 'อ่านไฟล์ไม่ได้ — เว็บที่เก็บไฟล์ไม่ให้โปรแกรมอ่านตรง ๆ หรืออินเทอร์เน็ตมีปัญหา';
   return m;      // (the reason that the reader itself gives: not an .xlsx, no "Order Number" column, an old .xls, an empty file, a web page)
 };
 async function xlConnectNow() {
@@ -4446,14 +4485,31 @@ async function xlConnectNow() {
   try {
     if (!/^https?:\/\//i.test(link)) throw new Error('bad-link');
     if (/\/spreadsheets\/d\/[A-Za-z0-9_-]{20,}/.test(link)) throw new Error('xl-gsheet');
+    if (xlLocalName()) await window.O2OZone.xlfClear();      // (a link was asked for on this computer: it replaces the file picked here)
     const info = await window.O2OZone.xlConnect(link);
     xlCfg = { url: info.url, link }; try { localStorage.setItem(LS_XL, JSON.stringify(xlCfg)); } catch (_) {} cloudTouch('xl');
     try { window.O2OZone.autoRun(true); } catch (_) {}
-    const cols = Object.entries(DB_NAMES).map(([k, n]) => info.cols[k === 'order' ? 'no' : k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', info.cols[k === 'order' ? 'no' : k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
-    box.innerHTML = `<div class="add">${T('เชื่อมต่อได้')} — ${T('อ่านได้ {0} ออเดอร์', info.n.toLocaleString())}${info.from ? ' · ' + T('วันที่ในไฟล์ {0} ถึง {1}', info.from, info.to) : ''}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>`;
+    box.innerHTML = xlInfoHtml(info);
   } catch (e) { box.innerHTML = `<span class="err">${T(xlWhy(e, link))}</span>`; }
   xlBusy = false; renderDb(); render();
 }
+const xlInfoHtml = info => {
+  const cols = Object.entries(DB_NAMES).map(([k, n]) => info.cols[k === 'order' ? 'no' : k] ? `<li class="add">${n} ← ${T('คอลัมน์ {0}', info.cols[k === 'order' ? 'no' : k])}</li>` : `<li class="err">${n} — ${T('ไม่พบคอลัมน์นี้')}</li>`).join('');
+  return `<div class="add">${T('เชื่อมต่อได้')} — ${T('อ่านได้ {0} ออเดอร์', info.n.toLocaleString())}${info.from ? ' · ' + T('วันที่ในไฟล์ {0} ถึง {1}', info.from, info.to) : ''}</div><ul style="margin:4px 0 0;padding-left:18px">${cols}</ul>`;
+};
+$('xlPick').addEventListener('click', async () => {      // the file on this computer: picked in the browser's own window (the program only gets to read it)
+  const box = $('xlStatus'); if (IN_VIEWER || xlBusy) return;
+  if (!window.showOpenFilePicker) { box.hidden = false; box.innerHTML = `<span class="err">${T('เบราว์เซอร์นี้เลือกไฟล์แบบจำไว้ไม่ได้ — ใช้ Chrome หรือ Edge บนคอมพิวเตอร์')}</span>`; return; }
+  xlBusy = true;
+  try {
+    const info = await window.O2OZone.xlPickLocal();
+    box.hidden = false; box.innerHTML = `<div class="add">${xesc(T('ไฟล์ในเครื่อง: {0}', info.name))}</div>` + xlInfoHtml(info);
+    try { window.O2OZone.autoRun(true); } catch (_) {}
+  } catch (e) { if (!(e && e.name === 'AbortError')) { box.hidden = false; box.innerHTML = `<span class="err">${T(xlWhy(e, ''))}</span>`; } }
+  xlBusy = false; renderDb(); render();
+});
+$('xlPickOff').addEventListener('click', async () => { await window.O2OZone.xlfClear(); $('xlStatus').hidden = true; renderDb(); toast('เลิกใช้ไฟล์ในเครื่องแล้ว'); });
+$('xlStatus').addEventListener('click', async e => { if (!e.target.closest('#xlfAllow')) return; const ok = await window.O2OZone.xlfAllow(); if (!ok) toast('ยังอ่านไฟล์ไม่ได้ — กดอนุญาตในหน้าต่างของเบราว์เซอร์'); });
 let xlLinkT = null;
 $('xlLink').addEventListener('paste', () => { clearTimeout(xlLinkT); xlLinkT = setTimeout(xlConnectNow, 80); });
 $('xlLink').addEventListener('input', () => { clearTimeout(xlLinkT); if (/^https?:\/\/\S+\.(xlsx|csv)(\?\S*)?$/i.test($('xlLink').value.trim())) xlLinkT = setTimeout(xlConnectNow, 900); });
@@ -4461,9 +4517,10 @@ $('xlLink').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTim
 $('xlLink').addEventListener('change', () => { clearTimeout(xlLinkT); xlConnectNow(); });
 $('xlOff').addEventListener('click', () => { xlCfg = null; $('xlLink').value = ''; try { localStorage.removeItem(LS_XL); } catch (_) {} cloudTouch('xl'); try { window.O2OZone.xlClear(); } catch (_) {} $('xlStatus').hidden = true; $('dbTestOut').hidden = true; renderDb(); toast('ตัดการเชื่อมต่อแล้ว'); });
 document.addEventListener('o2o-xl-read', e => {      // the file was read again (or could not be): the status line says so — never over a connect that is going on
-  if (xlBusy || !xlCfg || IN_VIEWER) return; const box = $('xlStatus'), d = e.detail || {};
+  const local = xlLocalName(); if (xlBusy || (!xlCfg && !local) || IN_VIEWER) return; const box = $('xlStatus'), d = e.detail || {};
   box.hidden = false;
-  box.innerHTML = d.err ? `<span class="err">${T('อ่านไฟล์ Excel ไม่ได้ — {0}', T(xlWhy({ message: d.err, name: /Failed to fetch|abort/i.test(d.err) ? 'TypeError' : '' }, xlCfg.link)))}</span>` : `<div class="add">${T('ไฟล์ Excel: {0} ออเดอร์', (d.n || 0).toLocaleString())} · ${T('อัปเดต {0}', new Date(d.at || Date.now()).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }))}</div>`;
+  const allow = d.err === 'xlf-perm' ? ` <button type="button" id="xlfAllow" class="primary">${xesc(T('อนุญาตอ่านไฟล์'))}</button>` : '';
+  box.innerHTML = d.err ? `<span class="err">${T('อ่านไฟล์ Excel ไม่ได้ — {0}', T(xlWhy({ message: d.err, name: /Failed to fetch|abort/i.test(d.err) ? 'TypeError' : '' }, local ? '' : xlCfg.link)))}</span>${allow}` : `<div class="add">${local ? xesc(T('ไฟล์ในเครื่อง: {0}', local)) + ' · ' : ''}${T('ไฟล์ Excel: {0} ออเดอร์', (d.n || 0).toLocaleString())} · ${T('อัปเดต {0}', new Date(d.at || Date.now()).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }))}</div>`;
 });
 setInterval(() => { if (xlUsable() && !document.hidden && window.O2OZone) window.O2OZone.xlRefresh(false); }, 60000);      // (the file is read again every 5 minutes: xlRefresh does nothing before that)
 if (xlUsable()) setTimeout(() => { if (window.O2OZone) window.O2OZone.xlRefresh(false); }, 800);
@@ -6189,6 +6246,21 @@ const LEX = [   // [Thai (source), English, Burmese]
     'ပရိုဂရမ်သည် စာရွက်ကို ဖတ်ရုံသာ လုပ်သည် — ပြင်ခြင်း၊ ဖျက်ခြင်း၊ ထည့်ခြင်း မလုပ်ပါ။ ရှာဖွေရန် စကင်န်ဖတ်ထားသော အော်ဒါနံပါတ်များကိုသာ ပို့ပြီး ရလဒ်ကို ဤဘရောက်ဇာတွင် သိမ်းထားသည်။ Order Number, Customer Name, Original Expected Date, Original Expected Time နှင့် Sub District ကော်လံများကို လင့်ခ်ညွှန်ပြသော တက်ဘ်မှ အသုံးပြုသည်'],
   ['เชื่อมต่อและทดสอบ', 'Connect and test', 'ချိတ်ဆက်၍ စမ်းသပ်ရန်'],
   ['ตัดการเชื่อมต่อ', 'Disconnect', 'ချိတ်ဆက်မှု ဖြတ်ရန်'],
+  ['หรือถ้าไฟล์อยู่ในเครื่องนี้ (เช่น โฟลเดอร์ OneDrive ที่ซิงค์ลงคอมพิวเตอร์) กด "เลือกไฟล์ในเครื่อง" แล้วเลือกไฟล์นั้นครั้งเดียว — โปรแกรมอ่านตรงจากเครื่อง ไม่ต้องใช้ลิงก์และไม่ต้องล็อกอิน (Chrome / Edge) เปิดเบราว์เซอร์ใหม่แล้วอาจถามขออนุญาตอ่านอีกครั้ง',
+    'Or, if the file is on this computer (e.g. a OneDrive folder synced to it), press "Choose file on this computer" and pick it once — the program reads it straight from the computer: no link, no sign-in (Chrome / Edge). After the browser is reopened it may ask for permission to read again',
+    'သို့မဟုတ် ဖိုင်သည် ဤကွန်ပျူတာတွင်ရှိပါက (ဥပမာ OneDrive ဖိုလ်ဒါ) "ကွန်ပျူတာထဲမှ ဖိုင်ရွေးရန်" ကိုနှိပ်ပြီး တစ်ကြိမ်ရွေးပါ — ပရိုဂရမ်က ကွန်ပျူတာထဲမှ တိုက်ရိုက်ဖတ်သည်၊ လင့်ခ်မလို၊ လော့ဂ်အင်မလို (Chrome / Edge)။ ဘရောက်ဇာပြန်ဖွင့်လျှင် ဖတ်ခွင့် ထပ်မေးနိုင်သည်'],
+  ['📁 เลือกไฟล์ในเครื่อง', '📁 Choose file on this computer', '📁 ကွန်ပျူတာထဲမှ ဖိုင်ရွေးရန်'],
+  ['เลือกไฟล์ในเครื่อง', 'Choose file on this computer', 'ကွန်ပျူတာထဲမှ ဖိုင်ရွေးရန်'],
+  ['เลือกไฟล์อื่น', 'Choose another file', 'အခြားဖိုင်ရွေးရန်'],
+  ['เลิกใช้ไฟล์ในเครื่อง', 'Stop using the file on this computer', 'ကွန်ပျူတာထဲမှ ဖိုင်ကို မသုံးတော့ရန်'],
+  ['เลิกใช้ไฟล์ในเครื่องแล้ว', 'Stopped using the file on this computer', 'ကွန်ပျူတာထဲမှ ဖိုင်ကို မသုံးတော့ပါ'],
+  ['ไฟล์ในเครื่อง: {0}', 'File on this computer: {0}', 'ကွန်ပျူတာထဲမှ ဖိုင်: {0}'],
+  ['อนุญาตอ่านไฟล์', 'Allow reading the file', 'ဖိုင်ဖတ်ခွင့်ပေးရန်'],
+  ['ยังอ่านไฟล์ไม่ได้ — กดอนุญาตในหน้าต่างของเบราว์เซอร์', 'Still cannot read the file — press Allow in the browser window', 'ဖိုင်ကို မဖတ်နိုင်သေးပါ — ဘရောက်ဇာဝင်းဒိုးတွင် ခွင့်ပြုကိုနှိပ်ပါ'],
+  ['เบราว์เซอร์นี้เลือกไฟล์แบบจำไว้ไม่ได้ — ใช้ Chrome หรือ Edge บนคอมพิวเตอร์', 'This browser cannot remember a chosen file — use Chrome or Edge on a computer', 'ဤဘရောက်ဇာသည် ရွေးထားသောဖိုင်ကို မမှတ်နိုင်ပါ — ကွန်ပျူတာပေါ်ရှိ Chrome သို့မဟုတ် Edge ကိုသုံးပါ'],
+  ['ไม่พบไฟล์ที่เลือกไว้แล้ว (ย้ายหรือลบ?) — กด "เลือกไฟล์ในเครื่อง" เลือกใหม่', 'The chosen file is gone (moved or deleted?) — press "Choose file on this computer" to pick it again', 'ရွေးထားသောဖိုင် မတွေ့တော့ပါ (ရွှေ့/ဖျက်?) — "ကွန်ပျူတာထဲမှ ဖိုင်ရွေးရန်" ကိုနှိပ်ပြီး ပြန်ရွေးပါ'],
+  ['ต้องอนุญาตให้อ่านไฟล์อีกครั้ง (เบราว์เซอร์ถามทุกครั้งที่เปิดใหม่) — กดปุ่ม "อนุญาตอ่านไฟล์"', 'Permission to read the file is needed again (the browser asks after each restart) — press "Allow reading the file"', 'ဖိုင်ဖတ်ခွင့် ထပ်လိုအပ်သည် (ဘရောက်ဇာပြန်ဖွင့်တိုင်း မေးသည်) — "ဖိုင်ဖတ်ခွင့်ပေးရန်" ကိုနှိပ်ပါ'],
+  ['ลิงก์ของ OneDrive / SharePoint / Google Drive / Dropbox อ่านจากเว็บไม่ได้ (ต้องล็อกอิน และเว็บเหล่านี้ไม่ให้โปรแกรมอื่นอ่านตรง ๆ) — ถ้าไฟล์ซิงค์ลงเครื่องนี้ ให้กดปุ่ม "เลือกไฟล์ในเครื่อง" ด้านล่างแทน', 'A OneDrive / SharePoint / Google Drive / Dropbox link cannot be read from the web (it needs a sign-in and these sites do not let other programs read it directly) — if the file is synced to this computer, press "Choose file on this computer" below instead', 'OneDrive / SharePoint / Google Drive / Dropbox လင့်ခ်ကို ဝက်ဘ်မှ ဖတ်၍မရပါ (လော့ဂ်အင်လိုပြီး ဤဆိုက်များက အခြားပရိုဂရမ်ကို တိုက်ရိုက်မဖတ်စေပါ) — ဖိုင်ကို ဤကွန်ပျူတာသို့ ထပ်တူကူးထားလျှင် အောက်ပါ "ကွန်ပျူတာထဲမှ ဖိုင်ရွေးရန်" ကိုနှိပ်ပါ'],
   ['ตัดการเชื่อมต่อแล้ว', 'Disconnected', 'ချိတ်ဆက်မှု ဖြတ်ပြီးပါပြီ'],
   ['ลองค้นหาออเดอร์', 'Try looking up an order', 'အော်ဒါတစ်ခု စမ်းရှာကြည့်ရန်'],
   ['เลขออเดอร์ 11 ตัว', '11-character order number', 'စာလုံး ၁၁ လုံး အော်ဒါနံပါတ်'],
