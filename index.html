@@ -513,7 +513,8 @@ td.x{width:34px;text-align:center}
 .panel input[type=text]{width:100%;height:40px;padding:0 10px;border-radius:10px;outline:none;background:var(--card);color:var(--ink);
   border:2px solid var(--pbd);font:800 17px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;letter-spacing:.06em;font-variant-numeric:tabular-nums;
   transition:border-color .15s,box-shadow .15s}
-.panel input[type=text]::placeholder{color:var(--muted);opacity:.5;font-weight:600;font-size:13.5px;letter-spacing:0}
+.panel input[type=text]::placeholder{color:var(--muted);opacity:.5;font-weight:600;font-size:var(--phfs,var(--phs0,13.5px));letter-spacing:0}
+.panel.purple:not(.zoomed) input[type=text]{--phs0:21px;line-height:1.5}      /* the four Re-Print scan fields in the small box: the hint is as big as the box allows (initPhFit shrinks it, one size for the four, to the longest) */
 .panel input[type=text]:focus{border-color:var(--dot);box-shadow:0 0 0 4px color-mix(in srgb,var(--dot) 28%,transparent)}
 /* the Assign field is a solid bar like the green "พิมพ์ใบปะหน้า" button, with the colours swapped: white bold text on orange (it used to be a white field with an orange edge) */
 input.aw{margin-bottom:6px}
@@ -1340,9 +1341,9 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
             <div class="pmode" id="reprintMode" hidden><span>โหมด Re-Print — ฟังก์ชันอื่นปิดอยู่ สแกนได้เลย</span><button id="reprintDone" type="button">เสร็จสิ้น (Esc)</button></div>
             <input id="reprintIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 1 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)">
             <input id="reprintIn2" class="rp2" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนเลขออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)">
-            <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>Order</small></span></div>
+            <div class="infield"><input id="reprintIn3" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="หลายออเดอร์ (พิมพ์ทีเดียว)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ พิมพ์ทีเดียว)"><span class="cnt zero" id="bulkCnt" role="img"><b id="bulkCntN">0</b><small>Order</small></span></div>
             <div class="bulkrow" id="bulkRow" hidden><button id="bulkGo" class="bulkgo" type="button"></button><button id="bulkDel" class="bulkdel" type="button">ลบทั้งหมด</button></div>
-            <div class="infield"><input id="reprintIn4" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="สแกนหลายออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)"><span class="cnt zero" id="bulk2Cnt" role="img"><b id="bulk2CntN">0</b><small>Order</small></span></div>
+            <div class="infield"><input id="reprintIn4" class="rp3" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="หลายออเดอร์ (1 Page / 2 Order)" aria-label="Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)"><span class="cnt zero" id="bulk2Cnt" role="img"><b id="bulk2CntN">0</b><small>Order</small></span></div>
             <div class="bulkrow" id="bulk2Row" hidden><button id="bulk2Go" class="bulkgo" type="button"></button><button id="bulk2Del" class="bulkdel" type="button">ลบทั้งหมด</button></div>
             <div class="pmsg" id="reprintMsg" aria-live="polite"></div>
             <p class="phint" id="reprintHint"></p>
@@ -6061,6 +6062,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['สแกนเลขออเดอร์ (1 Page / 2 Order)', 'Scan order number (1 Page / 2 Order)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 1 Order)', 'Re-Print cover sheet: order number (1 Page / 1 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (1 Page / 2 Order)', 'Re-Print cover sheet: order number (1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
+  ['หลายออเดอร์ (พิมพ์ทีเดียว)', 'Many orders (print at once)', 'အော်ဒါများစွာ (တစ်ခါတည်း)'],
+  ['หลายออเดอร์ (1 Page / 2 Order)', 'Many orders (1 Page / 2 Order)', 'အော်ဒါများစွာ (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['สแกนหลายออเดอร์ (พิมพ์ทีเดียว)', 'Scan many orders (print at once)', 'အော်ဒါများစွာ စကင်န်ဖတ်ပါ (တစ်ခါတည်း)'],
   ['สแกนหลายออเดอร์ (1 Page / 2 Order)', 'Scan many orders (1 Page / 2 Order)', 'အော်ဒါများစွာ စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
   ['Re-Print ใบปะหน้า: เลขออเดอร์ (หลายออเดอร์ 1 Page / 2 Order)', 'Re-Print cover sheet: order number (many orders, 1 Page / 2 Order)', 'Re-Print အဖုံးစာရွက်: အော်ဒါနံပါတ် (အော်ဒါများစွာ၊ ၁ စာမျက်နှာ / ၂ အော်ဒါ)'],
