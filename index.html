@@ -1090,6 +1090,14 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #paneTrip #ztTrips .zplus{height:36px;padding:0 12px;border-radius:9px;font-weight:800;white-space:nowrap}
 #paneTrip #ztTrips tr.zadd td{border-bottom:0;padding-top:10px}
 #paneTrip .zrep input.zrname{width:100%;min-width:170px;box-sizing:border-box;height:34px;font-weight:700}      /* shops that order again and have no Trip: the name to add (editable), the Trip, "เพิ่ม" */
+#paneTrip .adrow{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0;background:var(--soft)}
+#paneTrip .adh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+#paneTrip .adtrip{margin-left:auto;font-weight:800;color:var(--accent)}
+#paneTrip .ada{margin:4px 0;line-height:1.45;word-break:break-word}
+#paneTrip .adb{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}
+#paneTrip .adb a{color:var(--accent);font-weight:700;white-space:nowrap}
+#paneTrip .adb .adshow{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+#paneTrip iframe.admap{display:block;width:100%;height:260px;border:0;border-radius:10px;margin-top:8px;background:var(--card)}
 #paneTrip .zrep td{vertical-align:top}
 #paneTrip .zrep .zrtools{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:4px;font-size:13px}
 #paneTrip .zrep .zrtools a{color:var(--accent);white-space:nowrap}
@@ -1545,6 +1553,12 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
           <button id="tClear" type="button" class="danger">ลบเส้นทางทั้งหมด</button>
         </div>
       </details>
+    </section>
+    <section class="dsec" id="addrSec">
+      <p class="dtitle"><span class="dnum">ค</span>ที่อยู่ลูกค้า / แผนที่ <span class="rcount">อ่านอย่างเดียว</span></p>
+      <p class="hint">ค้นด้วยเลขออเดอร์ ชื่อลูกค้า หรือส่วนของที่อยู่ — เห็นที่อยู่เต็ม แขวง และ Trip ของออเดอร์ (ข้อมูลจากชีต/ไฟล์ที่อ่านไว้ในเบราว์เซอร์นี้ ไม่ถูกบันทึก). ปุ่ม "Google Maps" เปิดแผนที่ในแท็บใหม่ และ "แสดงแผนที่" วางแผนที่ไว้ในหน้านี้ — ที่อยู่ถูกส่งให้ Google เฉพาะเมื่อกดปุ่มนั้น</p>
+      <div class="row"><input id="adQ" class="rsearch" type="search" placeholder="เลขออเดอร์ / ชื่อลูกค้า / ที่อยู่" spellcheck="false" autocomplete="off" style="flex:1;min-width:180px"><label class="f"><input id="adOnly" type="checkbox" checked> เฉพาะที่ยังไม่มี Trip</label></div>
+      <div id="adList" class="adlist"></div>
     </section>
     </div>
     </div>
@@ -3782,6 +3796,32 @@ function zAddShop(tr) {
   if (li < 0) { toast('ไม่พบ Trip นี้ในตารางโซน'); return; }
   lines[li] = lines[li].replace(/\s+$/, '') + ' / ' + name; zSaveZoneText(lines.join('\n'));
 }
+/* Box ค: the address of a customer, with a Google Maps link. Read from the orders in memory (S.orders: the sheet / file as read); nothing is saved, nothing is sent anywhere until a map button is pressed. */
+const adMapQ = o => encodeURIComponent(String(o.addr || '').replace(/,?\s*Thailand\s*$/i, '').replace(/\s+null\b/g, ''));
+function renderAddr() {
+  const box = $('adList'); if (!box) return;
+  const q = $('adQ').value.trim().toLowerCase(), only = $('adOnly').checked;
+  let list = (S.orders || []).filter(o => !/cancel|return/i.test(o.status));
+  if (!list.length) { box.innerHTML = `<div class="empty">${esc(T('ยังไม่มีออเดอร์ที่อ่านไว้ — เชื่อมต่อชีตหรือไฟล์ก่อน'))}</div>`; return; }
+  const tripOf = o => (Z.zt ? finalOf(o) : o.zt);
+  if (only) list = list.filter(o => tripOf(o) == null);
+  if (q) list = list.filter(o => `${o.no} ${(o.raw && o.raw.name) || ''} ${o.addr || ''} ${o.sd || ''}`.toLowerCase().includes(q));
+  const total = list.length; list = list.slice().sort((a, b) => dateNum(b.date) - dateNum(a.date)).slice(0, 25);
+  if (!total) { box.innerHTML = `<div class="empty">${esc(T('ไม่พบออเดอร์'))}</div>`; return; }
+  box.innerHTML = `<div class="muted" style="margin:6px 0;font-size:13px">${esc(T('พบ {0} ใบ — แสดง {1} ใบแรก', total, list.length))}</div>` + list.map(o => {
+    const t = tripOf(o), g = o.zt == null && Z.guess ? Z.guess.get(o.no) : null;
+    return `<div class="adrow" data-no="${esc(o.no)}"><div class="adh"><b>${esc(o.no)}</b> <span class="muted">${esc((o.raw && o.raw.name) || '')}</span> <span class="adtrip">${t != null ? 'Trip ' + t : esc(T('ยังไม่มี Trip'))}${g && t == null ? ' · ' + esc(T('เดา Trip {0}', g.trip)) : ''}</span></div><div class="ada">${esc(o.addr || T('ไม่มีที่อยู่'))}</div><div class="adb"><span class="muted">${esc(o.sd || '')} ${esc(o.d || '')}${o.date ? ' · ' + esc(o.date) : ''}</span><a class="adgm" href="https://www.google.com/maps/search/?api=1&query=${adMapQ(o)}" target="_blank" rel="noopener">${esc(T('Google Maps'))} ↗</a><button type="button" class="adshow">${esc(T('แสดงแผนที่'))}</button></div></div>`;
+  }).join('');
+}
+$('adQ').addEventListener('input', () => renderAddr()); $('adOnly').addEventListener('change', () => renderAddr());
+$('adList').addEventListener('click', e => {
+  const b = e.target.closest('.adshow'); if (!b) return;
+  const row = b.closest('.adrow'), old = row.querySelector('iframe.admap');
+  if (old) { old.remove(); b.textContent = T('แสดงแผนที่'); return; }
+  const o = (S.byNo && S.byNo.get(row.dataset.no)); if (!o) return;
+  const f = document.createElement('iframe'); f.className = 'admap'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer'; f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  f.src = `https://maps.google.com/maps?q=${adMapQ(o)}&hl=th&z=16&output=embed`; row.appendChild(f); b.textContent = T('ซ่อนแผนที่');
+});
 function zAddTrip() {
   const n = +$('zNewNum').value.replace(/\D/g, ''), txt = $('zNewZones').value.replace(/\s+/g, ' ').trim();
   if (!(n >= 1 && n <= 99)) { toast('ใส่เลข Trip 1-99'); $('zNewNum').focus(); return; }
@@ -3844,7 +3884,7 @@ function renderZones() {
   }
   h += '<div class="row" style="margin-top:12px"><button id="zApplyTrip" class="primary" type="button">ใช้ผลนี้เป็นเส้นทาง Trip</button><button id="zCopy" type="button">คัดลอกตารางโซนที่เติมแล้ว</button><button id="zCsvOut" type="button">ดาวน์โหลดเลขออเดอร์ที่อยู่นอกโซน (CSV)</button><button id="zCsvAll" type="button">ดาวน์โหลดทุกออเดอร์พร้อม Trip (CSV)</button></div></details>';
   const el = $('zoneOut'), dkey = d => d.id || (d.querySelector('summary') ? d.querySelector('summary').textContent.trim().slice(0, 12) : ''), wasOpen = new Set([...el.querySelectorAll('details')].filter(d => d.open).map(dkey));      // (by name, not by place: the box of the shops without a Trip comes and goes, and the others must not take its open / shut state)      // (the check runs by itself every 10 minutes: a folded "details" line the person has opened must not snap shut under them)
-  el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach(d => { if (wasOpen.has(dkey(d))) d.open = true; }); renderTripTable();
+  el.hidden = false; $('zEmpty').hidden = true; el.innerHTML = h; el.querySelectorAll('details').forEach(d => { if (wasOpen.has(dkey(d))) d.open = true; }); renderTripTable(); renderAddr();
   el.querySelectorAll('#zRepeat .zradd').forEach(b => b.addEventListener('click', () => zAddShop(b.closest('tr'))));
   el.querySelectorAll('#zRepeat .zrfind').forEach(b => b.addEventListener('click', () => zMapLookup(b.closest('tr'))));
   el.querySelectorAll('#zRepeat .zrname').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); i.closest('tr').querySelector('.zrtrip').focus(); } }));
@@ -5698,6 +5738,21 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['แก้ไข', 'Edit', 'ပြင်ရန်'],
   ['บันทึก', 'Save', 'သိမ်းရန်'],
   ['เลข Trip', 'Trip number', 'Trip နံပါတ်'],
+  ['ที่อยู่ลูกค้า / แผนที่', 'Customer address / map', 'ဖောက်သည်လိပ်စာ / မြေပုံ'],
+  ['ค้นด้วยเลขออเดอร์ ชื่อลูกค้า หรือส่วนของที่อยู่ — เห็นที่อยู่เต็ม แขวง และ Trip ของออเดอร์ (ข้อมูลจากชีต/ไฟล์ที่อ่านไว้ในเบราว์เซอร์นี้ ไม่ถูกบันทึก). ปุ่ม "Google Maps" เปิดแผนที่ในแท็บใหม่ และ "แสดงแผนที่" วางแผนที่ไว้ในหน้านี้ — ที่อยู่ถูกส่งให้ Google เฉพาะเมื่อกดปุ่มนั้น',
+    'Search by order number, customer name or part of the address — you see the full address, sub-district and Trip of the order (from the sheet / file read in this browser; nothing is saved). "Google Maps" opens the map in a new tab and "Show map" puts it in this page — the address is sent to Google only when that button is pressed',
+    ' အော်ဒါနံပါတ်၊ ဖောက်သည်အမည် သို့မဟုတ် လိပ်စာအစိတ်အပိုင်းဖြင့် ရှာပါ — အော်ဒါ၏ လိပ်စာအပြည့်အစုံ၊ ရပ်ကွက်နှင့် Trip ကို မြင်ရသည် (ဤဘရောက်ဇာတွင် ဖတ်ထားသော စာရွက်/ဖိုင်မှ၊ မသိမ်းပါ)။ "Google Maps" က မြေပုံကို တက်ဘ်အသစ်တွင် ဖွင့်ပြီး "မြေပုံပြရန်" က ဤစာမျက်နှာထဲတွင် ထားသည် — ထိုခလုတ်ကို နှိပ်မှသာ လိပ်စာကို Google သို့ ပို့သည်'],
+  ['เลขออเดอร์ / ชื่อลูกค้า / ที่อยู่', 'Order number / customer name / address', 'အော်ဒါနံပါတ် / ဖောက်သည်အမည် / လိပ်စာ'],
+  ['เฉพาะที่ยังไม่มี Trip', 'Only those without a Trip', 'Trip မရှိသေးသည်များသာ'],
+  ['ยังไม่มีออเดอร์ที่อ่านไว้ — เชื่อมต่อชีตหรือไฟล์ก่อน', 'No orders read yet — connect the sheet or a file first', 'ဖတ်ထားသော အော်ဒါ မရှိသေးပါ — စာရွက် သို့မဟုတ် ဖိုင်ကို အရင်ချိတ်ပါ'],
+  ['ไม่พบออเดอร์', 'No order found', 'အော်ဒါ မတွေ့ပါ'],
+  ['พบ {0} ใบ — แสดง {1} ใบแรก', '{0} found — showing the first {1}', '{0} ခု တွေ့သည် — ပထမ {1} ခု ပြသည်'],
+  ['ยังไม่มี Trip', 'No Trip yet', 'Trip မရှိသေးပါ'],
+  ['เดา Trip {0}', 'guess: Trip {0}', 'ခန့်မှန်း Trip {0}'],
+  ['ไม่มีที่อยู่', 'no address', 'လိပ်စာ မရှိပါ'],
+  ['Google Maps', 'Google Maps', 'Google Maps'],
+  ['แสดงแผนที่', 'Show map', 'မြေပုံပြရန်'],
+  ['ซ่อนแผนที่', 'Hide map', 'မြေပုံဖျောက်ရန်'],
   ['เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน', 'Fill in the Trip that the system guesses for sheets outside the zones', 'ဇုန်ပြင်ပရှိ စာရွက်များအတွက် စနစ်က ခန့်မှန်းသော Trip နံပါတ်ကို ဖြည့်ရန်'],
   ['ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)', 'Put a ? after a Trip that the system guesses (unticked = printed as a plain number, like any other)', 'စနစ်က ခန့်မှန်းသော Trip နံပါတ်နောက်တွင် ? ထည့်ရန် (မတိုက်ပါက သာမန်နံပါတ်အတိုင်း ပုံနှိပ်သည်)'],
   ['เปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is on', 'ခန့်မှန်း Trip ဖွင့်ထားသည်'],
