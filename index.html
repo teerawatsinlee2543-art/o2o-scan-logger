@@ -569,6 +569,8 @@ input.aw{margin-bottom:6px}
 .plist .o{font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .plist .e{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;min-width:0}
 .plist .k{font-size:12px;font-weight:700;color:var(--k);grid-column:2 / 4}
+:root[data-theme="dark"] .panel .plist .k{color:var(--pt);font-size:13px}      /* (dark theme: the label under the order number was dark violet on near-black; it takes the light colour of its box) */
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .panel .plist .k{color:var(--pt);font-size:13px} }
 .plist li button{display:grid;place-items:center;min-width:26px;height:22px;padding:0 6px;border:0;border-radius:7px;background:linear-gradient(135deg,#e5484d,#c92a2f);color:#fff;font-size:16px;font-weight:800;line-height:1;box-shadow:0 2px 5px rgba(201,42,47,.35)}      /* the × of a row is a red box, easy to see */
 .plist li button:hover:not(:disabled){border:0;color:#fff;filter:brightness(1.12)}
 .plist li button svg{display:block;width:12px;height:12px}
@@ -651,6 +653,19 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpclick{min-width:0;font-size:13px;color:var(--pt);opacity:.8}
 #rpPrint{flex:none;display:inline-flex;align-items:center;gap:12px;padding:14px 36px;font-size:26px;font-weight:800;line-height:1.1;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 6px 16px rgba(11,92,173,.38);cursor:pointer}
 #rpPrint svg{width:30px;height:30px}
+/* A wide screen: the preview page gets the whole height of the box (up to the top edge of the page) — the title, the note and the print button stand in a column BESIDE it instead of above / below it,
+   and the preview side is a little wider than the scanning side. (A narrow screen keeps the stacked layout.) */
+@media (min-width:1100px){
+  .panel.purple.zoomed{grid-template-columns:minmax(0,.74fr) minmax(0,1.26fr)}
+  .panel.purple.zoomed .rpview{display:grid;grid-template-columns:minmax(0,1fr) clamp(170px,17vw,220px);grid-template-rows:auto auto 1fr auto;grid-template-areas:"box head" "box note" "box ." "box foot";column-gap:12px;padding:8px 12px}
+  .panel.purple.zoomed .rphead{grid-area:head;align-self:start}
+  .panel.purple.zoomed .rphead b{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+  .panel.purple.zoomed .rpnote{grid-area:note}
+  .panel.purple.zoomed .rpbox{grid-area:box}
+  .panel.purple.zoomed .rpfoot{grid-area:foot;flex-direction:column;align-items:stretch;gap:10px;padding-top:0}
+  .panel.purple.zoomed #rpPrint{width:100%;justify-content:center;gap:8px;padding:12px 10px;font-size:clamp(18px,1.7vw,24px)}
+  .panel.purple.zoomed #rpPrint svg{width:24px;height:24px}
+}
 #rpPrint:hover:not(:disabled){filter:brightness(1.07)}
 #rpPrint:disabled{background:#b3c3d9;box-shadow:none;cursor:default;opacity:.8}
 .rpwrap .sheet{cursor:pointer}
@@ -661,9 +676,9 @@ input.rp2{margin-top:8px}
 .infield input[type=text]{padding-right:66px;text-overflow:ellipsis}
 .infield .cnt{position:absolute;right:9px;top:6px;bottom:6px;display:flex;align-items:center;gap:5px;padding:0 11px;border-radius:11px;white-space:nowrap;pointer-events:none;
   color:#5a3b00;background:linear-gradient(160deg,#ffe98a,#ffc83d);box-shadow:0 1px 0 rgba(255,255,255,.65) inset,0 3px 8px rgba(214,150,0,.34);transition:opacity .2s,filter .2s}
-.infield .cnt b{font-size:17px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.infield .cnt b{font-size:17px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums;color:#b3141a}      /* the number is RED on the yellow badge (the word "Order" keeps the brown) */
 .infield .cnt small{display:none;font-size:11px;font-weight:800;letter-spacing:.02em;opacity:.85}      /* the word "Order" shows in the full-page view only (the small box has no room), and not once the count has 3 digits */
-.infield .cnt.zero{opacity:.6;filter:saturate(.6)}
+.infield .cnt.zero{opacity:.85;filter:saturate(.8)}      /* (0 Order: only a little dimmer than a real count — the red 0 must stay easy to read) */
 .panel.zoomed .infield input[type=text]{padding-right:clamp(128px,11vw,176px)}
 .panel.zoomed .infield .cnt{right:clamp(12px,1.2vw,18px);top:clamp(8px,1.5vh,14px);bottom:clamp(8px,1.5vh,14px);padding:0 clamp(12px,1.3vw,20px);border-radius:14px;gap:6px}
 .panel.zoomed .infield .cnt b{font-size:clamp(20px,2.2vw,30px)}
@@ -713,7 +728,7 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .panel.zoomed .pmode{margin-bottom:clamp(5px,1vh,10px);padding-block:clamp(3px,.7vh,8px)}
 .panel.zoomed input[type=text]{height:clamp(52px,calc(10.5vh - 12px),100px);font-size:clamp(22px,min(3.6vw,5vh),46px)}
 .panel.zoomed input.rp2,.panel.zoomed .infield{margin-top:clamp(4px,.9vh,8px)}
-.panel.zoomed .pmsg{min-height:clamp(26px,4.8vh,44px);font-size:clamp(14px,2.4vh,18px);padding-block:clamp(2px,.6vh,6px)}
+.panel.zoomed .pmsg{min-height:clamp(18px,2.8vh,26px);font-size:clamp(14px,2.4vh,18px);padding-block:clamp(2px,.6vh,6px)}      /* (the line above the list is kept, but less tall: the list starts higher and has more rows in view) */
 .panel.zoomed .phint{font-size:clamp(13px,2.2vh,16px);margin-block:clamp(2px,.5vh,4px) clamp(4px,.9vh,8px)}
 .panel.zoomed .plist{min-height:clamp(72px,14vh,140px)}
 .panel.zoomed .plist li{padding-block:clamp(6px,1.1vh,11px);font-size:clamp(15px,2.3vh,18px)}
