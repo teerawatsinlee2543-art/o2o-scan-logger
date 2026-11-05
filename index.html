@@ -6403,9 +6403,12 @@ function initPhFit() {
       cv.font = `${ph.fontStyle} ${ph.fontWeight} ${nat}px ${ph.fontFamily}`;
       cv.letterSpacing = ph.letterSpacing === 'normal' ? '0px' : ph.letterSpacing;
       const need = cv.measureText(e.placeholder).width, room = e.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 3;
-      return need > room && room > 0 ? { e, size: Math.max(FLOOR, nat * room / need) } : null;
-    });
-    jobs.forEach(j => { if (j) { j.e.style.setProperty('--phfs', j.size.toFixed(2) + 'px'); j.e.setAttribute('data-phfit', ''); } });      // …then the too-long ones get their smaller size
+      return { e, nat, size: need > room && room > 0 ? Math.max(FLOOR, nat * room / need) : nat };
+    }).filter(Boolean);
+    /* fields of one box that start at the same size (the four scan fields of the purple Re-Print box) get ONE size — the smallest any of them needs — so the hints never look unequal; a lone too-long hint is shrunk alone, as before */
+    const grp = new Map(), panels = [...document.querySelectorAll('.panel')];
+    jobs.forEach((j, i) => { const p = j.e.closest('.panel'); j.k = (p ? 'p' + panels.indexOf(p) : 'e' + i) + '|' + j.nat.toFixed(1); grp.set(j.k, Math.min(grp.has(j.k) ? grp.get(j.k) : Infinity, j.size)); });      // (a field outside a .panel is its own group)
+    jobs.forEach(j => { const s = grp.get(j.k); if (s < j.nat - 0.01) { j.e.style.setProperty('--phfs', s.toFixed(2) + 'px'); j.e.setAttribute('data-phfit', ''); } });      // …then the ones that need a smaller size get it
   }
   function schedule() { if (!raf) raf = requestAnimationFrame(fitAll); }
   new MutationObserver(schedule).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['placeholder'] });      // (not childList: a scan re-renders the lists, and scanning never waits for this)
