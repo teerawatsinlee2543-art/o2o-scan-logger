@@ -5199,7 +5199,11 @@ function openPrintDlg() {
 let pdNameFor = null, pdNewName = null;                                    // pdNameFor: a scanned code with no name (asks the name) · pdNewName: a typed name nobody knows (asks the 4 last digits of the ID card)
 const pdAskName = () => pdSay('', T('รหัส {0} ยังไม่มีชื่อ — พิมพ์ชื่อเล่นของคนนี้ แล้วกด "ไปต่อ" (หรือ Enter) ใบปะหน้าจะได้มีชื่อผู้จัด', pdNameFor));
 const pdAskNum = () => pdSay('', T('ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลขบัตรประชาชน 13 หลักของคนนี้', pdNewName));
-function pdSubmit(raw) { try { pdSubmit0(raw); } finally { pdGoSync(); } }      // (Enter, a scan and the green "ไปต่อ" button all come here; the button is re-checked after every step)
+function pdSubmit(raw) {      // (Enter, a scan and the arrow / "ไปต่อ" buttons all come here; the buttons are re-checked after every step)
+  try { pdSubmit0(raw); }
+  catch (err) { try { console.error(err); } catch (_) {} sfx.bad(); pdSay('bad', T('เกิดข้อผิดพลาด: {0}', String((err && err.message) || err).slice(0, 120))); }      // (never a silent failure: the reason stays on screen)
+  finally { pdGoSync(); }
+}
 function pdSubmit0(raw) {
   const s = String(raw == null ? pdIn.value : raw).trim();
   if (!pdNewName && !pdNameFor && ORD_RE.test(s.toUpperCase())) { sfx.bad(); pdIn.value = ''; pdSay('bad', 'นี่คือเลขออเดอร์ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น'); return; }      // an order number scanned here must not become a "nickname"
@@ -5224,8 +5228,9 @@ function pdSubmit0(raw) {
   pdDone();
 }
 function pdDone() {
-  if (pdMode === 'rp') { $('printDlg').close(); rpApply(); return; }        // Re-Print field 1 / 2: the picker goes on the scanned order(s), then the print page
-  if (pdMode === 'bulk' || pdMode === 'bulk2') { $('printDlg').close(); bulkApply(pdMode === 'bulk2'); return; }    // the third / fourth Re-Print field: the picker goes on the waiting orders, then the print page
+  const gone = () => { sfx.bad(); pdSay('bad', 'ไม่มีออเดอร์รอพิมพ์แล้ว — ถูกล้างหรือพิมพ์ไปแล้ว (อาจจากเครื่องอื่น) กด ยกเลิก แล้วสแกนใหม่'); };      // (the orders this window was opened for are no longer on the list: say so instead of closing and doing nothing)
+  if (pdMode === 'rp') { if (!state.reprints.some(x => rpPick.includes(x.order))) return gone(); $('printDlg').close(); rpApply(); return; }        // Re-Print field 1 / 2: the picker goes on the scanned order(s), then the print page
+  if (pdMode === 'bulk' || pdMode === 'bulk2') { if (!bulkPending(pdMode === 'bulk2').length) return gone(); $('printDlg').close(); bulkApply(pdMode === 'bulk2'); return; }    // the third / fourth Re-Print field: the picker goes on the waiting orders, then the print page
   const emp = state.emp, name = nameOfEmp(emp), orders = pendingOrders(), now = Date.now();
   orders.forEach((o, i) => {
     state.rows.forEach(r => { if (r.order === o && !r.emp) { r.emp = emp; r.name = name; } });
@@ -5238,7 +5243,7 @@ function pdDone() {
 }
 $('printWho').addEventListener('click', openPrintDlg);
 $('pdCancel').addEventListener('click', () => $('printDlg').close());
-['pdGo', 'pdGo2'].forEach(id => $(id).addEventListener('click', () => { pdSubmit(); if ($('printDlg').open) pdIn.focus(); }));      // "ไปต่อ" = Enter in the field (a nickname, or the next step: the name for a badge, the ID number for a new name)
+['pdGo', 'pdGo2'].forEach(id => { const b = $(id); b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', () => { pdSubmit(); if ($('printDlg').open) pdIn.focus(); }); });      // (mousedown does not take the focus off the field: on a phone the keyboard stays and the window does not jump away from under the finger before the click)      // "ไปต่อ" = Enter in the field (a nickname, or the next step: the name for a badge, the ID number for a new name)
 $('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
@@ -6588,6 +6593,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลบเส้นทาง Trip ทั้งหมด {0} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)', 'Delete all {0} Trip areas?\n(Press "Undo last change" if you slip)', 'Trip ဧရိယာ {0} ခုလုံးကို ဖျက်မလား?\n(မှားသွားပါက "နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်" ကိုနှိပ်ပါ)'],
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
+  ['เกิดข้อผิดพลาด: {0}', 'Something went wrong: {0}', 'အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်: {0}'],
+  ['ไม่มีออเดอร์รอพิมพ์แล้ว — ถูกล้างหรือพิมพ์ไปแล้ว (อาจจากเครื่องอื่น) กด ยกเลิก แล้วสแกนใหม่', 'No orders are waiting any more — they were cleared or already printed (maybe from another computer). Press Cancel and scan again', 'ပုံနှိပ်ရန် စောင့်နေသော အော်ဒါမရှိတော့ပါ — ရှင်းလင်းပြီး သို့မဟုတ် ပုံနှိပ်ပြီးဖြစ်သည် (အခြားကွန်ပျူတာမှ ဖြစ်နိုင်သည်)။ ပယ်ဖျက်ကို နှိပ်ပြီး ပြန်စကင်န်ဖတ်ပါ'],
   ['ชื่อเล่น', 'Nickname', 'အမည်ပြောင်'],
   ['ตารางเวลางาน', 'Work schedule', 'အလုပ်ချိန်ဇယား'],
   ['ชื่อเล่น ← {0}', 'Nickname ← {0}', 'အမည်ပြောင် ← {0}'],
