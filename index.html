@@ -4924,7 +4924,7 @@ function bulkDone() {                                 // the print button of the
 }
 
 /* ---- the cover sheet that is about to be printed, shown on the right half of the zoomed Re-Print box ---- */
-let previewOrder = null;
+let previewOrder = null, previewManual = null;      // previewManual: the order whose ROW was clicked (an order already printed is shown only when it was picked on purpose, so it can be printed again)
 const AUTO_PRINT_RE = /[AB]$/;
 const hooks = { printFrame: f => f.contentWindow.print() };               // (a hook, so a test can stand in for the real print dialog)
 /* The Trip of the go, read by itself: a lane is scanned one Trip at a time, so the orders of the go that the zone table places (road / soi / sub-district) say which Trip it is, and an order the table does NOT place
@@ -4980,7 +4980,13 @@ function renderRpView() {
   if (pairWait && !inList(pairWait)) pairWait = null;                        // taken out of the list again
   if (previewPair && !previewPair.every(inList)) previewPair = null;
   if (previewOrder && !inList(previewOrder)) previewOrder = null;
-  const pages = rpPages(), p = (previewOrder ? pages.filter(x => x.orders.includes(previewOrder)).pop() : null) || pages[pages.length - 1] || null;
+  const pages = rpPages();
+  let p = previewOrder ? pages.filter(x => x.orders.includes(previewOrder)).pop() : null;
+  if (!p && previewOrder && previewManual === previewOrder) {                // a row that was clicked but is not waiting (already printed, or an older scan of field 1 / 2): its sheet is shown by itself, one order on both slips, so it can be printed again
+    const x = state.reprints.find(r => r.order === previewOrder);
+    if (x) p = { f: x.bulk ? (x.two ? 4 : 3) : (x.pair ? 2 : 1), orders: [x.order], pair: false, old: true };
+  }
+  p = p || pages[pages.length - 1] || null;
   clearTimeout(renderRpView.t); rpSel = null; rpShown = [];
   note.className = 'rpnote';
   if (!p) { $('rpTitle').textContent = T('ตัวอย่างใบที่จะพิมพ์'); $('rpPrint').disabled = true; note.textContent = ''; box.innerHTML = `<div class="rpempty">ยังไม่มีใบที่จะแสดง — สแกนเลขออเดอร์ทางซ้าย</div>`; return; }
@@ -4995,7 +5001,7 @@ function renderRpView() {
   const names = p.orders.map(o => (orderInfo[o] || {}).name).filter(Boolean).join(' / ');
   if (p.st === 'gone') { note.className = 'rpnote bad'; note.textContent = T('ไม่มีข้อมูลออเดอร์นี้ในชีต — ไม่แสดงตัวอย่าง (ติดต่อ Admin Counter)'); }
   else if (p.st === 'wait') { note.className = 'rpnote wait'; note.textContent = T('กำลังค้นหาข้อมูลออเดอร์ …'); }
-  else if (have) { note.className = 'rpnote ok'; note.textContent = '✓ ' + (have === p.orders.length ? T('ข้อมูลเข้าแล้ว') : T('ข้อมูลเข้าแล้ว {0}/{1} ใบ', have, p.orders.length)) + (names ? ' · ' + names : ''); }
+  else if (have) { note.className = 'rpnote ok'; note.textContent = '✓ ' + (have === p.orders.length ? T('ข้อมูลเข้าแล้ว') : T('ข้อมูลเข้าแล้ว {0}/{1} ใบ', have, p.orders.length)) + (names ? ' · ' + names : '') + (p.old ? ' · ' + T('พิมพ์ซ้ำได้') : ''); }
   else note.textContent = 'ยังไม่มีชื่อลูกค้า/วันที่/รอบส่งของออเดอร์นี้ — นำเข้าไฟล์ Call Center ในกล่องเขียว หรือเชื่อมต่อ Google Sheet';      // the note (it wraps to several lines on a phone) is set first: it takes height from the box the sheet is fitted into
   if (p.st === 'gone') { box.innerHTML = `<div class="rpempty">${xesc(T('ไม่มีข้อมูลออเดอร์นี้ในชีต — ไม่แสดงตัวอย่าง (ติดต่อ Admin Counter)'))}</div>`; return; }
   box.innerHTML = `<div class="rppg sel" data-i="0"><div class="rppgcap">${xesc(T('ช่อง {0} · 1 Page / {1} Order', p.f, p.pair ? 2 : 1))} · ${xesc(p.orders.join(' + '))}</div>` +
@@ -5089,7 +5095,7 @@ function renderSide() {
     li.addEventListener('click', e => { if (e.target.closest('button')) return; const ul = $('assignList'), sc = ul.scrollTop; toggleSel('assign', a.order); paintSel(); ul.scrollTop = sc; }); return li; });
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); if (a.bulk && !a.batched) sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.two ? 'หลายออเดอร์ · 1 Page / 2 Order' : 'หลายออเดอร์') + (a.batched ? ' · พิมพ์แล้ว' : '') : '' });
     li.style.cursor = 'pointer'; li.title = 'กดเพื่อเลือก (ดูตัวอย่างใบนี้) แล้วกดคัดลอก — คัดลอกเฉพาะที่เลือก'; if (a.order === previewOrder) li.classList.add('sel');
-    li.addEventListener('click', e => { if (e.target.closest('button')) return; const ul = $('reprintList'), sc = ul.scrollTop; toggleSel('reprint', a.order); previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); ul.scrollTop = sc; }); return li; });
+    li.addEventListener('click', e => { if (e.target.closest('button')) return; const ul = $('reprintList'), sc = ul.scrollTop; toggleSel('reprint', a.order); previewOrder = a.order; previewManual = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); ul.scrollTop = sc; }); return li; });
   markDupRows(); renderRpView(); renderEmpBox(); paintSel();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
@@ -6789,6 +6795,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['คัดลอกที่เลือก ({0})', 'Copy the selected ({0})', 'ရွေးထားသည်ကို ကူးယူရန် ({0})'],
+  ['พิมพ์ซ้ำได้', 'can be printed again', 'ပြန်ပုံနှိပ်နိုင်သည်'],
   ['พิมพ์เสร็จแล้ว (ปิดหน้าต่างพิมพ์ของเบราว์เซอร์) นับถอยหลัง 3 วินาทีแล้วกลับหน้า Re-Print เอง — ถ้ายกเลิกการพิมพ์ กด "ยังไม่ได้พิมพ์" เพื่ออยู่ต่อ', 'When printing is over (the browser\'s print window is closed), count 3 seconds and go back to the Re-Print page by itself — if you cancelled the printing, press "Not printed" to stay', 'ပုံနှိပ်ပြီးလျှင် (ဘရောက်ဇာ၏ ပုံနှိပ်ဝင်းဒိုးကို ပိတ်ပြီးနောက်) ၃ စက္ကန့်ရေပြီး Re-Print စာမျက်နှာသို့ ကိုယ်တိုင် ပြန်သွားမည် — ပုံနှိပ်မှုကို ပယ်ဖျက်ခဲ့လျှင် "မပုံနှိပ်ရသေး" ကိုနှိပ်ပြီး ဆက်နေပါ'],
   ['พิมพ์เสร็จแล้ว — กลับหน้า Re-Print ใน {0} วินาที', 'Printed — back to the Re-Print page in {0} s', 'ပုံနှိပ်ပြီးပါပြီ — Re-Print စာမျက်နှာသို့ {0} စက္ကန့်အတွင်း ပြန်သွားမည်'],
   ['ยังไม่ได้พิมพ์ — อยู่ต่อ', 'Not printed — stay', 'မပုံနှိပ်ရသေး — ဆက်နေမည်'],
