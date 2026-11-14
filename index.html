@@ -440,7 +440,7 @@ td.x{width:34px;text-align:center}
 :root[data-theme="dark"] .panel button.mini:disabled{opacity:.7}
 :root[data-theme="dark"] .panel .prow button.go:disabled{opacity:.62}
 :root[data-theme="dark"] .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
-:root[data-theme="dark"] #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
+:root[data-theme="dark"] #rpPrint:disabled, :root[data-theme="dark"] #rpRestore:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
 :root[data-theme="dark"] #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
 :root[data-theme="dark"] .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
 :root[data-theme="dark"] .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
@@ -481,7 +481,7 @@ td.x{width:34px;text-align:center}
   :root:not([data-theme="light"]) .panel button.mini:disabled{opacity:.7}
   :root:not([data-theme="light"]) .panel .prow button.go:disabled{opacity:.62}
   :root:not([data-theme="light"]) .panel.purple.zoomed .rpview{background:linear-gradient(160deg,#241c45,#171230);border-color:var(--pbd);box-shadow:0 0 0 1px rgba(132,102,245,.3),0 10px 30px rgba(0,0,0,.4)}
-  :root:not([data-theme="light"]) #rpPrint:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
+  :root:not([data-theme="light"]) #rpPrint:disabled, :root:not([data-theme="light"]) #rpRestore:disabled{background:#2c3556;color:#8e9ac2;opacity:1}
   :root:not([data-theme="light"]) #rpPrint:not(:disabled){box-shadow:0 0 26px rgba(61,143,232,.55)}
   :root:not([data-theme="light"]) .bigdlg{--card:#fff;--ink:#1d2433;--muted:#667085;--line:#eee4dc;--soft:#f8f3ee;--bad:#b42318;--ok:#1f7a45;--warn:#8a5a00}
   :root:not([data-theme="light"]) .bigdlg .pmsg:not(.warn):not(.bad):not(:empty){background:rgba(255,255,255,.7)}
@@ -663,20 +663,31 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rpwait{padding:22px 26px;border-radius:14px;border:2px dashed var(--pbd);background:rgba(255,255,255,.6);color:var(--pt);font-size:15px;font-weight:700}
 .rpwrap{flex:none;position:relative}
 .rpwrap .sheet{margin:0;position:absolute;left:0;top:0;transform-origin:top left;box-shadow:0 6px 22px rgba(0,0,0,.28)}
-.rpfoot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:12px}
-.rpclick{min-width:0;font-size:13px;color:var(--pt);opacity:.8}
+.rpfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;padding-top:12px}
+.rpclick{flex:1 1 150px;min-width:0;font-size:13px;color:var(--pt);opacity:.8}
+/* the orange "ดึงชุดล่าสุดกลับมา" button: puts the orders of the last go (printed or not, or deleted by mistake) back on the waiting list, so nothing has to be scanned again */
+#rpRestore{order:-1;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;font-size:17px;font-weight:800;line-height:1.15;border:0;border-radius:14px;color:#fff;background:linear-gradient(135deg,#f39a4a,#d9701f);box-shadow:0 5px 14px rgba(217,112,31,.38);cursor:pointer}
+#rpRestore svg{width:22px;height:22px;flex:none}
+#rpRestoreTxt{text-align:center;text-wrap:balance}      /* (two even lines instead of a word cut off at the end of the first) */
+#rpRestore:hover:not(:disabled){filter:brightness(1.07)}
+#rpRestore:disabled{background:#d8cfc6;box-shadow:none;cursor:default;opacity:.75}
 #rpPrint{flex:none;display:inline-flex;align-items:center;gap:12px;padding:14px 36px;font-size:26px;font-weight:800;line-height:1.1;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 6px 16px rgba(11,92,173,.38);cursor:pointer}
 #rpPrint svg{width:30px;height:30px}
 /* A wide screen: the preview page gets the whole height of the box (up to the top edge of the page) — the title, the note and the print button stand in a column BESIDE it instead of above / below it,
    and the preview side is a little wider than the scanning side. (A narrow screen keeps the stacked layout.) */
 @media (min-width:1100px){
   .panel.purple.zoomed{grid-template-columns:minmax(min(600px,50%),.74fr) minmax(0,1.26fr)}      /* (the scanning side is never narrower than 600 px / half the screen: the hints in its fields are shrunk to fit the box, so a narrower box meant smaller type) */
-  .panel.purple.zoomed .rpview{display:grid;grid-template-columns:minmax(0,1fr) clamp(160px,11vw,210px);grid-template-rows:auto auto 1fr auto;grid-template-areas:"box head" "box note" "box ." "box foot";column-gap:12px;padding:8px 12px}
+  .panel.purple.zoomed .rpview{display:grid;grid-template-columns:minmax(0,1fr) clamp(160px,11vw,210px);grid-template-rows:auto auto 1fr auto;grid-template-areas:"box head" "box note" "box hint" "rest foot";column-gap:12px;padding:8px 12px}
   .panel.purple.zoomed .rphead{grid-area:head;align-self:start}
   .panel.purple.zoomed .rphead b{white-space:normal;overflow:visible;overflow-wrap:anywhere}
   .panel.purple.zoomed .rpnote{grid-area:note}
   .panel.purple.zoomed .rpbox{grid-area:box}
   .panel.purple.zoomed .rpfoot{grid-area:foot;flex-direction:column;align-items:stretch;gap:10px;padding-top:0}
+  /* the foot row: the orange "ดึงชุดล่าสุดกลับมา" button stands BOTTOM LEFT, on the line of the print button (which is bottom right); the hint sits above the print button. (.rpfoot only groups them: its children are placed in the page's grid) */
+  .panel.purple.zoomed .rpfoot{display:contents}
+  .panel.purple.zoomed .rpclick{grid-area:hint;align-self:end;margin-bottom:10px;position:relative;z-index:1}
+  .panel.purple.zoomed #rpRestore{order:0;grid-area:rest;justify-self:start;align-self:end;width:clamp(160px,11vw,210px);padding:12px 8px;gap:6px;font-size:clamp(14px,1.15vw,18px);position:relative;z-index:1}
+  .panel.purple.zoomed #rpRestore svg{width:clamp(18px,1.4vw,22px);height:clamp(18px,1.4vw,22px)}
   .panel.purple.zoomed #rpPrint{width:100%;justify-content:center;gap:8px;padding:22px 8px;font-size:clamp(18px,1.6vw,26px);border-radius:18px}      /* (the print button is the biggest thing of the column: tall, wide as the column, large type) */
   .panel.purple.zoomed #rpPrint svg{width:clamp(20px,1.6vw,26px);height:clamp(20px,1.6vw,26px)}
   /* .rpc (set by fitRpView when the screen is wide enough): the page stands in the MIDDLE of the whole frame as it always did, and the column (title, note, print button) lies over the free space at its right */
@@ -684,7 +695,17 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
   .panel.purple.zoomed .rpview.rpc .rpbox{grid-area:1 / 1 / 5 / 3}
   .panel.purple.zoomed .rpview.rpc .rphead{grid-area:1 / 2;position:relative;z-index:1}
   .panel.purple.zoomed .rpview.rpc .rpnote{grid-area:2 / 2;position:relative;z-index:1}
-  .panel.purple.zoomed .rpview.rpc .rpfoot{grid-area:4 / 2;position:relative;z-index:1}
+  /* (in that centred layout the free strip at the LEFT of the page is as wide as the column at its right: the orange button stands there) */
+  .panel.purple.zoomed .rpview.rpc .rpclick{grid-area:3 / 2}
+  .panel.purple.zoomed .rpview.rpc #rpRestore{grid-area:4 / 1}
+  .panel.purple.zoomed .rpview.rpc #rpPrint{grid-area:4 / 2;position:relative;z-index:1}
+}
+@media (max-width:600px){      /* a phone: the hint on its own line, then the orange and the print button side by side */
+  .rpclick{order:-2;flex:1 1 100%}
+  #rpRestore{flex:1 1 0;min-width:0;padding:10px 8px;gap:6px;font-size:14px}
+  #rpRestore svg{width:18px;height:18px}
+  #rpPrint{padding:12px 20px;font-size:22px;gap:8px}
+  #rpPrint svg{width:24px;height:24px}
 }
 #rpPrint:hover:not(:disabled){filter:brightness(1.07)}
 #rpPrint:disabled{background:#b3c3d9;box-shadow:none;cursor:default;opacity:.8}
@@ -1456,7 +1477,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
               <div class="rphead"><b id="rpTitle"></b></div>
               <div class="rpnote" id="rpNote"></div>
               <div class="rpbox" id="rpBox" data-notr></div>
-              <div class="rpfoot"><span class="rpclick">กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย</span><button id="rpPrint" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>พิมพ์ใบนี้</button></div>
+              <div class="rpfoot"><span class="rpclick">กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย</span><button id="rpRestore" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span id="rpRestoreTxt">ดึงชุดล่าสุดกลับมา</span></button><button id="rpPrint" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>พิมพ์ใบนี้</button></div>
             </aside>
           </section>
         </div>
@@ -2313,7 +2334,7 @@ $('btnClear').addEventListener('click', async () => {
   if (!nr && !na && !np) return;
   if (!await ask(`ล้างข้อมูลทั้งหมด?\nรายการสแกน ${nr} · Assign ${na} · Re-Print ${np}\n(ควรกด "ส่งออก Excel" ก่อน — ถ้าพลาดกด "กู้คืนที่เพิ่งล้าง" ได้)`)) return;
   try { localStorage.setItem(LS_BAK, JSON.stringify({ rows: state.rows, assigns: state.assigns, reprints: state.reprints })); } catch (_) {}
-  state.rows = []; state.assigns = []; state.reprints = []; pairWait = null; previewPair = null; previewOrder = null;
+  rememberPending(); state.rows = []; state.assigns = []; state.reprints = []; pairWait = null; previewPair = null; previewOrder = null;
   selBatch = null; listFilter = null; state.finished = false; save(); render(); toast('ล้างแล้ว'); focusNext();
 });
 $('btnRestore').addEventListener('click', async () => {
@@ -4898,8 +4919,31 @@ function reprintBulk(raw, two) {
 function bulkApply(two) {                             // the picker who is signed in goes on every waiting order, then the print page
   const emp = state.emp, name = nameOfEmp(emp), list = bulkPending(two);
   if (!list.length) return;
+  rememberGo(list);                                   // (this go — only this field's orders — is what the orange "ดึงชุดล่าสุดกลับมา" button brings back, printed or not)
   list.forEach(x => { x.emp = emp; x.name = name; });
   pvBulk = list.map(x => x.order); save(); render(); openPrint(two ? 'bulk2' : 'bulk');
+}
+/* the LAST GO of Re-Print orders is remembered (state.lastGo): every time a go is sent to the print page, and when waiting orders are deleted / cleared. The orange button on the preview puts it back on the
+   waiting list — printed or not — so a go that went wrong (jam, wrong picker, deleted by mistake) is done again without scanning every order once more. */
+function rememberGo(items) { if (items && items.length) state.lastGo = { ts: Date.now(), items: items.map(x => ({ order: x.order, two: !!x.two })) }; }      // (the caller saves)
+const rememberPending = () => rememberGo(state.reprints.filter(x => x.bulk && !x.batched));
+function restoreLastGo() {
+  const g = state.lastGo, items = g && Array.isArray(g.items) ? g.items : [];
+  if (!items.length) { sfx.bad(); return sideMsg('reprint', 'bad', T('ยังไม่มีชุดล่าสุดให้ดึงกลับมา')); }
+  const now = Date.now(), back = [];
+  items.forEach((it, i) => {
+    const old = state.reprints.find(x => x.order === it.order);
+    if (old && old.bulk && !old.batched) return;                                // already waiting
+    if (old) state.reprints.splice(state.reprints.indexOf(old), 1);            // printed (or scanned in field 1 / 2): it waits again, without a picker
+    state.reprints.push(it.two ? { ts: now + i, order: it.order, emp: '', name: '', bulk: true, two: true } : { ts: now + i, order: it.order, emp: '', name: '', bulk: true });
+    back.push(it);
+  });
+  if (!back.length) { sfx.ok(); return sideMsg('reprint', 'ok', T('ชุดล่าสุด ({0} ออเดอร์) รอพิมพ์อยู่ในรายการแล้ว — กดปุ่มเขียว', items.length)); }
+  const last = back[back.length - 1], e = state.reprints.find(x => x.order === last.order);
+  previewOrder = last.order; previewManual = null; previewPair = last.two ? previewPairOf(e) : null;
+  save(); sfx.ok();
+  sideMsg('reprint', 'ok', T('✓ ดึงชุดล่าสุดกลับมา {0} ออเดอร์ — กดปุ่มเขียว "เสร็จสิ้น / ใส่ชื่อผู้จัด" เพื่อพิมพ์อีกครั้ง', back.length));
+  render(); scanCheck(back.map(x => x.order)).then(ch => { if (ch) renderRpView(); });
 }
 function bulkFinish(raw, two) { if (pickEmp(raw, (kind, text) => sideMsg('reprint', kind, text))) bulkApply(two); }
 function renderBulkOne(two) {                         // the counter in the corner of the field (orders scanned in this go) and the green / delete row under it (only while orders wait)
@@ -4977,6 +5021,9 @@ function rpPages() {
 }
 function renderRpView() {
   if (!document.querySelector('.panel.purple').classList.contains('zoomed')) return;
+  const nGo = state.lastGo && Array.isArray(state.lastGo.items) ? state.lastGo.items.length : 0;      // the orange button: how many orders of the last go it can bring back
+  $('rpRestore').disabled = !nGo; $('rpRestoreTxt').textContent = nGo ? T('ดึงชุดล่าสุดกลับมา ({0} ใบ)', nGo) : T('ดึงชุดล่าสุดกลับมา');
+  $('rpRestore').title = T(nGo ? 'เอาออเดอร์ชุดล่าสุดที่สแกนไว้ (พิมพ์แล้วหรือยังไม่พิมพ์) กลับมารอพิมพ์ใหม่ ไม่ต้องสแกนซ้ำ' : 'ยังไม่มีชุดล่าสุด — ระบบจะจำไว้เมื่อสั่งพิมพ์ หรือเมื่อลบรายการ');
   const box = $('rpBox'), note = $('rpNote'), inList = x => state.reprints.some(r => r.order === x);
   if (pairWait && !inList(pairWait)) pairWait = null;                        // taken out of the list again
   if (previewPair && !previewPair.every(inList)) previewPair = null;
@@ -5162,9 +5209,11 @@ $('bulkGo').addEventListener('click', () => openBulkDlg(false)); $('bulk2Go').ad
 async function bulkDelete(two) {                      // "ลบทั้งหมด" under a many-orders field: only the orders waiting in that field's go
   const n = bulkPending(two).length; if (!n) return;
   if (!await ask(`ลบออเดอร์ที่สแกนไว้ ${n} ใบ ออกจากรอบนี้?`)) return;
-  state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched && !!x.two === !!two)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); (two ? reprintIn4 : reprintIn3).focus();
+  rememberGo(bulkPending(two));                       // (deleted by mistake: "ดึงชุดล่าสุดกลับมา" brings them back)
+  state.reprints =state.reprints.filter(x => !(x.bulk && !x.batched && !!x.two === !!two)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); (two ? reprintIn4 : reprintIn3).focus();
 }
 $('bulkDel').addEventListener('click', () => bulkDelete(false)); $('bulk2Del').addEventListener('click', () => bulkDelete(true));
+$('rpRestore').addEventListener('click', restoreLastGo);
 async function copyList(items, label, kind) {
   const sel = listSel[kind], picked = sel.size ? items.filter(x => sel.has(x.order)) : items;      // ticked rows only; nothing ticked = the whole list
   const orders = [...new Set(picked.map(x => x.order))];
@@ -5177,7 +5226,7 @@ $('assignClear').addEventListener('click', async () => {
   if (state.assigns.length && await ask(`ล้างรายการ Assign ${state.assigns.length} รายการ?\n(ไม่ย้อนการ Assign ที่ทำไปแล้วในรายการสแกน — ถ้าจะย้อนให้กด × ทีละรายการ)`)) { state.assigns = []; save(); render(); toast('ล้างรายการ Assign แล้ว'); }
 });
 $('reprintClear').addEventListener('click', async () => {
-  if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { state.reprints = []; save(); sideMsg('reprint', '', ''); render(); toast('ล้างรายการ Re-Print แล้ว'); }
+  if (state.reprints.length && await ask(`ล้างรายการ Re-Print ${state.reprints.length} รายการ?`)) { rememberPending(); state.reprints = []; save(); sideMsg('reprint', '', ''); render(); toast('ล้างรายการ Re-Print แล้ว'); }
 });
 
 /* ---------- ผู้จัด in the full-page Re-Print view (green box): who the picker is, i.e. the name printed on the sheet ----------
@@ -5268,6 +5317,7 @@ function openRpDlg(orders) {
 }
 function rpApply() {                                                       // the picker who was just signed in goes on the order(s), then the print page
   const emp = state.emp, name = nameOfEmp(emp), orders = rpPick.slice();
+  rememberGo(orders.map(o => ({ order: o, two: orders.length > 1 })));
   state.reprints.forEach(x => { if (orders.includes(x.order)) { x.emp = emp; x.name = name; x.picked = true; } });
   pvRp = orders; save(); render(); openPrint('rp');
 }
@@ -6797,6 +6847,13 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['คัดลอกที่เลือก ({0})', 'Copy the selected ({0})', 'ရွေးထားသည်ကို ကူးယူရန် ({0})'],
   ['พิมพ์ซ้ำได้', 'can be printed again', 'ပြန်ပုံနှိပ်နိုင်သည်'],
+  ['ดึงชุดล่าสุดกลับมา', 'Bring back the last batch', 'နောက်ဆုံးအစုကို ပြန်ယူရန်'],
+  ['ดึงชุดล่าสุดกลับมา ({0} ใบ)', 'Bring back the last batch ({0} sheets)', 'နောက်ဆုံးအစုကို ပြန်ယူရန် ({0} ရွက်)'],
+  ['เอาออเดอร์ชุดล่าสุดที่สแกนไว้ (พิมพ์แล้วหรือยังไม่พิมพ์) กลับมารอพิมพ์ใหม่ ไม่ต้องสแกนซ้ำ', 'Put the orders of the last scanned batch (printed or not) back on the waiting list — no need to scan them again', 'နောက်ဆုံးစကင်န်ဖတ်ထားသော အော်ဒါအစုကို (ပုံနှိပ်ပြီး သို့မဟုတ် မပုံနှိပ်ရသေး) စောင့်ဆိုင်းစာရင်းသို့ ပြန်ထည့်ရန် — ထပ်စကင်န်ဖတ်ရန် မလိုပါ'],
+  ['ยังไม่มีชุดล่าสุด — ระบบจะจำไว้เมื่อสั่งพิมพ์ หรือเมื่อลบรายการ', 'No last batch yet — it is remembered when you send a batch to print or delete the list', 'နောက်ဆုံးအစု မရှိသေးပါ — ပုံနှိပ်ရန်ပို့သည့်အခါ သို့မဟုတ် စာရင်းဖျက်သည့်အခါ မှတ်ထားပါမည်'],
+  ['ยังไม่มีชุดล่าสุดให้ดึงกลับมา', 'There is no last batch to bring back yet', 'ပြန်ယူရန် နောက်ဆုံးအစု မရှိသေးပါ'],
+  ['ชุดล่าสุด ({0} ออเดอร์) รอพิมพ์อยู่ในรายการแล้ว — กดปุ่มเขียว', 'The last batch ({0} orders) is already waiting on the list — press the green button', 'နောက်ဆုံးအစု (အော်ဒါ {0} ခု) သည် စာရင်းတွင် စောင့်နေပြီးဖြစ်သည် — အစိမ်းရောင်ခလုတ်ကို နှိပ်ပါ'],
+  ['✓ ดึงชุดล่าสุดกลับมา {0} ออเดอร์ — กดปุ่มเขียว "เสร็จสิ้น / ใส่ชื่อผู้จัด" เพื่อพิมพ์อีกครั้ง', '✓ Last batch is back: {0} orders — press the green "Finish / enter the picker" button to print again', '✓ နောက်ဆုံးအစု ပြန်ရောက်ပြီ — အော်ဒါ {0} ခု — ထပ်ပုံနှိပ်ရန် အစိမ်းရောင် "ပြီးဆုံး / ပစ္စည်းကောက်သူ ထည့်ရန်" ခလုတ်ကို နှိပ်ပါ'],
   ['พิมพ์เสร็จแล้ว (ปิดหน้าต่างพิมพ์ของเบราว์เซอร์) นับถอยหลัง 3 วินาทีแล้วกลับหน้า Re-Print เอง — ถ้ายกเลิกการพิมพ์ กด "ยังไม่ได้พิมพ์" เพื่ออยู่ต่อ', 'When printing is over (the browser\'s print window is closed), count 3 seconds and go back to the Re-Print page by itself — if you cancelled the printing, press "Not printed" to stay', 'ပုံနှိပ်ပြီးလျှင် (ဘရောက်ဇာ၏ ပုံနှိပ်ဝင်းဒိုးကို ပိတ်ပြီးနောက်) ၃ စက္ကန့်ရေပြီး Re-Print စာမျက်နှာသို့ ကိုယ်တိုင် ပြန်သွားမည် — ပုံနှိပ်မှုကို ပယ်ဖျက်ခဲ့လျှင် "မပုံနှိပ်ရသေး" ကိုနှိပ်ပြီး ဆက်နေပါ'],
   ['พิมพ์เสร็จแล้ว — กลับหน้า Re-Print ใน {0} วินาที', 'Printed — back to the Re-Print page in {0} s', 'ပုံနှိပ်ပြီးပါပြီ — Re-Print စာမျက်နှာသို့ {0} စက္ကန့်အတွင်း ပြန်သွားမည်'],
   ['ยังไม่ได้พิมพ์ — อยู่ต่อ', 'Not printed — stay', 'မပုံနှိပ်ရသေး — ဆက်နေမည်'],
