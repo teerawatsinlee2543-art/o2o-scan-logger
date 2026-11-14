@@ -844,6 +844,19 @@ button.bulkdel:disabled{opacity:.45;cursor:default}
 .twodlg .tdcol.pt .eadd button{flex:1 1 100%;height:50px;padding:0 22px;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 4px 14px rgba(11,92,173,.32)}
 .twodlg .tdcol.pt .ptlist{min-height:150px;border-color:#a8c8f0}
 .twodlg .tdcol .pdin,.twodlg .tdcol.pt .eadd input[type=text]{height:56px;font-size:22px}
+/* the one PURPLE button on the row of "to print" (right end): it opens a pop-up where a regular employee is added to the roster (number + name + nickname) — the data of Update Data -> ชื่อพนักงาน */
+.emqhead .mini{margin-left:0}
+.emqhead .raopen{display:inline-flex;align-items:center;gap:8px;margin-left:auto;padding:8px 14px;border:0;border-radius:10px;background:linear-gradient(135deg,#8b5cf0,#5b2a9e);box-shadow:0 3px 10px rgba(91,42,158,.32);color:#fff;font:800 15px/1.1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;cursor:pointer}
+.emqhead .raopen:hover{filter:brightness(1.08);border:0}
+.emqhead .raopen svg{flex:none;width:20px;height:20px}
+.ramsg{flex:none;margin-top:8px;padding:6px 12px;border-radius:8px;background:#efe6fd;color:#4f2a96;font-size:14px;font-weight:700;line-height:1.35}
+.ramsg:empty{display:none}
+#raDlg .bdhead{background:linear-gradient(135deg,#8b5cf0,#5b2a9e)}
+#raDlg .pdin{border-color:#cdb8f0}      /* (purple frames while not clicked; the clicked field keeps the red frame like every field of the pop-ups) */
+#raDlg .bdbody{display:flex;flex-direction:column;gap:12px}
+#raDlg .pdmsg[hidden]{display:none}
+#raDlg .bdfoot .pdgo{background:linear-gradient(135deg,#8b5cf0,#5b2a9e);box-shadow:0 4px 14px rgba(91,42,158,.38)}
+@media (min-width:901px) and (max-height:820px){ .twodlg .tdcol .bdsub{display:none} .twodlg .tdcol .bdbody{padding:10px 16px 12px} }      /* (a short screen, e.g. a laptop at 150 %: the grey explanation lines are hidden so the lists get their room) */
 .twodlg .tdcol.pt .pmsg:empty{display:none}
 .twodlg .tdcol.pt .ptlist li{gap:12px;padding:10px 14px}
 .twodlg .tdcol.pt .ptlist li.sel{background:#e3effd}
@@ -1412,7 +1425,8 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
                   <div class="bdbody">
                     <div class="empadd"><input id="empNoIn" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="ใส่เลข 4 ตัวท้าย หรือสแกนบัตร" aria-label="เลข 4 ตัวท้ายของเลขพนักงาน"><button id="empNoAdd" class="gbtn" type="button">เพิ่ม</button></div>
                     <div class="pdmsg" id="empNoMsg" aria-live="polite"></div>
-                    <div class="emqhead"><b id="empQTitle">รายการที่จะพิมพ์</b><span class="emcnt" id="empQCnt"></span><button id="empQClr" class="mini" type="button" hidden>ล้างทั้งหมด</button></div>
+                    <div class="emqhead"><b id="empQTitle">รายการที่จะพิมพ์</b><span class="emcnt" id="empQCnt"></span><button id="empQClr" class="mini" type="button" hidden>ล้างทั้งหมด</button><button id="raOpen" class="raopen" type="button" title="เพิ่มชื่อพนักงานประจำเข้าระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M18 8v6m-3-3h6"/></svg><span>เพิ่มชื่อพนักงานประจำ</span></button></div>
+                    <div class="ramsg" id="raMsg" aria-live="polite"></div>
                     <ul class="emlist" id="empQList" aria-labelledby="empQTitle"></ul>
                     <div class="bdfoot"><button id="empQGo" class="gbtn" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg><span id="empQGoTxt">พิมพ์บัตร</span></button></div>
                   </div>
@@ -1470,6 +1484,17 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
     <div class="pdfield"><input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น เช่น น้ำ" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น"><button id="pdGo2" class="pdgo2" type="button" disabled title="ไปต่อ" aria-label="ไปต่อ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6"/></svg></button></div>
     <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
     <div class="bdfoot"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button><button id="pdGo" class="pdgo" type="button" disabled>ไปต่อ</button></div>
+  </div>
+</dialog>
+
+<dialog id="raDlg" class="bigdlg pdlg" aria-labelledby="raDTitle">
+  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M18 8v6m-3-3h6"/></svg></span><div><h3 id="raDTitle">เพิ่มชื่อพนักงานประจำ</h3><p class="bdsub">ใส่เลขพนักงาน 4 หรือ 8 หลัก + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย</p></div></div>
+  <div class="bdbody">
+    <input id="raNo" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="13" placeholder="เลขพนักงาน 4 หรือ 8 หลัก" aria-label="เลขพนักงานประจำ 4 หรือ 8 หลัก">
+    <input id="raName" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="60" placeholder="ชื่อ" aria-label="ชื่อพนักงานประจำ">
+    <input id="raNick" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="30" placeholder="ชื่อเล่น (ถ้ามี)" aria-label="ชื่อเล่นพนักงานประจำ">
+    <div class="pdmsg" id="raDMsg" aria-live="polite" hidden></div>
+    <div class="bdfoot"><span class="sp"></span><button id="raCancel" type="button">ยกเลิก</button><button id="raAdd" class="pdgo" type="button">เพิ่มเข้าระบบ</button></div>
   </div>
 </dialog>
 
@@ -5291,7 +5316,7 @@ function addPartTime() {
 let ptThenUse = false;
 function openPtDlg(prefill, thenUse) {                                     // the Part-Time window; `prefill` = a typed name to make a person of (then the number is asked for)
   ptThenUse = !!thenUse; ptName.value = prefill || ''; ptNum.value = ''; $('ptMsg').textContent = ''; $('ptMsg').className = 'pmsg';
-  resetEmpSide(); $('ptDlg').showModal(); renderEmpBox(); (prefill ? ptNum : empNoIn).focus();
+  resetEmpSide(); resetAddSide(); $('ptDlg').showModal(); renderEmpBox(); (prefill ? ptNum : empNoIn).focus();
 }
 $('ptDlg').addEventListener('close', () => { ptThenUse = false; clearTimeout(empNoT); });
 $('ptAdd').addEventListener('click', addPartTime);
@@ -5406,7 +5431,7 @@ function empAddText(raw) {                                                 // th
     if (added.length) empSay('ok', T('✓ เพิ่ม {0}', empNameLine(x.id)));
     else if (dups.length) empSay('', T('มีเลข {0} ในรายการแล้ว', x.id));
     else if (x.kind === 'pt') empSay('bad', T('เลข {0} เป็นพนักงานชั่วคราว ({1}) — พิมพ์บัตรจากรายการในหน้าต่างบาร์โค้ดพนักงานชั่วคราว', x.id, ptime[x.id].name));
-    else if (x.kind === 'none') empSay('bad', T('ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — เพิ่มชื่อที่ Update Data → ชื่อพนักงาน ก่อน', x.id));
+    else if (x.kind === 'none') { empSay('bad', T('ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ใส่เลขไว้ให้แล้ว)', x.id)); if (!raNo.value) raNo.value = x.id; }      // (the number pops into the purple box, only the name is left to type)
     else empSay('bad', 'ใส่เลขท้ายของเลขพนักงานอย่างน้อย 4 ตัว');
   } else {
     empSay(added.length ? 'ok' : 'bad', [added.length ? T('✓ เพิ่ม {0} คน', added.length) : '', none.length ? T('ไม่พบ {0}', none.join(', ')) : '', pts.length ? T('ชั่วคราว {0}', pts.map(x => x.id).join(', ')) : '',
@@ -5427,7 +5452,7 @@ function empPrintQueue() {
 }
 function resetEmpSide() {                                                  // opening the window: an empty field (the list of what is waiting to be printed stays)
   empNoIn.value = ''; clearTimeout(empNoT); empNoMsg.className = 'pdmsg';
-  empNoMsg.textContent = rosterCount() ? '' : T('ยังไม่มีรายชื่อพนักงานประจำ — นำเข้าที่ Update Data → ชื่อพนักงาน ก่อน'); renderEmpQueue();
+  empNoMsg.textContent = rosterCount() ? '' : T('ยังไม่มีรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ หรือนำเข้าที่ Update Data → ชื่อพนักงาน'); renderEmpQueue();
 }
 attachLayoutFix(empNoIn, false);                                           // (a Thai / Burmese keyboard layout: the digits are read from the physical keys)
 empNoIn.addEventListener('input', () => { empNoIn.value = empNoIn.value.replace(/\D/g, ''); clearTimeout(empNoT); empSyncGo(); if (empNoIn.value.length >= 8) empCommit(); else if (empNoIn.value.length === 4) empNoT = setTimeout(empCommit, 700); });      // 8 digits = a scanned badge: at once; 4 digits and nothing more for 0.7 s: the typed last digits
@@ -5445,6 +5470,37 @@ empNoIn.addEventListener('paste', e => {                                   // a 
 $('empNoAdd').addEventListener('click', () => { if (!empCommit()) empNoIn.focus(); });
 empQGo.addEventListener('click', empPrintQueue);
 empQClr.addEventListener('click', () => { empQueue = []; empNoMsg.textContent = ''; empNoMsg.className = 'pdmsg'; renderEmpQueue(); empNoIn.focus(); });
+
+/* The one PURPLE button on the "to print" row of the barcode window opens a pop-up: ADD A REGULAR EMPLOYEE — number (4 digits, or the 8 of the badge) + name + nickname, exactly the data of Update Data ->
+   ชื่อพนักงาน -> "เพิ่ม / แก้ทีละคน" (same roster, same backup for "undo", shared with the other computers like the roster). The person is also put into the "to print" list at once, so the card can be printed right away.
+   A number the green field does not know is put into the pop-up's number field beforehand (only the name is left to type). Mistakes are told inside the pop-up; a success closes it and a line under the row says it. */
+const raNo = $('raNo'), raName = $('raName'), raNick = $('raNick'), raMsg = $('raMsg'), raDMsg = $('raDMsg'), raDlg = $('raDlg');
+const raSay = text => { raMsg.textContent = text || ''; };                 // the line under the "to print" row (success)
+const raDSay = text => { raDMsg.className = 'pdmsg bad'; raDMsg.textContent = text || ''; raDMsg.hidden = !text; };      // the message inside the pop-up (what is wrong)
+function resetAddSide() { raNo.value = raName.value = raNick.value = ''; raSay(''); raDSay(''); }
+function raOpen() { raDSay(''); raDlg.showModal(); (raNo.value ? raName : raNo).focus(); }
+function raAddGo() {
+  let id = raNo.value.replace(/\D/g, ''), full = '';
+  const nm = raName.value.replace(/\s+/g, ' ').trim().slice(0, 60), nick = raNick.value.replace(/\s+/g, ' ').trim().slice(0, 30);
+  if (EMP8_RE.test(id)) { full = id; id = id.slice(-4); }                  // the whole 8-digit number: kept for display / cards, the person is known by the last 4
+  if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');
+  if (!EMP_RE.test(id)) { sfx.bad(); raDSay('ใส่เลขพนักงาน 4 หรือ 8 หลัก'); raNo.focus(); return; }
+  if (id in ptime && !(id in roster)) { sfx.bad(); raDSay(T('เลข {0} เป็นพนักงานชั่วคราว ({1}) — ใช้เลขอื่น', id, ptime[id].name)); raNo.focus(); return; }
+  if (!nm && !nick && !(id in roster)) { sfx.bad(); raDSay('ใส่ชื่อ (หรือชื่อเล่น) ก่อน'); raName.focus(); return; }
+  backupRoster(); const had = id in roster; roster[id] = nm || roster[id] || nick; saveRoster();
+  if (nick || full) { rosterInfo[id] = Object.assign({}, rosterInfo[id], nick ? { nick } : {}, full ? { full } : {}); saveRInfo(); }
+  if (!empQueue.includes(id)) empQueue.push(id);                           // pops into the "to print" list
+  renderEmpQueue([id]); try { renderRoster(); } catch (_) {} render(); sfx.ok();
+  raSay(T(had ? '✓ แก้ {0} แล้ว — อยู่ในรายการที่จะพิมพ์แล้ว' : '✓ เพิ่ม {0} เข้าระบบแล้ว — อยู่ในรายการที่จะพิมพ์แล้ว', empNameLine(id)));
+  raNo.value = raName.value = raNick.value = ''; raDSay(''); raDlg.close(); empNoIn.focus();
+}
+attachLayoutFix(raNo, false);                                              // (a Thai / Burmese keyboard layout: the digits are read from the physical keys)
+raNo.addEventListener('input', () => { raNo.value = raNo.value.replace(/\D/g, ''); const v = raNo.value, id = EMP8_RE.test(v) ? v.slice(-4) : v;
+  if (EMP_RE.test(id) && id in roster && !raName.value && !raNick.value) { raName.value = roster[id] || ''; raNick.value = (rosterInfo[id] || {}).nick || ''; } });      // (the number of someone who is listed fills in the name: ready to be corrected)
+[raNo, raName, raNick].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); raAddGo(); } }));
+$('raAdd').addEventListener('click', raAddGo);
+$('raCancel').addEventListener('click', () => raDlg.close());
+$('raOpen').addEventListener('click', raOpen);
 
 
 /* ---------- นำไฟล์เข้า (green box): a file / pasted column of order numbers becomes rows in the scan list ----------
@@ -6327,9 +6383,21 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['พิมพ์บัตร', 'Print card', 'ကတ်ပုံနှိပ်ရန်'],
   ['ใส่เลขท้ายของเลขพนักงานอย่างน้อย 4 ตัว', 'Enter at least the last 4 digits of the employee number', 'ဝန်ထမ်းနံပါတ် နောက်ဆုံး ၄ လုံးအနည်းဆုံး ထည့်ပါ'],
   ['เลข {0} เป็นพนักงานชั่วคราว ({1}) — พิมพ์บัตรจากรายการในหน้าต่างบาร์โค้ดพนักงานชั่วคราว', 'Number {0} is a Part-Time person ({1}) — print the card from the list in the Part-Time window', 'နံပါတ် {0} သည် ယာယီဝန်ထမ်း ({1}) ဖြစ်သည် — ယာယီဝန်ထမ်းဝင်းဒိုးရှိ စာရင်းမှ ကတ်ပုံနှိပ်ပါ'],
-  ['ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — เพิ่มชื่อที่ Update Data → ชื่อพนักงาน ก่อน', 'Number {0} is not in the regular roster — add the name in Update Data → Employee names first', 'နံပါတ် {0} ကို ပုံမှန်ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ — Update Data → ဝန်ထမ်းအမည်တွင် အရင်ထည့်ပါ'],
+  ['ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ใส่เลขไว้ให้แล้ว)', 'Number {0} is not in the regular roster — press the purple button "Add a regular employee" (the number is filled in)', 'နံပါတ် {0} ကို ပုံမှန်ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ — ခရမ်းရောင်ခလုတ် "ပုံမှန်ဝန်ထမ်း ထည့်ရန်" ကို နှိပ်ပါ (နံပါတ်ကို ထည့်ပေးထားပြီး)'],
+  ['เพิ่มชื่อพนักงานประจำ', 'Add a regular employee', 'ပုံမှန်ဝန်ထမ်း ထည့်ရန်'],
+  ['ใส่เลขพนักงาน 4 หรือ 8 หลัก + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย', 'Type the 4- or 8-digit employee number + the name — it goes into the employee roster at once (like Update Data → Employee names) and into the list to print', 'ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး + အမည်ကို ရိုက်ပါ — ဝန်ထမ်းစာရင်းထဲ ချက်ချင်းဝင်ပြီး ပုံနှိပ်မည့်စာရင်းတွင်လည်း ပေါ်လာမည်'],
+  ['เลขพนักงาน 4 หรือ 8 หลัก', 'Employee number, 4 or 8 digits', 'ဝန်ထမ်းနံပါတ် ၄ သို့မဟုတ် ၈ လုံး'],
+  ['ชื่อเล่น (ถ้ามี)', 'Nickname (if any)', 'အမည်ပြောင် (ရှိလျှင်)'],
+  ['เพิ่มเข้าระบบ', 'Add to the system', 'စနစ်ထဲ ထည့်ရန်'],
+  ['เพิ่มล่าสุด', 'Added lately', 'မကြာသေးမီ ထည့်ထားသည်'],
+  ['ยังไม่ได้เพิ่ม — กรอกด้านบนแล้วกด เพิ่มเข้าระบบ', 'Nothing added yet — fill in the form above and press Add to the system', 'မထည့်ရသေးပါ — အပေါ်တွင် ဖြည့်ပြီး စနစ်ထဲ ထည့်ရန် နှိပ်ပါ'],
+  ['ใส่เลขพนักงาน 4 หรือ 8 หลัก', 'Enter a 4- or 8-digit employee number', 'ဝန်ထမ်းနံပါတ် ၄ သို့မဟုတ် ၈ လုံး ထည့်ပါ'],
+  ['เลข {0} เป็นพนักงานชั่วคราว ({1}) — ใช้เลขอื่น', 'Number {0} belongs to a Part-Time person ({1}) — use another number', 'နံပါတ် {0} သည် ယာယီဝန်ထမ်း ({1}) ဖြစ်သည် — အခြားနံပါတ်သုံးပါ'],
+  ['ใส่ชื่อ (หรือชื่อเล่น) ก่อน', 'Type a name (or nickname) first', 'အမည် (သို့မဟုတ် အမည်ပြောင်) ကို အရင်ရိုက်ပါ'],
+  ['✓ แก้ {0} แล้ว — อยู่ในรายการที่จะพิมพ์แล้ว', '✓ {0} updated — it is in the list to print', '✓ {0} ပြင်ပြီးပါပြီ — ပုံနှိပ်မည့်စာရင်းတွင် ရှိပါပြီ'],
+  ['✓ เพิ่ม {0} เข้าระบบแล้ว — อยู่ในรายการที่จะพิมพ์แล้ว', '✓ {0} added to the system — it is in the list to print', '✓ {0} ကို စနစ်ထဲ ထည့်ပြီးပါပြီ — ပုံနှိပ်မည့်စာရင်းတွင် ရှိပါပြီ'],
   ['✓ {0} — เปิดหน้าพิมพ์บัตรแล้ว ใส่เลขคนต่อไปได้เลย', '✓ {0} — card print window opened; you can enter the next number', '✓ {0} — ကတ်ပုံနှိပ်စာမျက်နှာ ဖွင့်ပြီး၊ နောက်တစ်ယောက်၏ နံပါတ် ထည့်နိုင်သည်'],
-  ['ยังไม่มีรายชื่อพนักงานประจำ — นำเข้าที่ Update Data → ชื่อพนักงาน ก่อน', 'No regular roster yet — import it in Update Data → Employee names first', 'ပုံမှန်ဝန်ထမ်းစာရင်း မရှိသေးပါ — Update Data → ဝန်ထမ်းအမည်တွင် အရင်သွင်းပါ'],
+  ['ยังไม่มีรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ หรือนำเข้าที่ Update Data → ชื่อพนักงาน', 'No regular roster yet — press the purple button "Add a regular employee", or import it in Update Data → Employee names', 'ပုံမှန်ဝန်ထမ်းစာရင်း မရှိသေးပါ — ခရမ်းရောင်ခလုတ် "ပုံမှန်ဝန်ထမ်း ထည့်ရန်" ကို နှိပ်ပါ သို့မဟုတ် Update Data → ဝန်ထမ်းအမည်တွင် သွင်းပါ'],
   ['รวม {0} Order', 'Total {0} Order', 'စုစုပေါင်း {0} Order'],
   ['สแกนเลขออเดอร์ที่จะพิมพ์ซ้ำ', 'Scan the order number to reprint', 'ပြန်ပရင့်မည့် အော်ဒါနံပါတ်ကို စကင်န်ဖတ်ပါ'],
   ['สแกนเลขออเดอร์ (1 Page / 1 Order)', 'Scan order number (1 Page / 1 Order)', 'အော်ဒါနံပါတ် စကင်န်ဖတ်ပါ (၁ စာမျက်နှာ / ၁ အော်ဒါ)'],
