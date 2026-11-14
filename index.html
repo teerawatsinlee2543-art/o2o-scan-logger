@@ -573,6 +573,9 @@ input.aw{margin-bottom:6px}
 .plist li:last-child{border-bottom:0}
 .plist li:nth-child(even){background:color-mix(in srgb,var(--soft) 55%,var(--card))}
 .plist li.sel,.plist li.sel:nth-child(even){background:color-mix(in srgb,var(--dot) 18%,var(--card));box-shadow:inset 3px 0 0 var(--dot)}
+.plist li.chk,.plist li.chk:nth-child(even){background:color-mix(in srgb,var(--dot) 30%,var(--card));box-shadow:inset 0 0 0 2px var(--dot)}      /* ticked for "copy": the copy button then copies only the ticked orders */
+.plist li.chk .t::before{content:"\2713\00a0";font-weight:900;color:var(--dot)}
+.plist li.chk .o{font-weight:800}
 .plist li.dup,.plist li.dup:nth-child(even){background:color-mix(in srgb,#e5484d 16%,var(--card));box-shadow:inset 5px 0 0 #e5484d}      /* the entry that the last duplicate scan ran into (stays until the next scan) */
 .plist li.dup .o{color:var(--bad)}
 .plist li.dupflash{animation:dupblink .75s ease-in-out 4}
@@ -5052,6 +5055,16 @@ function sideItem(x, onDelete, delTitle, extra) {
   if (extra && extra.kind) { const k = document.createElement('span'); k.className = 'k'; k.textContent = extra.kind; li.appendChild(k); }
   return li;
 }
+/* TICK, THEN COPY: a click on a row of the Assign / Re-Print list ticks it (click again = untick); "คัดลอกเลขออเดอร์" then copies only the ticked orders ("คัดลอกที่เลือก (N)"), and everything when nothing is ticked */
+const listSel = { assign: new Set(), reprint: new Set() };
+function toggleSel(kind, order) { const s = listSel[kind]; if (s.has(order)) s.delete(order); else s.add(order); }
+function paintSel() {
+  [['assign', state.assigns, 'assignList', 'assignCopy', 'Assign'], ['reprint', state.reprints, 'reprintList', 'reprintCopy', 'Re-Print']].forEach(([kind, items, ulId, btnId]) => {
+    const have = new Set(items.map(x => x.order)); listSel[kind] = new Set([...listSel[kind]].filter(o => have.has(o)));      // (an order that left the list is no longer ticked)
+    $(ulId).querySelectorAll('li[data-order]').forEach(li => li.classList.toggle('chk', listSel[kind].has(li.dataset.order)));
+    const n = listSel[kind].size; $(btnId).textContent = n ? T('คัดลอกที่เลือก ({0})', n) : T('คัดลอกเลขออเดอร์');
+  });
+}
 function renderSide() {
   const fin = !!state.finished;
   assignIn.disabled = fin;
@@ -5064,11 +5077,13 @@ function renderSide() {
   $('printCount').textContent = nAll; $('printWho').disabled = !nAll;
   $('printLbl').textContent = nAll ? T('พิมพ์ใบปะหน้า ({0} ใบ)', nAll) : T('ยังไม่มีออเดอร์ให้พิมพ์ — สแกนหรือนำเข้าไฟล์ก่อน');
   $('reprintHint').textContent = 'สแกนเลขออเดอร์ที่ต้องพิมพ์ใบปะหน้าซ้ำ — ไม่ต้องมีพนักงาน';
-  renderList($('assignList'), state.assigns, (a, i) => sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin }));
+  renderList($('assignList'), state.assigns, (a, i) => { const li = sideItem(a, () => undoAssign(i), 'ยกเลิก Assign นี้ (คืนค่าเดิม)', { kind: ASSIGN_KIND[a.kind], locked: fin });
+    li.style.cursor = 'pointer'; li.title = 'กดเพื่อเลือก แล้วกดคัดลอก (คัดลอกเฉพาะที่เลือก)';
+    li.addEventListener('click', e => { if (e.target.closest('button')) return; const ul = $('assignList'), sc = ul.scrollTop; toggleSel('assign', a.order); paintSel(); ul.scrollTop = sc; }); return li; });
   renderList($('reprintList'), state.reprints, (a, i) => { const li = sideItem(a, () => { state.reprints.splice(i, 1); save(); if (a.bulk && !a.batched) sideMsg('reprint', '', ''); render(); toast(`เอา ${a.order} ออกจาก Re-Print`); }, 'เอาออกจากรายการ Re-Print', { kind: a.pair ? '1 Page / 2 Order' : a.bulk ? (a.two ? 'หลายออเดอร์ · 1 Page / 2 Order' : 'หลายออเดอร์') + (a.batched ? ' · พิมพ์แล้ว' : '') : '' });
-    li.style.cursor = 'pointer'; li.title = 'กดเพื่อดูตัวอย่างใบนี้'; if (a.order === previewOrder) li.classList.add('sel');
-    li.addEventListener('click', e => { if (e.target.closest('button')) return; previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); }); return li; });
-  markDupRows(); renderRpView(); renderEmpBox();
+    li.style.cursor = 'pointer'; li.title = 'กดเพื่อเลือก (ดูตัวอย่างใบนี้) แล้วกดคัดลอก — คัดลอกเฉพาะที่เลือก'; if (a.order === previewOrder) li.classList.add('sel');
+    li.addEventListener('click', e => { if (e.target.closest('button')) return; const ul = $('reprintList'), sc = ul.scrollTop; toggleSel('reprint', a.order); previewOrder = a.order; previewPair = previewPairOf(a); renderRpView(); renderSide(); ul.scrollTop = sc; }); return li; });
+  markDupRows(); renderRpView(); renderEmpBox(); paintSel();
   $('assignCopy').disabled = !state.assigns.length; $('assignClear').disabled = !state.assigns.length;
   $('reprintCopy').disabled = !state.reprints.length; $('reprintClear').disabled = !state.reprints.length;
   renderBulk();                                                              // the third and fourth fields: the counter in their corner, and the green / delete row under them while orders wait
@@ -5136,12 +5151,14 @@ async function bulkDelete(two) {                      // "ลบทั้งห�
   state.reprints = state.reprints.filter(x => !(x.bulk && !x.batched && !!x.two === !!two)); save(); sideMsg('reprint', '', ''); render(); toast('ลบแล้ว'); (two ? reprintIn4 : reprintIn3).focus();
 }
 $('bulkDel').addEventListener('click', () => bulkDelete(false)); $('bulk2Del').addEventListener('click', () => bulkDelete(true));
-async function copyList(items, label) {
-  const ok = await copyText(items.map(x => x.order).join('\r\n'));
-  toast(ok ? T('คัดลอก {0} ({1} ใบ) แล้ว', T(label), items.length) : T('คัดลอกไม่สำเร็จ'));
+async function copyList(items, label, kind) {
+  const sel = listSel[kind], picked = sel.size ? items.filter(x => sel.has(x.order)) : items;      // ticked rows only; nothing ticked = the whole list
+  const orders = [...new Set(picked.map(x => x.order))];
+  const ok = await copyText(orders.join('\r\n'));
+  toast(ok ? (sel.size ? T('คัดลอกที่เลือก {0} ({1} ใบ) แล้ว', T(label), orders.length) : T('คัดลอก {0} ({1} ใบ) แล้ว', T(label), items.length)) : T('คัดลอกไม่สำเร็จ'));
 }
-$('assignCopy').addEventListener('click', () => copyList(state.assigns, 'Assign งาน'));
-$('reprintCopy').addEventListener('click', () => copyList(state.reprints, 'Re-Print ใบปะหน้า'));
+$('assignCopy').addEventListener('click', () => copyList(state.assigns, 'Assign งาน', 'assign'));
+$('reprintCopy').addEventListener('click', () => copyList(state.reprints, 'Re-Print ใบปะหน้า', 'reprint'));
 $('assignClear').addEventListener('click', async () => {
   if (state.assigns.length && await ask(`ล้างรายการ Assign ${state.assigns.length} รายการ?\n(ไม่ย้อนการ Assign ที่ทำไปแล้วในรายการสแกน — ถ้าจะย้อนให้กด × ทีละรายการ)`)) { state.assigns = []; save(); render(); toast('ล้างรายการ Assign แล้ว'); }
 });
@@ -6726,6 +6743,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลบเส้นทาง Trip ทั้งหมด {0} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)', 'Delete all {0} Trip areas?\n(Press "Undo last change" if you slip)', 'Trip ဧရိယာ {0} ခုလုံးကို ဖျက်မလား?\n(မှားသွားပါက "နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်" ကိုနှိပ်ပါ)'],
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
+  ['คัดลอกที่เลือก ({0})', 'Copy the selected ({0})', 'ရွေးထားသည်ကို ကူးယူရန် ({0})'],
+  ['คัดลอกที่เลือก {0} ({1} ใบ) แล้ว', 'Copied the selected {0} ({1} orders)', 'ရွေးထားသော {0} ({1} ခု) ကို ကူးယူပြီးပါပြီ'],
   ['เกิดข้อผิดพลาด: {0}', 'Something went wrong: {0}', 'အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်: {0}'],
   ['แก้ไขชื่อ PICK', 'Edit PICK name', 'PICK အမည် ပြင်ရန်'],
   ['แก้ไขชื่อ', 'Edit name', 'အမည် ပြင်ရန်'],      // (the green button on the print page is "แก้ไขชื่อ" + a line break + "PICK": the first half is a text node of its own)
