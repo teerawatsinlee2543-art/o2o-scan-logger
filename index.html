@@ -981,7 +981,7 @@ dialog textarea{width:100%;margin-top:12px;font-family:ui-monospace,Consolas,"Le
 .fillfull .row{margin-top:8px}
 .addbar .row{flex:1;flex-wrap:wrap;min-width:min(260px,100%)}
 .dfoot{margin-top:14px;justify-content:space-between}
-.dfoot .danger{margin-left:auto;border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.dfoot .danger,#tcolA .dact .danger{margin-left:auto;border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
 .dfoot .gprint{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:1px solid transparent;color:#fff;font-weight:700;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 4px 14px rgba(27,127,72,.38)}      /* the green print button, like the one in the barcode window */
 .dfoot .gprint:hover:not(:disabled){filter:brightness(1.08);border-color:transparent}
 .dfoot .gprint:disabled{opacity:.5;box-shadow:none;cursor:default}
@@ -1555,7 +1555,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <textarea id="tPaste" rows="3" spellcheck="false" placeholder="หรือคัดลอกตารางเส้นทางจาก Excel มาวางที่นี่ (วางแล้วทำงานเอง)"></textarea>
       <div id="tPreview" class="preview" hidden></div>
       <div id="tDone" class="msg ok" hidden></div>
-      <div class="row dact"><button id="tUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button></div>
+      <div class="row dact"><button id="tUndo" type="button" hidden>ย้อนกลับครั้งล่าสุด</button><button id="tClearA" type="button" class="danger">ล้างข้อมูล</button></div>
       <details class="zbox"><summary>รูปแบบไฟล์ที่รองรับ</summary>
         <p class="hint">แถวละพื้นที่ (มีคอลัมน์ Trip / เส้นทาง และคอลัมน์พื้นที่ เช่น เขต แขวง อำเภอ ตำบล จังหวัด รหัสไปรษณีย์) หรือหัวคอลัมน์เป็นชื่อ Trip แล้วรายชื่อพื้นที่เรียงลงมาใต้หัว</p>
       </details>
@@ -3100,11 +3100,15 @@ $('tUndo').addEventListener('click', () => {
   $('tDone').hidden = true; renderTrip(); render();
 });
 $('tSearch').addEventListener('input', renderTrip);
-$('tClear').addEventListener('click', async () => {
-  const n = Object.keys(tripMap).length; if (!n || !await ask(`ลบเส้นทาง Trip ทั้งหมด ${n} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
+async function clearTripAll() {      // the red button in box ข and "ล้างข้อมูล" in box ก (next to the file drop box) do the same: the route table goes (kept as the backup that "ย้อนกลับครั้งล่าสุด" brings back) and the half-read file / pasted table / "updated" answer in box ก are emptied too
+  const n = Object.keys(tripMap).length;
+  if (!n) { resetTrip(); return; }
+  if (!await ask(`ลบเส้นทาง Trip ทั้งหมด ${n} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)`)) return;
   try { localStorage.setItem(LS_TRIP_BAK, JSON.stringify(tripMap)); } catch (_) {}
-  tripMap = {}; saveTrip(); renderTrip(); render(); toast('ลบเส้นทางทั้งหมดแล้ว');
-});
+  tripMap = {}; saveTrip(); resetTrip(); renderTrip(); render(); toast('ลบเส้นทางทั้งหมดแล้ว');
+}
+$('tClear').addEventListener('click', clearTripAll);
+$('tClearA').addEventListener('click', clearTripAll);
 $('tExport').addEventListener('click', () => {
   const H = t => ({ v: t, s: 1 });
   const rows = [[H('Trip'), H('พื้นที่')]];
@@ -6542,6 +6546,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['อัปเดตเส้นทางแล้ว: {0} พื้นที่ / {1} Trip', 'Routes updated: {0} areas / {1} Trips', 'လမ်းကြောင်းများ အပ်ဒိတ်လုပ်ပြီး: ဧရိယာ {0} ခု / Trip {1} ခု'],
   ['ลบเส้นทาง Trip ทั้งหมด {0} พื้นที่?\n(กด "ย้อนกลับครั้งล่าสุด" ได้ถ้าพลาด)', 'Delete all {0} Trip areas?\n(Press "Undo last change" if you slip)', 'Trip ဧရိယာ {0} ခုလုံးကို ဖျက်မလား?\n(မှားသွားပါက "နောက်ဆုံးပြောင်းလဲမှုကို နောက်ပြန်ရန်" ကိုနှိပ်ပါ)'],
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
+  ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['ชื่อเล่น', 'Nickname', 'အမည်ပြောင်'],
   ['ตารางเวลางาน', 'Work schedule', 'အလုပ်ချိန်ဇယား'],
   ['ชื่อเล่น ← {0}', 'Nickname ← {0}', 'အမည်ပြောင် ← {0}'],
