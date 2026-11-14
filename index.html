@@ -1716,7 +1716,14 @@ const savePt = () => { try { localStorage.setItem(LS_PT, JSON.stringify(ptime));
    with the rest of the Part-Time data (plain, no passphrase: that is how the user wants it). ptCode(id) = what the barcode holds. */
 const ptCodeOk = (id, c) => typeof c === 'string' && /^\d{13}$/.test(c) && c.slice(-4) === id;
 const ptCode = id => { const c = ptime[id] && ptime[id].id13; return ptCodeOk(id, c) ? c : id; };      // the 13 digits when they are known, else the 4
-const nameOfEmp = id => roster[id] || (ptime[id] && ptime[id].name) || '';
+/* NAMES OUTSIDE THE SYSTEM (2026-11-14, "who is the picker?" window): a name that is neither in the roster nor Part-Time can simply be typed — no number, no ID card. It is kept here as a guest {G1: {name, ts}}
+   (a code "G<n>" instead of 4 digits, so it can never clash with a real number), only in this browser; the same name typed again finds the same guest. The slip prints the name; no card / barcode is made for a guest. */
+const LS_GUEST = 'o2o-guests-v1';
+let guests = {};
+try { const g = JSON.parse(localStorage.getItem(LS_GUEST) || 'null'); if (g && typeof g === 'object') guests = g; } catch (_) {}
+const saveGuests = () => { const ks = Object.keys(guests); if (ks.length > 300) ks.slice(0, ks.length - 300).forEach(k => delete guests[k]); try { localStorage.setItem(LS_GUEST, JSON.stringify(guests)); } catch (_) {} };
+const isGuest = id => /^G\d+$/.test(String(id)) && id in guests;
+const nameOfEmp = id => roster[id] || (ptime[id] && ptime[id].name) || (guests[id] && guests[id].name) || '';
 const isKnownEmp = id => id in roster || id in ptime;
 const EMP8_RE = /^\d{8}$/;
 const ID13_RE = /^\d{13}$/;           // the barcode of a Part-Time card: the whole 13-digit ID card number (only its last 4 digits identify the person)
@@ -4726,7 +4733,7 @@ function dupAlert(which, order, text) {
   ul.scrollTop += li.getBoundingClientRect().top - ul.getBoundingClientRect().top - (ul.clientHeight - li.offsetHeight) / 2;
   li.classList.remove('dupflash'); void li.offsetWidth; li.classList.add('dupflash');
 }
-const empLabel = (e, n) => e + (n ? ' ' + n : '');
+const empLabel = (e, n) => isGuest(e) && n ? n : e + (n ? ' ' + n : '');      // (a guest has no number to show: just the name)
 
 /* Assign: the order goes to the employee who is signed in. Already scanned -> the employee is filled in (or changed after a confirm);
    not scanned yet -> it is added to the scan list for that employee. Every Assign is listed and can be undone. */
@@ -5128,6 +5135,16 @@ function findPersonByName(s) {                                             // a 
   const lc = String(s).trim().toLowerCase(), eq = x => String(x || '').toLowerCase() === lc;
   return Object.keys(roster).find(k => eq(roster[k]) || eq(nickOf(k))) || Object.keys(ptime).find(k => eq(ptime[k].name)) || null;
 }
+function guestFor(name) {                                                  // a name outside the system -> its guest code (the same name typed again = the same guest; a new one is made otherwise)
+  const nm = String(name).replace(/\s+/g, ' ').trim().slice(0, 40), lc = nm.toLowerCase();
+  let id = Object.keys(guests).find(k => String(guests[k].name).toLowerCase() === lc);
+  if (!id) { let n = 1; while (('G' + n) in guests) n++; id = 'G' + n; guests[id] = { name: nm, ts: Date.now() }; saveGuests(); }
+  return id;
+}
+function pickGuest(name, say) {                                            // sign a guest in as the picker (no roster check: the name is the whole identity)
+  const id = guestFor(name); state.emp = id; state.mode = 'with'; save(); sfx.emp();
+  say('ok', `✓ ผู้จัด ${nameOfEmp(id)}`); render(); return id;
+}
 const last4 = raw => { const d = String(raw).replace(/\D/g, ''); return d.length === 4 || d.length === 13 ? d.slice(-4) : null; };      // 4 digits typed, or a whole 13-digit ID card number of which only the LAST 4 are kept (the rest is never stored)
 /* the green "พิมพ์ใบปะหน้า" bar: clicking it opens a window with ONE field that takes both a scanned staff badge (8 digits -> the last 4, or 4 digits) and a typed nickname. The way to the
    print page is locked until something valid is in it; there is no button — a scan goes on at once, a typed name with Enter. Then that employee is given every order of the scan list that
@@ -5145,7 +5162,9 @@ function pdSync() {                                                        // th
   if (pdNameFor) { if (v && !/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อบันทึกชื่อ แล้วไปหน้าพิมพ์'); else pdAskName(); return; }
   if (!v) pdSay('', 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
   else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
-  else pdSay('ok', /^\d+$/.test(v) ? 'พร้อมแล้ว — ไปหน้าพิมพ์เอง' : 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์');
+  else if (/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — ไปหน้าพิมพ์เอง');
+  else if (findPersonByName(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์');
+  else pdSay('ok', 'ชื่อนี้ไม่อยู่ในระบบ — ใช้เป็นชื่อผู้จัดบนใบได้เลย กด "ไปต่อ" (หรือ Enter)');
 }
 function openBulkDlg(two) {                                                // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
   const n = bulkPending(two).length; if (!n) return;
@@ -5199,7 +5218,7 @@ function pdSubmit0(raw) {
     return pdDone();
   }
   if (!s || !pdValid(s)) { sfx.bad(); pdSay('bad', !s ? 'สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน' : 'รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก'); return; }
-  if (!/^\d+$/.test(s) && !findPersonByName(s)) { pdNewName = s.replace(/\s+/g, ' ').slice(0, 40); pdIn.value = ''; pdAskNum(); return; }      // a new name: no number is invented, it is asked for here
+  if (!/^\d+$/.test(s) && !findPersonByName(s)) { pickGuest(s, pdSay); return pdDone(); }      // a name outside the system: used as it is (a guest, see guestFor) — no number or ID card is asked for
   if (!assignWhoGo(s, pdSay)) { pdIn.value = ''; return; }                // an unknown code: the reason stays on screen and the way on stays locked
   if (!nameOfEmp(state.emp)) { pdNameFor = state.emp; pdIn.value = ''; pdAskName(); return; }
   pdDone();
@@ -6303,6 +6322,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ยังไม่มีชื่อ "{0}" ในระบบ — ใส่เลขบัตรประชาชน 13 หลักของคนนี้', 'No "{0}" in the system yet — enter this person\'s 13-digit ID-card number', 'စနစ်တွင် "{0}" မရှိသေးပါ — ဤသူ၏ မှတ်ပုံတင်နံပါတ် ၁၃ လုံး ထည့်ပါ'],
   ['พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อบันทึก แล้วไปหน้าพิมพ์', 'Ready — press "Continue" (or Enter) to save and go to the print page', 'အဆင်သင့်ဖြစ်ပြီ — "ရှေ့ဆက်ရန်" (သို့မဟုတ် Enter) နှိပ်၍ သိမ်းပြီး ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
   ['พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์', 'Ready — press "Continue" (or Enter) to go to the print page', 'အဆင်သင့်ဖြစ်ပြီ — "ရှေ့ဆက်ရန်" (သို့မဟုတ် Enter) နှိပ်၍ ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['ชื่อนี้ไม่อยู่ในระบบ — ใช้เป็นชื่อผู้จัดบนใบได้เลย กด "ไปต่อ" (หรือ Enter)', 'This name is not in the system — it can be used as the picker\'s name on the sheet. Press "Continue" (or Enter)', 'ဤအမည်သည် စနစ်တွင် မရှိပါ — စာရွက်ပေါ်ရှိ ပစ္စည်းကောက်သူအမည်အဖြစ် သုံးနိုင်သည်။ "ရှေ့ဆက်ရန်" (သို့မဟုတ် Enter) နှိပ်ပါ'],
   ['ไปต่อ', 'Continue', 'ရှေ့ဆက်ရန်'],
   ['ลบพนักงานชั่วคราวทั้งหมด {0} คน?\n(ออเดอร์ที่สแกนไปแล้วยังเก็บชื่อไว้ตามเดิม · รายชื่อพนักงานประจำไม่ถูกแตะ)', 'Delete all {0} temporary employees?\n(Orders already scanned keep their names · the regular roster is not touched)', 'ယာယီဝန်ထမ်း {0} ဦးလုံးကို ဖျက်မလား?\n(စကင်န်ဖတ်ပြီးသော အော်ဒါများတွင် အမည်ကျန်နေမည် · ပုံမှန်ဝန်ထမ်းစာရင်းကို မထိပါ)'],
   ['ยังไม่มีผู้จัด', 'No picker yet', 'ပစ္စည်းကောက်သူ မရှိသေးပါ'],
