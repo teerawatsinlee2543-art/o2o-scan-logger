@@ -1489,7 +1489,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 <dialog id="printDlg" class="bigdlg pdlg" aria-labelledby="pdTitle">
   <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><div><h3 id="pdTitle">ใครเป็นผู้จัด?</h3><p class="bdsub" id="pdInfo"></p></div></div>
   <div class="bdbody">
-    <div class="pdfield"><input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น เช่น น้ำ" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น"><button id="pdGo2" class="pdgo2" type="button" disabled title="ไปต่อ" aria-label="ไปต่อ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6"/></svg></button></div>
+    <div class="pdfield"><input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="ใส่เลข 4 หรือ 8 หลัก ชื่อเล่น หรือสแกนบัตร" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น"><button id="pdGo2" class="pdgo2" type="button" disabled title="ไปต่อ" aria-label="ไปต่อ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6"/></svg></button></div>
     <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
     <div class="bdfoot"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button><button id="pdGo" class="pdgo" type="button" disabled>ไปต่อ</button></div>
   </div>
@@ -5231,16 +5231,23 @@ function pdSync() {                                                        // th
   const v = pdIn.value.trim(); pdGoSync();
   if (pdNewName) { if (v && last4(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อบันทึก แล้วไปหน้าพิมพ์'); else pdAskNum(); return; }
   if (pdNameFor) { if (v && !/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อบันทึกชื่อ แล้วไปหน้าพิมพ์'); else pdAskName(); return; }
-  if (!v) pdSay('', 'ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้');
-  else if (!pdValid(v)) pdSay('', 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
-  else if (/^\d+$/.test(v)) pdSay('ok', 'พร้อมแล้ว — ไปหน้าพิมพ์เอง');
+  if (!v) pdSay('', 'ล็อกอยู่ — ใส่เลขพนักงาน 4 หรือ 8 หลัก ชื่อเล่น หรือสแกนบัตรก่อน จึงไปหน้าพิมพ์ได้');
+  else if (/^\d+$/.test(v)) {                                              // digits: the last 4 of the number, or the whole 8 (typed digits wait for "ไปต่อ" / Enter; only a fast scan goes on by itself)
+    if (!pdValid(v)) pdSay('', v.length < 4 ? 'ล็อกอยู่ — ใส่เลขท้าย 4 หลัก หรือเลขเต็ม 8 หลัก' : v.length < 8 ? 'ล็อกอยู่ — พิมพ์ต่อให้ครบ 8 หลัก (หรือเหลือ 4 หลักท้าย)' : 'ล็อกอยู่ — รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก');
+    else {
+      const id = v.slice(-4);
+      if (nameOfEmp(id)) pdSay('ok', T('พร้อมแล้ว — {0} · {1} — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์', id, nickOf(id) || nameOfEmp(id)));
+      else if (state.requireRoster && rosterCount() > 0 && !isKnownEmp(id)) pdSay('', v.length === 4 ? T('ไม่พบรหัส {0} ในรายชื่อพนักงาน — ถ้าเป็นเลข 8 หลัก พิมพ์ต่อให้ครบ', id) : T('ไม่พบรหัส {0} ในรายชื่อพนักงาน', id));      // (4 typed digits may be the start of 8)
+      else pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์');
+    }
+  }
   else if (findPersonByName(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์');
   else pdSay('ok', 'ชื่อนี้ไม่อยู่ในระบบ — ใช้เป็นชื่อผู้จัดบนใบได้เลย กด "ไปต่อ" (หรือ Enter)');
 }
 function openBulkDlg(two) {                                                // the same window as the green bar's: one field, a badge or a nickname; it hands the picker to the waiting orders and opens the print page
   const n = bulkPending(two).length; if (!n) return;
   pdMode = two ? 'bulk2' : 'bulk'; pdNameFor = null; pdNewName = null;
-  $('pdInfo').textContent = T('{0} ออเดอร์ที่สแกนไว้ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', n);
+  $('pdInfo').textContent = T('{0} ออเดอร์ที่สแกนไว้ — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', n);
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
@@ -5248,7 +5255,7 @@ function openBulkDlg(two) {                                                // th
 let rpPick = [], pvRp = [];                                                // the order(s) of the go that waits for its picker · the order(s) the print page shows (1 = the same on both slips, 2 = one page of two orders)
 function openRpDlg(orders) {
   rpPick = orders.slice(); pdMode = 'rp'; pdNameFor = null; pdNewName = null;
-  $('pdInfo').textContent = orders.length > 1 ? T('{0} + {1} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0], orders[1]) : T('{0} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0]);
+  $('pdInfo').textContent = orders.length > 1 ? T('{0} + {1} — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0], orders[1]) : T('{0} — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ให้เอง', orders[0]);
   $('pdSkip').hidden = true;
   pdIn.value = ''; pdSync(); $('printDlg').showModal(); pdIn.focus();
 }
@@ -5318,7 +5325,7 @@ $('pdCancel').addEventListener('click', () => $('printDlg').close());
 $('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
-wire(pdIn, /^(\d{4}|\d{8}|\d{13})$/, null, true); sideHandlers.set(pdIn, pdSubmit);      // (names too: the layout fix only remembers the keys here)
+wire(pdIn, /^$/, null, true); sideHandlers.set(pdIn, pdSubmit);      // (/^$/: digits TYPED by a person never go on by themselves — 4 digits may be the start of 8; only a fast scan does, and Enter / the arrow / "ไปต่อ" always do)      // (names too: the layout fix only remembers the keys here)
 attachLayoutFix(assignWho, true);
 assignWho.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = fixTyped(assignWho); assignWho.value = ''; assignWhoGo(v); assignWho.focus(); } });
 function newPtId() {                                                       // a free 4-digit number, not one of the regular staff and not another Part-Time person
@@ -6240,7 +6247,13 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['✓ {0} → เลข {1}', '✓ {0} → No. {1}', '✓ {0} → နံပါတ် {1}'],
   ['สแกนบาร์โค้ดนี้ = ชื่อ {0}', 'scanning this barcode = the name {0}', 'ဤဘားကုဒ်ကို စကင်ဖတ်လျှင် = အမည် {0}'],
   ['✓ ผู้จัด {0}', '✓ Picker {0}', '✓ ပစ္စည်းကောက်သူ {0}'],
-  ['ล็อกอยู่ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่นก่อน จึงไปหน้าพิมพ์ได้', 'Locked — scan an employee barcode or type a nickname first, then the print page opens', 'လော့ခ်ထားသည် — ဝန်ထမ်းဘားကုဒ် စကင်ဖတ် သို့မဟုတ် အမည်ပြောင် ရိုက်မှ ပုံနှိပ်စာမျက်နှာသို့ သွားနိုင်မည်'],
+  ['ล็อกอยู่ — ใส่เลขพนักงาน 4 หรือ 8 หลัก ชื่อเล่น หรือสแกนบัตรก่อน จึงไปหน้าพิมพ์ได้', 'Locked — enter the 4- or 8-digit employee number, a nickname, or scan a badge first, then the print page opens', 'လော့ခ်ထားသည် — ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး၊ အမည်ပြောင် ထည့်ပါ သို့မဟုတ် ကတ်ကို စကင်န်ဖတ်ပြီးမှ ပုံနှိပ်စာမျက်နှာသို့ သွားနိုင်မည်'],
+  ['ล็อกอยู่ — ใส่เลขท้าย 4 หลัก หรือเลขเต็ม 8 หลัก', 'Locked — enter the last 4 digits or the whole 8-digit number', 'လော့ခ်ထားသည် — နောက်ဆုံး ၄ လုံး သို့မဟုတ် ၈ လုံးအပြည့် ထည့်ပါ'],
+  ['ล็อกอยู่ — พิมพ์ต่อให้ครบ 8 หลัก (หรือเหลือ 4 หลักท้าย)', 'Locked — keep typing to 8 digits (or leave only the last 4)', 'လော့ခ်ထားသည် — ၈ လုံးပြည့်အောင် ဆက်ရိုက်ပါ (သို့မဟုတ် နောက်ဆုံး ၄ လုံးသာ ထားပါ)'],
+  ['พร้อมแล้ว — {0} · {1} — กด "ไปต่อ" (หรือ Enter) เพื่อไปหน้าพิมพ์', 'Ready — {0} · {1} — press "Continue" (or Enter) to go to the print page', 'အဆင်သင့်ဖြစ်ပြီ — {0} · {1} — "ရှေ့ဆက်ရန်" (သို့မဟုတ် Enter) နှိပ်၍ ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
+  ['ไม่พบรหัส {0} ในรายชื่อพนักงาน', 'Code {0} is not in the employee roster', 'ကုဒ် {0} ကို ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ'],
+  ['ไม่พบรหัส {0} ในรายชื่อพนักงาน — ถ้าเป็นเลข 8 หลัก พิมพ์ต่อให้ครบ', 'Code {0} is not in the employee roster — if it is an 8-digit number, keep typing', 'ကုဒ် {0} ကို ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ — ၈ လုံးဖြစ်လျှင် ဆက်ရိုက်ပါ'],
+  ['ใส่เลข 4 หรือ 8 หลัก ชื่อเล่น หรือสแกนบัตร', 'Enter 4 or 8 digits, a nickname, or scan a badge', 'ဂဏန်း ၄ ဒါမှမဟုတ် ၈ လုံး၊ အမည်ပြောင် ထည့်ပါ သို့မဟုတ် ကတ်ကို စကင်န်ဖတ်ပါ'],
   ['ผู้จัด: ใส่ชื่อ หรือสแกนรหัสพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย)', 'Picker: type a name or scan the employee code (8 digits, only the last 4 are read)', 'ပစ္စည်းကောက်သူ: အမည်ရိုက် သို့မဟုတ် ဝန်ထမ်းကုဒ် စကင်ဖတ်ပါ (၈ လုံး နောက်ဆုံး ၄ လုံးသာ ဖတ်သည်)'],
   ['พิมพ์บาร์โค้ดพนักงานชั่วคราว (Part-Time)', 'Print Part-Time employee barcodes', 'ယာယီ (Part-Time) ဝန်ထမ်း ဘားကုဒ် ပုံနှိပ်ရန်'],
   ['ชื่อพนักงานชั่วคราว', 'Temporary employee name', 'ယာယီဝန်ထမ်း အမည်'],
@@ -6486,6 +6499,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เอา {0} ออกจากรอบนี้', '{0} removed from this go', '{0} ကို ဤအကြိမ်မှ ဖယ်ရှားပြီးပါပြီ'],
   ['เอาออกจากรอบนี้', 'Remove from this go', 'ဤအကြိမ်မှ ဖယ်ရှားရန်'],
   ['{0} ออเดอร์ที่สแกนไว้ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', '{0} scanned orders — scan an employee barcode or type a nickname and the print page opens by itself', 'စကင်န်ဖတ်ထားသော အော်ဒါ {0} ခု — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
+  ['{0} ออเดอร์ที่สแกนไว้ — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ใบปะหน้าให้เอง', '{0} scanned orders — enter the 4- or 8-digit employee number, type a nickname or scan a badge and the print page opens by itself', 'စကင်န်ဖတ်ထားသော အော်ဒါ {0} ခု — ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး ထည့်ပါ၊ အမည်ပြောင်ရိုက်ပါ သို့မဟုတ် ကတ်ကို စကင်န်ဖတ်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
   ['หลายออเดอร์', 'Many orders', 'အော်ဒါများစွာ'],
   ['หลายออเดอร์ · พิมพ์แล้ว', 'Many orders · printed', 'အော်ဒါများစွာ · ပုံနှိပ်ပြီး'],
   ['กดที่ใบตัวอย่าง ก็สั่งพิมพ์ได้เลย', 'Click the sample sheet to print it right away', 'နမူနာစာရွက်ကို နှိပ်လျှင် ချက်ချင်း ပုံနှိပ်နိုင်သည်'],
@@ -6740,6 +6754,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที', 'When the print page opens from any of the 3 Re-Print fields, start printing by itself within 1 second', 'Re-Print အကွက် ၃ ခုမှ ပုံနှိပ်စာမျက်နှာ ပွင့်သည်နှင့် ၁ စက္ကန့်အတွင်း အလိုအလျောက် ပုံနှိပ်သည်'],
   ['{0} + {1} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} + {1} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} + {1} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
   ['{0} — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} — scan an employee barcode or type a nickname and the print page opens by itself', '{0} — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
+  ['{0} + {1} — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} + {1} — enter the 4- or 8-digit employee number, type a nickname or scan a badge and the print page opens by itself', '{0} + {1} — ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး ထည့်ပါ၊ အမည်ပြောင်ရိုက်ပါ သို့မဟုတ် ကတ်ကို စကင်န်ဖတ်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
+  ['{0} — ใส่เลขพนักงาน 4 หรือ 8 หลัก พิมพ์ชื่อเล่น หรือสแกนบัตร แล้วระบบเปิดหน้าพิมพ์ให้เอง', '{0} — enter the 4- or 8-digit employee number, type a nickname or scan a badge and the print page opens by itself', '{0} — ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး ထည့်ပါ၊ အမည်ပြောင်ရိုက်ပါ သို့မဟုတ် ကတ်ကို စကင်န်ဖတ်ပါ၊ ပုံနှိပ်စာမျက်နှာ အလိုအလျောက် ပွင့်ပါမည်'],
   ['นี่คือเลขออเดอร์ — สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น', 'This is an order number — scan an employee barcode or type a nickname', 'ဤသည်မှာ အော်ဒါနံပါတ်ဖြစ်သည် — ဝန်ထမ်းဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ'],
   ['ตัวอย่างใบปะหน้า — 1 หน้า (2 ออเดอร์ ใบละออเดอร์)', 'Cover sheet preview — 1 page (2 orders, one per slip)', 'အဖုံးစာရွက် နမူနာ — ၁ စာမျက်နှာ (အော်ဒါ ၂ ခု၊ တစ်ရွက်လျှင် တစ်ခု)'],
   ['เสียงจริง: เครื่องแคชเชียร์ #1', 'Real recording: checkout beep #1', 'အစစ်အမှန်အသံသွင်း: ငွေရှင်းစက် ပီ့ #1'],
