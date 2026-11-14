@@ -378,6 +378,7 @@ td.x{width:34px;text-align:center}
 .pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:19px}
 .pdlg .pdmsg{display:flex;align-items:center;gap:12px;min-height:60px;margin-top:16px;padding:12px 18px;border-radius:16px;font-size:18px;font-weight:700;line-height:1.35;background:#fff3cd;color:#7a4b00}
 .pdlg .pdmsg svg{flex:none;width:24px;height:24px}
+.pdlg .pdmsg[hidden]{display:none}      /* (an empty message box is not shown: the edit-PICK window has no message until something is wrong) */
 .pdlg .pdmsg.ok{background:#e4f3ea;color:#1f7a45}
 .pdlg .pdmsg.bad{background:#fde3e3;color:#b42318}
 .pdlg .pdskip{border:0;background:none;color:var(--muted);font-size:15px;font-weight:600;text-decoration:underline;padding:6px 2px}
@@ -1052,10 +1053,14 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 #pvPrint svg{width:56px;height:56px;flex:none}
 #pvPrint:hover:not(:disabled){filter:brightness(1.07);border:0}
 #pvPrint:disabled{background:#8fa6c4;box-shadow:none}
+#pvEditPick{position:fixed;right:28px;bottom:172px;z-index:5;display:inline-flex;align-items:center;gap:14px;padding:16px 34px 16px 28px;font-size:30px;font-weight:800;line-height:1.1;border:0;border-radius:20px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 8px 24px rgba(27,127,72,.5)}      /* green, above the big print button: fix the PICK (picker) name without scanning again */
+#pvEditPick svg{width:34px;height:34px;flex:none}
+#pvEditPick:hover:not(:disabled){filter:brightness(1.07);border:0}
+#pvEditPick:disabled{background:#9db5a7;box-shadow:none}
 #pvClose{position:fixed;top:12px;right:28px;z-index:6;padding:16px 30px;font-size:32px;border-radius:18px;color:#fff;border:0;background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 4px 14px rgba(189,48,59,.45)}      /* red, floating at the top right */
 #pvClose:hover:not(:disabled){filter:brightness(1.1);border:0}
 @media screen{ #pvPages{padding-bottom:200px} }      /* (room under the last sheet for the print button) */
-@media (max-width:560px){ #pvPrint{left:16px;right:16px;bottom:16px;padding:18px;font-size:30px;justify-content:center;gap:12px} #pvPrint svg{width:36px;height:36px} #pvClose{top:8px;right:14px;padding:10px 18px;font-size:22px} .pvbar{max-width:calc(100% - 140px);margin-left:8px} }
+@media (max-width:560px){ #pvEditPick{left:16px;right:16px;bottom:100px;padding:12px;font-size:22px;justify-content:center;gap:10px} #pvEditPick svg{width:26px;height:26px} #pvPrint{left:16px;right:16px;bottom:16px;padding:18px;font-size:30px;justify-content:center;gap:12px} #pvPrint svg{width:36px;height:36px} #pvClose{top:8px;right:14px;padding:10px 18px;font-size:22px} .pvbar{max-width:calc(100% - 140px);margin-left:8px} }
 .pvnote{flex:0 1 auto;font-size:13px;color:var(--warn);empty-cells:hide}      /* (on the same line as the title when there is room) */
 .pvnote:empty{display:none}
 @media screen{ #pvPages{zoom:var(--pvz,1)} }      /* the A4 sheets are shrunk to fit a narrow screen (--pvz is set from the window width); printing is not scaled */
@@ -1065,7 +1070,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
   body.has-print .app,body.has-print .toast,body.has-print dialog,body.has-print iframe.printframe{display:none!important}      /* (a hidden print frame left over from an earlier print would add an EMPTY page to the printed page) */
   body.has-print{overflow:visible!important;background:#fff}
   body.has-print #printView{position:static;overflow:visible;background:#fff}
-  .pvbar,#pvClose,#pvPrint{display:none!important}
+  .pvbar,#pvClose,#pvPrint,#pvEditPick{display:none!important}
 }
 .toast{position:fixed;left:50%;top:auto;right:auto;bottom:24px;width:auto;height:auto;margin:0;border:0;overflow:visible;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:90;max-width:min(92vw,640px);text-align:center}      /* (a popover: shown in the top layer, so it is above an open window (a <dialog>) too) */
 .toast.show{opacity:.96}
@@ -1464,6 +1469,15 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
   </div>
 </dialog>
 
+<dialog id="pickDlg" class="bigdlg pdlg" aria-labelledby="pkTitle">
+  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg></span><div><h3 id="pkTitle">แก้ไขชื่อ PICK</h3><p class="bdsub" id="pkInfo"></p></div></div>
+  <div class="bdbody">
+    <div class="pdfield"><input id="pkIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="พิมพ์ชื่อผู้จัดที่ถูกต้อง" aria-label="ชื่อผู้จัด (PICK)"><button id="pkGo2" class="pdgo2" type="button" disabled title="บันทึกชื่อ" aria-label="บันทึกชื่อ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6"/></svg></button></div>
+    <div class="pdmsg" id="pkMsg" aria-live="polite"></div>
+    <div class="bdfoot"><span class="sp"></span><button id="pkCancel" type="button">ยกเลิก</button><button id="pkGo" class="pdgo" type="button" disabled>บันทึกชื่อ</button></div>
+  </div>
+</dialog>
+
 <div id="printView" hidden>
   <div class="pvbar">
     <b id="pvTitle"></b>
@@ -1471,6 +1485,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
     <span class="pvnote" id="pvNote"></span>
   </div>
   <button id="pvClose" type="button">ปิด</button>
+  <button id="pvEditPick" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg><span>แก้ไขชื่อ PICK</span></button>
   <button id="pvPrint" class="primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span id="pvPrintTxt">พิมพ์</span></button>
   <div id="pvPages" data-notr></div>
 </div>
@@ -5796,7 +5811,7 @@ function pvDraw() {
   const noWho = rows.filter(r => !(nickOf(r.emp) || nameOfEmp(r.emp) || r.name) || /^\d+$/.test(nickOf(r.emp) || nameOfEmp(r.emp) || r.name)).length;      // the sheet prints the picker's name: these have none to print
   $('pvNote').textContent = [miss ? T('{0} ออเดอร์ยังไม่มีชื่อลูกค้า/วันที่/รอบส่ง — นำเข้าไฟล์ Call Center ในกล่องเขียวเพื่อเติมข้อมูล', miss) : '',
     noWho ? T('{0} ใบยังไม่มีชื่อผู้จัด — นำเข้ารายชื่อพนักงานใน Update Data หรือ Assign ใหม่ด้วยชื่อเล่น', noWho) : ''].filter(Boolean).join(' · ');
-  $('pvPrint').disabled = !rows.length;
+  $('pvPrint').disabled = !rows.length; $('pvEditPick').disabled = !rows.length;
 }
 function pvRender() {
   pvDraw();
@@ -5846,6 +5861,39 @@ $('pvPrint').addEventListener('click', async () => {
   }
 });
 $('pvClose').addEventListener('click', closePrint);
+/* THE GREEN "แก้ไขชื่อ PICK" BUTTON of the print page: the picker's name is wrong on the sheets (a typo, the wrong person) -> type the right one and every sheet of this page is redrawn with it, no new scan.
+   The name is looked up like in the picker window (roster / Part-Time by name or nickname, else a guest, see guestFor). Re-Print goes: the entries of these orders; the Assign / scan-list pages: the rows (and Assign
+   entries) of these orders, since that is where the sheet reads its picker from. */
+const pkIn = $('pkIn');
+function pkSay(kind, text) { const m = $('pkMsg'); m.className = 'pdmsg ' + (kind || ''); m.textContent = text || ''; m.hidden = !text; }
+const pkSync = () => { const off = !pkIn.value.trim(); $('pkGo').disabled = off; $('pkGo2').disabled = off; };
+function pvEditPickOpen() {
+  const rows = pvRows(); if (!rows.length) return;
+  const names = [...new Set(rows.map(r => nickOf(r.emp) || nameOfEmp(r.emp) || r.name || '').filter(Boolean))];
+  $('pkInfo').textContent = T('แก้ชื่อผู้จัดบนใบปะหน้าทุกใบในหน้านี้ ({0} ออเดอร์) ไม่ต้องสแกนใหม่', rows.length);
+  pkIn.value = names.length === 1 ? names[0] : ''; pkSay('', ''); pkSync();
+  $('pickDlg').showModal(); pkIn.focus(); pkIn.select();
+}
+function pvEditPickApply() {
+  const nm = pkIn.value.replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (!nm) { sfx.bad(); pkSay('bad', 'พิมพ์ชื่อผู้จัดก่อน'); return; }
+  if (/^\d+$/.test(nm)) { sfx.bad(); pkSay('bad', 'พิมพ์เป็นชื่อ ไม่ใช่ตัวเลข'); return; }
+  const orders = new Set(pvRows().map(r => r.order)); if (!orders.size) { $('pickDlg').close(); return; }
+  const code = findPersonByName(nm) || guestFor(nm), name = nameOfEmp(code) || nm;
+  const set = x => { x.emp = code; x.name = name; };
+  if (pvMode === 'rp' || pvMode === 'bulk' || pvMode === 'bulk2') state.reprints.forEach(x => { if (orders.has(x.order)) { set(x); x.picked = true; } });
+  else {
+    state.rows.forEach(r => { if (orders.has(r.order)) set(r); });
+    if (pvMode === 'assign') state.assigns.forEach(a => { if (orders.has(a.order)) set(a); });
+  }
+  save(); render(); pvDraw(); $('pickDlg').close(); sfx.ok();
+  toast(T('แก้ชื่อผู้จัดเป็น "{0}" แล้ว', name));
+}
+$('pvEditPick').addEventListener('click', pvEditPickOpen);
+pkIn.addEventListener('input', () => { pkSync(); if (pkIn.value.trim()) pkSay('', ''); });
+pkIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pvEditPickApply(); } });
+['pkGo', 'pkGo2'].forEach(id => { const b = $(id); b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', () => { pvEditPickApply(); if ($('pickDlg').open) pkIn.focus(); }); });
+$('pkCancel').addEventListener('click', () => $('pickDlg').close());
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('printView').hidden) closePrint(); });
 
 /* ---------- language: TH (source) / EN / MY ----------
@@ -6594,6 +6642,13 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['เกิดข้อผิดพลาด: {0}', 'Something went wrong: {0}', 'အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်: {0}'],
+  ['แก้ไขชื่อ PICK', 'Edit PICK name', 'PICK အမည် ပြင်ရန်'],
+  ['บันทึกชื่อ', 'Save name', 'အမည် သိမ်းရန်'],
+  ['พิมพ์ชื่อผู้จัดที่ถูกต้อง', 'Type the right picker name', 'မှန်ကန်သော ပစ္စည်းကောက်သူ အမည်ကို ရိုက်ပါ'],
+  ['พิมพ์ชื่อผู้จัดก่อน', 'Type the picker name first', 'ပစ္စည်းကောက်သူ အမည်ကို ဦးစွာ ရိုက်ပါ'],
+  ['พิมพ์เป็นชื่อ ไม่ใช่ตัวเลข', 'Type a name, not a number', 'နံပါတ်မဟုတ်ဘဲ အမည်ကို ရိုက်ပါ'],
+  ['แก้ชื่อผู้จัดบนใบปะหน้าทุกใบในหน้านี้ ({0} ออเดอร์) ไม่ต้องสแกนใหม่', 'Changes the picker name on every cover sheet of this page ({0} orders) — no new scan', 'ဤစာမျက်နှာရှိ အဖုံးစာရွက်အားလုံးပေါ်က ပစ္စည်းကောက်သူအမည်ကို ပြောင်းသည် (အော်ဒါ {0} ခု) — ပြန်စကင်န်ဖတ်ရန် မလိုပါ'],
+  ['แก้ชื่อผู้จัดเป็น "{0}" แล้ว', 'Picker name changed to "{0}"', 'ပစ္စည်းကောက်သူအမည်ကို "{0}" သို့ ပြောင်းပြီးပါပြီ'],
   ['ไม่มีออเดอร์รอพิมพ์แล้ว — ถูกล้างหรือพิมพ์ไปแล้ว (อาจจากเครื่องอื่น) กด ยกเลิก แล้วสแกนใหม่', 'No orders are waiting any more — they were cleared or already printed (maybe from another computer). Press Cancel and scan again', 'ပုံနှိပ်ရန် စောင့်နေသော အော်ဒါမရှိတော့ပါ — ရှင်းလင်းပြီး သို့မဟုတ် ပုံနှိပ်ပြီးဖြစ်သည် (အခြားကွန်ပျူတာမှ ဖြစ်နိုင်သည်)။ ပယ်ဖျက်ကို နှိပ်ပြီး ပြန်စကင်န်ဖတ်ပါ'],
   ['ชื่อเล่น', 'Nickname', 'အမည်ပြောင်'],
   ['ตารางเวลางาน', 'Work schedule', 'အလုပ်ချိန်ဇယား'],
