@@ -4927,6 +4927,19 @@ function bulkApply(two) {                             // the picker who is signe
    waiting list — printed or not — so a go that went wrong (jam, wrong picker, deleted by mistake) is done again without scanning every order once more. */
 function rememberGo(items) { if (items && items.length) state.lastGo = { ts: Date.now(), items: items.map(x => ({ order: x.order, two: !!x.two })) }; }      // (the caller saves)
 const rememberPending = () => rememberGo(state.reprints.filter(x => x.bulk && !x.batched));
+/* A go is OVER — printed, the print page closed, or the picker window cancelled: the Re-Print list, the counters and the preview start clean (the printed rows of older goes go too). Nothing is lost: the go was
+   remembered when it was sent (or just now, for a cancel) and the orange button brings it back. Orders waiting in the OTHER many-orders field, and a half-scanned pair of field 2, are left alone. */
+function clearReprintArea(goOrders) {
+  const go = new Set(goOrders);
+  state.reprints = state.reprints.filter(x => !(x.batched || go.has(x.order) || (!x.bulk && x.order !== pairWait)));
+  previewOrder = null; previewPair = null; previewManual = null; listSel.reprint.clear();
+  sideMsg('reprint', '', ''); save(); render();
+  toast(T('ล้างรายการแล้ว — ถ้าจะพิมพ์ซ้ำ กดปุ่มส้ม "ดึงชุดล่าสุดกลับมา"'));
+}
+function pdAbort() {                                  // the picker window was cancelled: the orders it was opened for are put away (nothing is printed); the orange button brings them back
+  if (pdMode === 'rp') { const go = new Set(rpPick); rememberGo(state.reprints.filter(x => go.has(x.order)).map(x => ({ order: x.order, two: go.size > 1 }))); clearReprintArea(rpPick); }
+  else if (pdMode === 'bulk' || pdMode === 'bulk2') { const l = bulkPending(pdMode === 'bulk2'); if (!l.length) return; rememberGo(l); clearReprintArea(l.map(x => x.order)); }
+}
 function restoreLastGo() {
   const g = state.lastGo, items = g && Array.isArray(g.items) ? g.items : [];
   if (!items.length) { sfx.bad(); return sideMsg('reprint', 'bad', T('ยังไม่มีชุดล่าสุดให้ดึงกลับมา')); }
@@ -5377,7 +5390,8 @@ function pdDone() {
   openPrint('scan');
 }
 $('printWho').addEventListener('click', openPrintDlg);
-$('pdCancel').addEventListener('click', () => $('printDlg').close());
+$('pdCancel').addEventListener('click', () => { $('printDlg').close(); pdAbort(); });
+$('printDlg').addEventListener('cancel', () => pdAbort());      // (Esc; a programmatic close() — the picker was accepted — does not fire it)
 ['pdGo', 'pdGo2'].forEach(id => { const b = $(id); b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', () => { pdSubmit(); if ($('printDlg').open) pdIn.focus(); }); });      // (mousedown does not take the focus off the field: on a phone the keyboard stays and the window does not jump away from under the finger before the click)      // "ไปต่อ" = Enter in the field (a nickname, or the next step: the name for a badge, the ID number for a new name)
 $('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
@@ -6006,7 +6020,12 @@ function pvAutoPrint() {                                                   // sh
 }
 const pvFit = () => $('pvPages').style.setProperty('--pvz', String(Math.min(1, (innerWidth - 16) / 800).toFixed(3)));
 window.addEventListener('resize', pvFit); pvFit();
-const closePrint = () => { clearTimeout(pvAutoT); pvBackCancel(); $('printView').hidden = true; document.body.classList.remove('has-print'); focusNext(); };
+const closePrint = () => {
+  const was = $('printView').hidden ? '' : pvMode;
+  clearTimeout(pvAutoT); pvBackCancel(); $('printView').hidden = true; document.body.classList.remove('has-print');
+  if (was === 'rp' || was === 'bulk' || was === 'bulk2') clearReprintArea(was === 'rp' ? pvRp : pvBulk);      // (a Re-Print go ends when its print page is closed — printed, cancelled or "close")
+  focusNext();
+};
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
@@ -6032,7 +6051,7 @@ function pvBackStart() {
   paint(); bar.hidden = false; clearInterval(pvBackT);
   pvBackT = setInterval(() => {
     if (--n > 0) { paint(); return; }
-    pvBackCancel(); bulkDone(); closePrint(); toast(T('กลับมาหน้า Re-Print แล้ว'));
+    pvBackCancel(); bulkDone(); closePrint();      // (closePrint clears the list and says so)
   }, 1000);
 }
 function pvBackStay() { if ($('pvBackBar').hidden) return; pvBackCancel(); toast(T('อยู่หน้าพิมพ์ต่อ — ยังไม่ได้ทำเครื่องหมายว่าพิมพ์แล้ว')); }
@@ -6046,6 +6065,7 @@ function pkSay(kind, text) { const m = $('pkMsg'); m.className = 'pdmsg ' + (kin
 const pkSync = () => { const off = !pkIn.value.trim(); $('pkGo').disabled = off; $('pkGo2').disabled = off; };
 function pvEditPickOpen() {
   const rows = pvRows(); if (!rows.length) return;
+  pvBackCancel();                                                            // (the name is being fixed: the 3 s countdown back to Re-Print must not close the page — and clear the list — under the window; print again with the blue button)
   const names = [...new Set(rows.map(r => nickOf(r.emp) || nameOfEmp(r.emp) || r.name || '').filter(Boolean))];
   $('pkInfo').textContent = T('แก้ชื่อผู้จัดบนใบปะหน้าทุกใบในหน้านี้ ({0} ออเดอร์) ไม่ต้องสแกนใหม่', rows.length);
   pkIn.value = names.length === 1 ? names[0] : ''; pkSay('', ''); pkSync();
@@ -6847,6 +6867,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['คัดลอกที่เลือก ({0})', 'Copy the selected ({0})', 'ရွေးထားသည်ကို ကူးယူရန် ({0})'],
   ['พิมพ์ซ้ำได้', 'can be printed again', 'ပြန်ပုံနှိပ်နိုင်သည်'],
+  ['ล้างรายการแล้ว — ถ้าจะพิมพ์ซ้ำ กดปุ่มส้ม "ดึงชุดล่าสุดกลับมา"', 'List cleared — to print again, press the orange "Bring back the last batch" button', 'စာရင်းကို ရှင်းလင်းပြီးပါပြီ — ထပ်ပုံနှိပ်ရန် လိမ္မော်ရောင် "နောက်ဆုံးအစုကို ပြန်ယူရန်" ခလုတ်ကို နှိပ်ပါ'],
   ['ดึงชุดล่าสุดกลับมา', 'Bring back the last batch', 'နောက်ဆုံးအစုကို ပြန်ယူရန်'],
   ['ดึงชุดล่าสุดกลับมา ({0} ใบ)', 'Bring back the last batch ({0} sheets)', 'နောက်ဆုံးအစုကို ပြန်ယူရန် ({0} ရွက်)'],
   ['เอาออเดอร์ชุดล่าสุดที่สแกนไว้ (พิมพ์แล้วหรือยังไม่พิมพ์) กลับมารอพิมพ์ใหม่ ไม่ต้องสแกนซ้ำ', 'Put the orders of the last scanned batch (printed or not) back on the waiting list — no need to scan them again', 'နောက်ဆုံးစကင်န်ဖတ်ထားသော အော်ဒါအစုကို (ပုံနှိပ်ပြီး သို့မဟုတ် မပုံနှိပ်ရသေး) စောင့်ဆိုင်းစာရင်းသို့ ပြန်ထည့်ရန် — ထပ်စကင်န်ဖတ်ရန် မလိုပါ'],
