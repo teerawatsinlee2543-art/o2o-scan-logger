@@ -2975,6 +2975,10 @@ function tripClean(m) { const out = {}; let n = 0; for (const [k, e] of Object.e
 let tripJunkN = 0;
 try { const r = JSON.parse(localStorage.getItem(LS_TRIP) || 'null'); if (r && typeof r === 'object') { const c = tripClean(r); tripMap = c.map; tripJunkN = c.n; } } catch (_) {}
 const saveTrip = () => { try { localStorage.setItem(LS_TRIP, JSON.stringify(tripMap)); } catch (_) {} cloudTouch('trips'); };
+/* NOTHING IS WORKED OUT BY ITSELF UNTIL ROUTES ARE PUT IN: the Trip on a cover sheet (zone table, the nearest Trip on the map, the system's guess, the Trip of the other sheets of the go) and the automatic fill of the route table
+   are used only when box ก of the Trip tab holds routes that a PERSON put in — a file / picture / paste, or the "ใช้ผลนี้เป็นเส้นทาง Trip" button (m). Cleared or never uploaded = every sheet prints "Trip ______" to write by hand.
+   (the automatic fill alone — entries marked z — does not count, otherwise "ล้างข้อมูล" would be filled again at the next sync) */
+const routesUploaded = () => Object.values(tripMap).some(e => e && (!e.z || e.m));
 function tripCount() {      // the Trips that really run: those of the area table + those of the zone table, but not a Trip that is only a customer's name ("Trip 20 = พี่แดง ศุภลักษณ์")
   const s = new Set(Object.values(tripMap).map(e => String(e.t))); let z = null;
   try { z = window.O2OZone && window.O2OZone.tripNums ? window.O2OZone.tripNums() : null; } catch (_) { }
@@ -3007,6 +3011,7 @@ function ztPut(o, t) {
 function tripFor(inf, order) {
   if (!inf) return '';
   if (inf.trip) return inf.trip;
+  if (!routesUploaded()) return '';                                   // no routes put in = no Trip is worked out or guessed: the sheet prints "Trip ______"
   const z = order ? ztGet(order) : undefined;
   if (z != null) return String(z);                                    // the zone table, by the order's own address
   for (const v of [inf.sd, inf.zip, inf.d, inf.pv]) { if (!v) continue; const e = tripMap[normArea(v)]; if (e && !e.am) return e.t; }      // the most specific area first; an automatic entry marked "am" (the area is split over several Trips) is skipped: a blank is better than a wrong Trip
@@ -4353,6 +4358,7 @@ function zoneMatcher() { const txt = $('zoneIn').value; if (!zmc || zmc.txt !== 
 function tripOfOrder(x) { const z = zoneMatcher(); if (!z.v) return undefined; return matchOrder({ sd: canonSd(x.sd), d: canonD(x.d), addr: x.addr || '', zip: x.zip || '', name: x.name || '' }, z.M).trip; }
 async function applyRoutes(silent) {
   if (!Z.zt) return;
+  if (silent && !routesUploaded()) return;      // (the automatic fill only goes on after routes were put in by a person; "ล้างข้อมูล" leaves the table empty)
   const bySd = new Map();
   for (const o of Z.orders) { const t = finalOf(o); if (t == null || !o.sd) continue; const m = bySd.get(o.sd) || bySd.set(o.sd, new Map()).get(o.sd); m.set(t, (m.get(t) || 0) + 1); }
   if (!bySd.size) { toast('ยังไม่มีแขวงที่จัด Trip ได้'); return; }
@@ -4362,7 +4368,7 @@ async function applyRoutes(silent) {
     const all = [...m].sort((a, b) => b[1] - a[1]), tot = all.reduce((x, y) => x + y[1], 0), tbl = Z.M ? Z.M.kmap.get(nk(sd)) : null;
     /* a sub-district that the zone table itself names goes to the Trip of the table (the vote of the orders cannot move it: Thap Chang is Trip 15 in the table whatever the roads of its orders say);
        any other that is split over several Trips (the top Trip has under 80 %) is marked "am" (ambiguous): the cover sheet leaves it blank unless the order's own address decides */
-    const ent = { a: sd, t: String(tbl != null ? tbl : all[0][0]), z: 1 }; if (tbl == null && all[0][1] < 0.8 * tot) ent.am = 1;
+    const ent = { a: sd, t: String(tbl != null ? tbl : all[0][0]), z: 1 }; if (tbl == null && all[0][1] < 0.8 * tot) ent.am = 1; if (!silent) ent.m = 1;      // (m: put in by the button, a person's own act: it counts as uploaded routes)
     entries.set(normArea(sd), ent); for (const e of (en[sd] || [])) entries.set(normArea(e), Object.assign({}, ent, { a: e }));
   }
   const old = Object.keys(tripMap).length, tripsN = new Set([...entries.values()].map(e => e.t)).size;
@@ -4861,7 +4867,7 @@ const hooks = { printFrame: f => f.contentWindow.print() };               // (a 
    (no road in its address, a sub-district the table does not have) takes that Trip instead of the area's guess. Needs 2+ placed orders with 60 %+ of them on one Trip; an order the table places itself keeps its own
    Trip; the Trip typed in the box wins over all of it. Settings can switch it off. */
 function rpBatchTrip(orders) {                                             // orders = the orders of a print (its own go); none given = the orders waiting on the list
-  if (state.rpBatchAuto === false) return '';
+  if (state.rpBatchAuto === false || !routesUploaded()) return '';
   const m = new Map(); let n = 0;
   for (const o of orders || state.reprints.filter(e => !e.batched).map(e => e.order)) { const z = ztGet(o); if (z == null) continue; m.set(z, (m.get(z) || 0) + 1); n++; }
   if (n < 2) return '';
