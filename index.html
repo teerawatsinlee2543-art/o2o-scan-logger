@@ -1570,7 +1570,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
         <div class="zset">
           <label class="f"><input id="zAll" type="checkbox" checked> ใช้ทุกวันในไฟล์ (ไม่ติ๊ก = เฉพาะวันที่เลือก)</label>
           <label class="f"><input id="zRoad" type="checkbox" checked> ใช้ชื่อถนน/ซอยช่วยตัดสิน</label>
-          <label class="f"><input id="zGuess" type="checkbox" checked> เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน</label>
+          <label class="f"><input id="zGuess" type="checkbox"> เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน (ไม่ติ๊ก = ใบที่ไม่มีข้อมูล Trip จริงพิมพ์เป็น Trip ______ ให้เขียนเอง)</label>
           <label class="f"><input id="zGuessMark" type="checkbox"> ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)</label>
           <div id="dayPick" class="row" hidden><label class="f">วันที่จะตรวจ <select id="daySel"></select></label></div>
           <div class="row"><button id="btnZone" type="button" disabled>ตรวจโซน</button></div>
@@ -3645,7 +3645,7 @@ function roadLabel0(x) {
    right about half of the time when the evidence agrees, so it is only given then, and the slip marks it with "?" — never as a plain number):
      - the other orders on the same ROAD (weight 3)  - the orders on the same real delivery route of the day, the TMS "Trip Id" of the sheet = nearby stops (2)  - the orders of the same sub-district (1)
    each source votes with the share of its orders per Trip; the best Trip needs 60 % of all the votes. OpenStreetMap road positions were tried too (nearest zone road): right only 22-29 % — the Trip table is a plan, not a map. */
-const LS_ZGUESS = 'o2o-zguess-v1';
+const LS_ZGUESS = 'o2o-zguess-v2';      // (v2: the guess became OFF by default on 2026-11-14 — a computer that had it on by default is reset once; only an explicit "on" is kept from now on)
 const zGuessOn = () => { const e = $('zGuess'); return !e || e.checked; };
 function roadKeyOf(o, M) {      // the road of the order in its canonical spelling (so a misspelling votes with the others)
   const ms = mentionsOf(o.addr).filter(m => !m.numOnly), r = ms.find(m => m.kind === 'ถ') || ms[0]; if (!r) return '';
@@ -4329,7 +4329,7 @@ $('zoneOut').addEventListener('click', e => {
 $('zoneOut').addEventListener('focusout', () => setTimeout(() => { if (zRenderLater && !zEditing()) { zRenderLater = false; if (Z.zt) renderZones(); } }, 0));      // (a check that finished while a zone box was being typed in is shown now)
 if (IN_VIEWER || !srcReady()) $('zSetBox').open = true;      // (no sheet to read — the Artifact, or none connected yet: the "use an order file instead" box is shown open)
 $('zRoad').addEventListener('change', () => { if (S.orders.length && !$('btnZone').disabled && Z.zt) runZones(); });
-try { if (localStorage.getItem(LS_ZGUESS) === '0') $('zGuess').checked = false; } catch (_) {}
+try { $('zGuess').checked = localStorage.getItem(LS_ZGUESS) === '1'; } catch (_) {}      // (OFF unless it is switched on here: a Trip with no real data is printed as "Trip ______" to write by hand, not as a guessed number)
 $('zGuess').addEventListener('change', () => { try { localStorage.setItem(LS_ZGUESS, $('zGuess').checked ? '1' : '0'); } catch (_) {} toast($('zGuess').checked ? 'เปิดเลข Trip ที่ระบบเดา' : 'ปิดเลข Trip ที่ระบบเดา'); try { window.O2O.render(); } catch (_) {} });
 try { $('zGuessMark').checked = localStorage.getItem('o2o-zguessmark-v1') === '1'; } catch (_) {}      // (the "?" after a guessed Trip is OFF unless it is switched on here: tripFor reads the same key)
 $('zGuessMark').addEventListener('change', () => { try { localStorage.setItem('o2o-zguessmark-v1', $('zGuessMark').checked ? '1' : '0'); } catch (_) {} toast($('zGuessMark').checked ? 'ใส่ ? ท้ายเลข Trip ที่ระบบเดา' : 'ไม่ใส่ ? ท้ายเลข Trip ที่ระบบเดา'); try { window.O2O.render(); } catch (_) {} });
@@ -5711,7 +5711,7 @@ const SHEET_CSS = `.sheet{--m:4mm;width:210mm;height:296.8mm;margin:14px auto;ba
 .s-ck{display:flex;align-items:center;gap:3mm}
 .s-cb{flex:none;width:10mm;height:10mm;box-sizing:border-box;border:1.3px solid #444;background:#e0e0e0}
 .s-tp{font-weight:800}
-.s-tu{display:inline-block;width:2.2em;height:0;margin-left:.1em;border-bottom:1px solid #222}      /* the blank to write the trip on: a thin line (not the bold "____" characters) */
+.s-tu{display:inline-block;width:3.2em;height:0;margin-left:.1em;margin-right:.1em;border-bottom:max(1.5px,.045em) solid #222}      /* the blank to write the trip on, like "______": a line the width of a few digits, a little thicker than a hairline (still not the bold "____" characters) */
 .s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
 .s-slot{box-sizing:border-box;height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900;border-bottom:1px solid #444}      /* the line under the round box, so a white (uncoloured) one is still seen */
@@ -6165,7 +6165,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['อ่านพิกัดไม่ได้ — ต้องเป็นจุดในประเทศไทย เช่น 13.85, 100.70 หรือลิงก์ Google Maps ที่มี @13.85,100.70', 'Cannot read the coordinates — must be a point in Thailand, e.g. 13.85, 100.70 or a Google Maps link containing @13.85,100.70', 'ကိုဩဒိနိတ် ဖတ်၍မရပါ — ထိုင်းနိုင်ငံအတွင်းနေရာဖြစ်ရမည် ဥပမာ 13.85, 100.70 သို့မဟုတ် @13.85,100.70 ပါသော Google Maps လင့်ခ်'],
   ['บันทึกหมุดแล้ว', 'Pin saved', 'ပင်သိမ်းပြီး'],
   ['ลบหมุดแล้ว', 'Pin removed', 'ပင်ဖျက်ပြီး'],
-  ['เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน', 'Fill in the Trip that the system guesses for sheets outside the zones', 'ဇုန်ပြင်ပရှိ စာရွက်များအတွက် စနစ်က ခန့်မှန်းသော Trip နံပါတ်ကို ဖြည့်ရန်'],
+  ['เติมเลข Trip ที่ระบบเดา ให้ใบที่ไม่เข้าโซน (ไม่ติ๊ก = ใบที่ไม่มีข้อมูล Trip จริงพิมพ์เป็น Trip ______ ให้เขียนเอง)', 'Fill in the Trip that the system guesses for sheets outside the zones (unticked = a sheet with no real Trip data prints "Trip ______" to write by hand)', 'ဇုန်ပြင်ပရှိ စာရွက်များအတွက် စနစ်က ခန့်မှန်းသော Trip နံပါတ်ကို ဖြည့်ရန် (မအမှတ်ထားလျှင် Trip အစစ်အမှန်ဒေတာမရှိသော စာရွက်သည် လက်ဖြင့်ရေးရန် "Trip ______" ဟု ပုံနှိပ်သည်)'],
   ['ใส่ ? ต่อท้ายเลข Trip ที่ระบบเดา (ไม่ติ๊ก = พิมพ์เป็นเลขเฉย ๆ เหมือนเลขปกติ)', 'Put a ? after a Trip that the system guesses (unticked = printed as a plain number, like any other)', 'စနစ်က ခန့်မှန်းသော Trip နံပါတ်နောက်တွင် ? ထည့်ရန် (မတိုက်ပါက သာမန်နံပါတ်အတိုင်း ပုံနှိပ်သည်)'],
   ['เปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is on', 'ခန့်မှန်း Trip ဖွင့်ထားသည်'],
   ['ปิดเลข Trip ที่ระบบเดา', 'The guessed Trip is off', 'ခန့်မှန်း Trip ပိတ်ထားသည်'],
