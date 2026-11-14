@@ -642,7 +642,7 @@ html:has(body.has-zoom){scrollbar-gutter:auto}
 .rphead b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rpnote{min-height:20px;margin-bottom:6px;font-size:13px;color:var(--pt);opacity:.9}
 .rpbox{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;gap:14px;overflow:auto}
-.rpnote.ok,.rpnote.bad,.rpnote.wait{display:inline-block;align-self:flex-start;max-width:100%;padding:2px 12px;border-radius:99px;font-weight:700;opacity:1}      /* what the sheet knows about the order on show */
+.rpnote.ok,.rpnote.bad,.rpnote.wait{display:inline-block;align-self:flex-start;max-width:100%;padding:5px 12px;border-radius:8px;font-weight:700;opacity:1}      /* what the sheet knows about the order on show */
 .rpnote.ok{background:#e3f6ea;color:#17683d}
 .rpnote.bad{background:#fde3e3;color:#b42318}
 .rpnote.wait{background:#fff3cd;color:#7a4b00}
@@ -1049,18 +1049,22 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 .pvbar{position:sticky;top:8px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;width:fit-content;max-width:calc(100% - 200px);margin:8px 0 4px 12px;padding:4px 12px;border-radius:10px;background:var(--card);color:var(--ink);font-size:14px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.45)}      /* a small white bar: only the title (and a note); it no longer spans the page and holds no buttons */
 .pvbar .sp{flex:1}
 /* the print page: the big blue "พิมพ์" button (with a printer icon) sits at the bottom right of the screen (always in reach, over the sheets); the red "ปิด" floats at the top right, on the black, outside the white bar */
-#pvPrint{position:fixed;right:28px;bottom:28px;z-index:5;display:inline-flex;align-items:center;gap:20px;padding:30px 78px 30px 66px;font-size:48px;line-height:1.1;border:0;border-radius:28px;color:#fff;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 12px 34px rgba(11,92,173,.55)}      /* blue, big */
+#pvActions{position:fixed;right:28px;bottom:28px;z-index:5;display:flex;flex-direction:column;gap:16px}      /* the green "edit PICK name" and the blue print button: one column, the SAME size */
+#pvPrint,#pvEditPick{display:inline-flex;align-items:center;justify-content:center;width:320px;height:116px;box-sizing:border-box;padding:0 20px;line-height:1.1;border:0;border-radius:28px;color:#fff}
+#pvPrint{gap:20px;font-size:48px;background:linear-gradient(135deg,#3d8fe8,#0b5cad);box-shadow:0 12px 34px rgba(11,92,173,.55)}      /* blue, big */
 #pvPrint svg{width:56px;height:56px;flex:none}
 #pvPrint:hover:not(:disabled){filter:brightness(1.07);border:0}
 #pvPrint:disabled{background:#8fa6c4;box-shadow:none}
-#pvEditPick{position:fixed;right:28px;bottom:172px;z-index:5;display:inline-flex;align-items:center;gap:14px;padding:16px 34px 16px 28px;font-size:30px;font-weight:800;line-height:1.1;border:0;border-radius:20px;color:#fff;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 8px 24px rgba(27,127,72,.5)}      /* green, above the big print button: fix the PICK (picker) name without scanning again */
-#pvEditPick svg{width:34px;height:34px;flex:none}
+#pvEditPick{gap:16px;font-size:40px;font-weight:800;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 12px 34px rgba(27,127,72,.5)}      /* green, above the print button and the same size: fix the PICK (picker) name without scanning again */
+#pvEditPick span{text-align:left}
+#pvEditPick svg{width:44px;height:44px;flex:none}
 #pvEditPick:hover:not(:disabled){filter:brightness(1.07);border:0}
 #pvEditPick:disabled{background:#9db5a7;box-shadow:none}
-#pvClose{position:fixed;top:12px;right:28px;z-index:6;padding:16px 30px;font-size:32px;border-radius:18px;color:#fff;border:0;background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 4px 14px rgba(189,48,59,.45)}      /* red, floating at the top right */
+#pvClose{position:fixed;top:12px;right:28px;z-index:6;display:inline-flex;align-items:center;gap:12px;padding:16px 30px 16px 24px;font-size:32px;border-radius:18px;color:#fff;border:0;background:linear-gradient(135deg,#d6404d,#b82f3a);box-shadow:0 4px 14px rgba(189,48,59,.45)}      /* red, floating at the top right, with a cross */
+#pvClose svg{width:30px;height:30px;flex:none}
 #pvClose:hover:not(:disabled){filter:brightness(1.1);border:0}
 @media screen{ #pvPages{padding-bottom:200px} }      /* (room under the last sheet for the print button) */
-@media (max-width:560px){ #pvEditPick{left:16px;right:16px;bottom:100px;padding:12px;font-size:22px;justify-content:center;gap:10px} #pvEditPick svg{width:26px;height:26px} #pvPrint{left:16px;right:16px;bottom:16px;padding:18px;font-size:30px;justify-content:center;gap:12px} #pvPrint svg{width:36px;height:36px} #pvClose{top:8px;right:14px;padding:10px 18px;font-size:22px} .pvbar{max-width:calc(100% - 140px);margin-left:8px} }
+@media (max-width:560px){ #pvActions{left:16px;right:16px;bottom:16px;gap:10px} #pvPrint,#pvEditPick{width:100%;height:72px;border-radius:20px} #pvPrint{font-size:30px;gap:12px} #pvPrint svg{width:36px;height:36px} #pvEditPick{font-size:24px;gap:10px} #pvEditPick svg{width:30px;height:30px} #pvEditPick span br{display:none} #pvClose{top:8px;right:14px;padding:10px 16px 10px 12px;font-size:22px;gap:8px} #pvClose svg{width:22px;height:22px} .pvbar{max-width:calc(100% - 150px);margin-left:8px} }
 .pvnote{flex:0 1 auto;font-size:13px;color:var(--warn);empty-cells:hide}      /* (on the same line as the title when there is room) */
 .pvnote:empty{display:none}
 @media screen{ #pvPages{zoom:var(--pvz,1)} }      /* the A4 sheets are shrunk to fit a narrow screen (--pvz is set from the window width); printing is not scaled */
@@ -1484,9 +1488,11 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
     <select id="pvBatch" aria-label="เลือกชุด"></select>
     <span class="pvnote" id="pvNote"></span>
   </div>
-  <button id="pvClose" type="button">ปิด</button>
-  <button id="pvEditPick" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg><span>แก้ไขชื่อ PICK</span></button>
+  <button id="pvClose" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span>ปิด</span></button>
+  <div id="pvActions">
+  <button id="pvEditPick" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg><span>แก้ไขชื่อ <br>PICK</span></button>
   <button id="pvPrint" class="primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg><span id="pvPrintTxt">พิมพ์</span></button>
+  </div>
   <div id="pvPages" data-notr></div>
 </div>
 
@@ -6643,6 +6649,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['เกิดข้อผิดพลาด: {0}', 'Something went wrong: {0}', 'အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်: {0}'],
   ['แก้ไขชื่อ PICK', 'Edit PICK name', 'PICK အမည် ပြင်ရန်'],
+  ['แก้ไขชื่อ', 'Edit name', 'အမည် ပြင်ရန်'],      // (the green button on the print page is "แก้ไขชื่อ" + a line break + "PICK": the first half is a text node of its own)
   ['บันทึกชื่อ', 'Save name', 'အမည် သိမ်းရန်'],
   ['พิมพ์ชื่อผู้จัดที่ถูกต้อง', 'Type the right picker name', 'မှန်ကန်သော ပစ္စည်းကောက်သူ အမည်ကို ရိုက်ပါ'],
   ['พิมพ์ชื่อผู้จัดก่อน', 'Type the picker name first', 'ပစ္စည်းကောက်သူ အမည်ကို ဦးစွာ ရိုက်ပါ'],
