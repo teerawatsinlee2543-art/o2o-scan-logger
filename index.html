@@ -370,6 +370,11 @@ td.x{width:34px;text-align:center}
 /* ONE field, locked (no way to the print page) until a nickname is typed or a staff badge is scanned */
 .pdlg .pdin{width:100%;height:70px;padding:0 22px;border-radius:18px;border:3px solid #a9dcbe;background:#fff;color:#1d2433;font:800 28px/1 Sarabun,"Leelawadee UI",Tahoma,sans-serif;outline:none}
 .pdlg .pdin:focus{border-color:#36b36c;box-shadow:0 0 0 6px rgba(54,179,108,.28)}
+.pdlg .pdfield{position:relative}
+.pdlg .pdfield .pdin{padding-right:86px}
+.pdlg .pdgo2{position:absolute;top:50%;right:10px;transform:translateY(-50%);width:52px;height:52px;padding:0;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#34ad6b,#1b7f48);box-shadow:0 3px 10px rgba(27,127,72,.4);cursor:pointer}      /* the round green arrow at the right edge of the field: the same as Enter in the field */
+.pdlg .pdgo2 svg{width:28px;height:28px}
+.pdlg .pdgo2:disabled{background:#c3cad5;box-shadow:none;cursor:not-allowed;opacity:1}
 .pdlg .pdin::placeholder{color:#8a93a3;font-weight:600;font-size:19px}
 .pdlg .pdmsg{display:flex;align-items:center;gap:12px;min-height:60px;margin-top:16px;padding:12px 18px;border-radius:16px;font-size:18px;font-weight:700;line-height:1.35;background:#fff3cd;color:#7a4b00}
 .pdlg .pdmsg svg{flex:none;width:24px;height:24px}
@@ -387,6 +392,9 @@ td.x{width:34px;text-align:center}
   .bigdlg .bdbody{padding:18px 18px 20px}
   .bigdlg .bdfoot button{padding:11px 22px;font-size:16px}
   .pdlg .pdin{height:58px;padding:0 16px;font-size:22px}
+  .pdlg .pdfield .pdin{padding-right:66px}
+  .pdlg .pdgo2{width:44px;height:44px;right:7px}
+  .pdlg .pdgo2 svg{width:24px;height:24px}
   .pdlg .pdin::placeholder{font-size:14px}
   .pdlg .pdmsg{font-size:16px;padding:10px 14px}
 }
@@ -1450,7 +1458,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 <dialog id="printDlg" class="bigdlg pdlg" aria-labelledby="pdTitle">
   <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><div><h3 id="pdTitle">ใครเป็นผู้จัด?</h3><p class="bdsub" id="pdInfo"></p></div></div>
   <div class="bdbody">
-    <input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น เช่น น้ำ (แล้วกด ไปต่อ)" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น">
+    <div class="pdfield"><input id="pdIn" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น เช่น น้ำ" aria-label="ผู้จัด: สแกนบาร์โค้ดพนักงาน (8 หลัก อ่านแค่ 4 หลักท้าย) หรือพิมพ์ชื่อเล่น"><button id="pdGo2" class="pdgo2" type="button" disabled title="ไปต่อ" aria-label="ไปต่อ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6"/></svg></button></div>
     <div class="pdmsg" id="pdMsg" aria-live="polite"></div>
     <div class="bdfoot"><button id="pdSkip" class="pdskip" type="button" hidden>ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย</button><span class="sp"></span><button id="pdCancel" type="button">ยกเลิก</button><button id="pdGo" class="pdgo" type="button" disabled>ไปต่อ</button></div>
   </div>
@@ -5124,7 +5132,7 @@ let pdMode = 'scan';                                                       // 's
 const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function pdSay(kind, text) { const m = $('pdMsg'); m.className = 'pdmsg ' + kind; m.innerHTML = (kind === 'ok' ? '✓ ' : LOCK_SVG); m.appendChild(document.createTextNode(text)); }
 const pdValid = v => /^\d+$/.test(v) ? (EMP_RE.test(v) || EMP8_RE.test(v) || ID13_RE.test(v)) : v.length > 0;     // digits only = a staff code (4 or 8 digits, or the 13 of a Part-Time card); anything else = a nickname
-const pdGoSync = () => { $('pdGo').disabled = !pdIn.value.trim(); };         // the green "ไปต่อ" button waits for something in the field
+const pdGoSync = () => { const off = !pdIn.value.trim(); $('pdGo').disabled = off; $('pdGo2').disabled = off; };         // the green "ไปต่อ" button waits for something in the field
 function pdSync() {                                                        // the lock message follows what is in the field
   const v = pdIn.value.trim(); pdGoSync();
   if (pdNewName) { if (v && last4(v)) pdSay('ok', 'พร้อมแล้ว — กด "ไปต่อ" (หรือ Enter) เพื่อบันทึก แล้วไปหน้าพิมพ์'); else pdAskNum(); return; }
@@ -5205,7 +5213,7 @@ function pdDone() {
 }
 $('printWho').addEventListener('click', openPrintDlg);
 $('pdCancel').addEventListener('click', () => $('printDlg').close());
-$('pdGo').addEventListener('click', () => { pdSubmit(); if ($('printDlg').open) pdIn.focus(); });      // "ไปต่อ" = Enter in the field (a nickname, or the next step: the name for a badge, the ID number for a new name)
+['pdGo', 'pdGo2'].forEach(id => $(id).addEventListener('click', () => { pdSubmit(); if ($('printDlg').open) pdIn.focus(); }));      // "ไปต่อ" = Enter in the field (a nickname, or the next step: the name for a badge, the ID number for a new name)
 $('printDlg').addEventListener('close', () => { pdNameFor = null; pdNewName = null; });
 $('pdSkip').addEventListener('click', () => { $('printDlg').close(); openPrint('scan'); });
 pdIn.addEventListener('input', pdSync);
@@ -5716,7 +5724,7 @@ const SHEET_CSS = `.sheet{--m:4mm;width:210mm;height:296.8mm;margin:14px auto;ba
 .s-ck{display:flex;align-items:center;gap:3mm}
 .s-cb{flex:none;width:10mm;height:10mm;box-sizing:border-box;border:1.3px solid #444;background:#e0e0e0}
 .s-tp{font-weight:800}
-.s-tu{display:inline-block;width:3.2em;height:0;margin-left:.1em;margin-right:.1em;border-bottom:max(1.5px,.045em) solid #222}      /* the blank to write the trip on, like "______": a line the width of a few digits, a little thicker than a hairline (still not the bold "____" characters) */
+.s-tu{display:inline-block;width:2.4em;height:0;margin-left:.1em;margin-right:.1em;vertical-align:-.18em;border-bottom:max(1px,.022em) solid #222}      /* the blank to write the trip on: a short thin line, set a little BELOW the baseline (user: "shorter, thinner, lower") */
 .s-sd{font-weight:900;color:#c2185b}
 .s-right{display:flex;flex-direction:column;min-width:0}
 .s-slot{box-sizing:border-box;height:30.9mm;display:flex;align-items:center;padding:0 2mm;background:#fff;color:#1b1b1b;font-weight:900;border-bottom:1px solid #444}      /* the line under the round box, so a white (uncoloured) one is still seen */
@@ -6567,7 +6575,7 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ใส่ชื่อพนักงาน หรือสแกนบาร์โค้ด', 'Type the employee name or scan the barcode', 'ဝန်ထမ်းအမည် ရိုက်ပါ သို့မဟုတ် ဘားကုဒ်ကို စကင်န်ဖတ်ပါ'],
   ['ใครเป็นผู้จัด?', 'Who is the picker?', 'ပစ္စည်းကောက်သူ ဘယ်သူလဲ?'],
   ['ทุกใบมีพนักงานแล้ว — ไปหน้าพิมพ์เลย', 'Every order has its employee — go to the print page', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီ — ပုံနှိပ်စာမျက်နှာသို့ သွားပါ'],
-  ['สแกนบาร์โค้ดพนักงาน หรือพิมพ์ชื่อเล่น เช่น น้ำ (แล้วกด ไปต่อ)', 'Scan the staff barcode or type a nickname, e.g. Nam (then press Continue)', 'ဝန်ထမ်းဘားကုဒ်ကို စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင် ဥပမာ နမ် ရိုက်ပါ (ပြီးလျှင် ရှေ့ဆက်ရန် နှိပ်ပါ)'],
+  ['สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น เช่น น้ำ', 'Scan a barcode or type a nickname, e.g. Nam', 'ဘားကုဒ်ကို စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင် ဥပမာ နမ် ရိုက်ပါ'],
   ['{0} ออเดอร์ยังไม่มีพนักงาน — สแกนบาร์โค้ด หรือพิมพ์ชื่อเล่น แล้วระบบเปิดหน้าพิมพ์ใบปะหน้า ({1} ใบ) ให้เอง', '{0} orders have no employee yet — scan a barcode or type a nickname and the print page ({1} sheets) opens by itself', 'အော်ဒါ {0} ခုတွင် ဝန်ထမ်းမရှိသေးပါ — ဘားကုဒ်စကင်န်ဖတ်ပါ သို့မဟုတ် အမည်ပြောင်ရိုက်ပါ၊ ပုံနှိပ်စာမျက်နှာ ({1} ရွက်) အလိုအလျောက် ပွင့်ပါမည်'],
   ['ทุกออเดอร์มีพนักงานแล้ว', 'Every order already has its employee', 'အော်ဒါတိုင်း ဝန်ထမ်းရှိပြီးဖြစ်သည်'],
   ['รหัส {0} ยังไม่มีชื่อ — พิมพ์ชื่อเล่นของคนนี้ แล้วกด Enter ใบปะหน้าจะได้มีชื่อผู้จัด', 'Code {0} has no name yet — type this person\'s nickname and press Enter so the sheet carries the picker\'s name', 'ကုဒ် {0} တွင် အမည် မရှိသေးပါ — ဤသူ၏ အမည်ပြောင်ကို ရိုက်ပြီး Enter နှိပ်ပါ၊ စာရွက်တွင် ပစ္စည်းကောက်သူအမည် ပါလာပါမည်'],
