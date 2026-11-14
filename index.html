@@ -2050,20 +2050,21 @@ function fixTyped(el) {                                                     // t
 }
 function wire(el, ownRe, normalize, mixed) {
   attachLayoutFix(el, mixed);
-  let tFirst = 0, tLast = 0, t1 = null, t2 = null;
+  let tFirst = 0, tLast = 0, bn = 0, prevLen = 0, t1 = null, t2 = null;      // bn = characters of the current burst (the keys that came one right after the other)
   const stop = () => { clearTimeout(t1); clearTimeout(t2); };
-  resets.set(el, () => { tFirst = 0; stop(); });
+  resets.set(el, () => { tFirst = 0; bn = 0; prevLen = 0; stop(); });
   el.addEventListener('input', () => {
     const now = performance.now();
     stop();
     if (normalize) el.value = normalize(el.value);
-    if (!el.value) { tFirst = 0; return; }
-    if (!tFirst) tFirst = now;
+    if (!el.value) { tFirst = 0; bn = 0; prevLen = 0; return; }
+    if (!tFirst || now - tLast > 300) { tFirst = now; bn = 0; }            // a new burst: the field was quiet for a moment — or the page itself emptied it (that fires no event, so the old start time would be stale and a real scan would look slow)
+    bn += Math.max(1, el.value.length - prevLen); prevLen = el.value.length;
     tLast = now;
     t1 = setTimeout(() => {
       const v = el.value.trim().toUpperCase();
       if (v.length < 4) return;
-      const fast = (tLast - tFirst) / Math.max(1, v.length - 1) < 35;
+      const fast = bn >= 4 && (tLast - tFirst) / Math.max(1, bn - 1) < 35;      // (a scanner: 4+ characters in one burst at under 35 ms each — one slow key typed after a pause is never "fast")
       if (fast && (EMP_RE.test(v) || EMP8_RE.test(v) || ID13_RE.test(v) || ORD_RE.test(v) || (v.length > 11 && extractOrder(v)))) { submitFrom(el); return; }
       if (ownRe.test(v)) { const snap = el.value; t2 = setTimeout(() => { if (el.value === snap) submitFrom(el); }, 260); }
     }, 140);
