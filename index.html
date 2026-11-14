@@ -1346,6 +1346,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
             </div>
             <div class="row">
               <label><input id="optPrintGo" type="checkbox"> พอหน้าพิมพ์เปิดจาก Re-Print ทั้ง 3 ช่อง ให้สั่งพิมพ์เองภายใน 1 วินาที</label>
+              <label><input id="optPrintBack" type="checkbox"> พิมพ์เสร็จแล้ว (ปิดหน้าต่างพิมพ์ของเบราว์เซอร์) ให้กลับมาหน้า Re-Print เอง ไม่ต้องกด ปิด</label>
               <label><input id="optBatchTrip" type="checkbox"> ใบ Re-Print ที่ตารางโซนหา Trip ไม่ได้ ให้ใช้ Trip ตามใบอื่นในชุดเดียวกัน</label>
               <label><input id="optShare" type="checkbox"> ซิงก์สด: รายการสแกน / Assign / Re-Print สแกนที่เครื่องไหน ทุกจอเห็นเหมือนกัน (ล้างที่เครื่องหนึ่ง = หายทุกเครื่อง)</label>
             </div>
@@ -2225,7 +2226,7 @@ function render() {
   $('empty').hidden = d.rows.length > 0;
 
   $('optBeep').value = BEEPS[state.beep] ? state.beep : 'p1'; $('optVol').value = VOLS[state.vol] ? state.vol : 'mid';
-  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optBatchTrip').checked = state.rpBatchAuto !== false; $('optShare').checked = state.share !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
+  $('optSize').value = size; $('optSound').checked = state.sound; $('optStrict').checked = state.requireRoster; $('optAutoZoom').checked = state.autoZoom; $('optAutoPrint').checked = state.autoPrint !== false; $('optPrintGo').checked = state.printGo !== false; $('optPrintBack').checked = state.printBack !== false; $('optBatchTrip').checked = state.rpBatchAuto !== false; $('optShare').checked = state.share !== false; $('optMargin').value = String(sheetMargin()); $('optAssignPrint').checked = state.assignAutoPrint !== false;
   $('btnRestore').hidden = !hasBackup();
   // finish gate: scanning is open until "สิ้นสุดการสแกน"; exports are locked until then
   const fin = !!state.finished;
@@ -2259,6 +2260,7 @@ $('optStrict').addEventListener('change', e => { state.requireRoster = e.target.
 $('optAutoZoom').addEventListener('change', e => { state.autoZoom = e.target.checked; save(); });
 $('optAutoPrint').addEventListener('change', e => { state.autoPrint = e.target.checked; save(); });
 $('optPrintGo').addEventListener('change', e => { state.printGo = e.target.checked; save(); });
+$('optPrintBack').addEventListener('change', e => { state.printBack = e.target.checked; save(); });
 $('optBatchTrip').addEventListener('change', e => { state.rpBatchAuto = e.target.checked; save(); renderRpView(); });
 $('optShare').addEventListener('change', e => { state.share = e.target.checked; save(); if (shareCfg) { shareLive(true); if (state.share) shareRun(); } });      // (switched off = this computer neither sends nor receives; switched on again = it catches up)
 $('optAssignPrint').addEventListener('change', e => { state.assignAutoPrint = e.target.checked; save(); render(); });
@@ -5939,7 +5941,13 @@ const closePrint = () => { clearTimeout(pvAutoT); $('printView').hidden = true; 
 $('assignPrint').addEventListener('click', () => openPrint('assign'));
 $('pvBatch').addEventListener('change', pvRender);
 $('pvPrint').addEventListener('click', async () => {
-  if (!IN_VIEWER) { document.querySelectorAll('iframe.printframe').forEach(f => f.remove()); window.print(); bulkDone(); return; }         // claude.ai web copy: no print dialog, so save a file that prints when opened (leftover hidden print frames are removed first: they would print as an extra blank page)
+  if (!IN_VIEWER) {                                                           // claude.ai web copy: no print dialog, so save a file that prints when opened (leftover hidden print frames are removed first: they would print as an extra blank page)
+    document.querySelectorAll('iframe.printframe').forEach(f => f.remove());
+    const fromRp = pvMode === 'rp' || pvMode === 'bulk' || pvMode === 'bulk2';
+    window.print(); bulkDone();                                               // (window.print() returns when the browser's print window is closed, printed or cancelled)
+    if (fromRp && state.printBack !== false) { closePrint(); toast(T('กลับมาหน้า Re-Print แล้ว — ถ้ายังไม่ได้พิมพ์ กดคลิกที่ใบตัวอย่างหรือสแกนใหม่')); }      // back to the Re-Print page (the full-page box it was opened from) without pressing "ปิด"
+    return;
+  }
   if (await download(new Blob([printFileHtml($('pvPages').innerHTML)], { type: 'text/html' }), `cover-sheets_${stamp()}.html`)) {
     toast('บันทึกไฟล์แล้ว — เปิดไฟล์นั้นในเบราว์เซอร์ จะขึ้นหน้าต่างพิมพ์เอง'); bulkDone();
   }
@@ -6744,6 +6752,8 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['ลบเส้นทางทั้งหมดแล้ว', 'All routes deleted', 'လမ်းကြောင်းအားလုံး ဖျက်ပြီးပါပြီ'],
   ['ล้างข้อมูล', 'Clear data', 'ဒေတာ ရှင်းလင်းရန်'],
   ['คัดลอกที่เลือก ({0})', 'Copy the selected ({0})', 'ရွေးထားသည်ကို ကူးယူရန် ({0})'],
+  ['พิมพ์เสร็จแล้ว (ปิดหน้าต่างพิมพ์ของเบราว์เซอร์) ให้กลับมาหน้า Re-Print เอง ไม่ต้องกด ปิด', 'When printing is over (the browser\'s print window is closed), go back to the Re-Print page by itself — no need to press Close', 'ပုံနှိပ်ပြီးလျှင် (ဘရောက်ဇာ၏ ပုံနှိပ်ဝင်းဒိုးကို ပိတ်ပြီးနောက်) Re-Print စာမျက်နှာသို့ ကိုယ်တိုင် ပြန်သွားမည် — ပိတ်ရန် မနှိပ်ရပါ'],
+  ['กลับมาหน้า Re-Print แล้ว — ถ้ายังไม่ได้พิมพ์ กดคลิกที่ใบตัวอย่างหรือสแกนใหม่', 'Back on the Re-Print page — if it was not printed, click the sample sheet or scan again', 'Re-Print စာမျက်နှာသို့ ပြန်ရောက်ပြီ — မပုံနှိပ်ရသေးပါက နမူနာစာရွက်ကို နှိပ်ပါ သို့မဟုတ် ပြန်စကင်န်ဖတ်ပါ'],
   ['คัดลอกที่เลือก {0} ({1} ใบ) แล้ว', 'Copied the selected {0} ({1} orders)', 'ရွေးထားသော {0} ({1} ခု) ကို ကူးယူပြီးပါပြီ'],
   ['เกิดข้อผิดพลาด: {0}', 'Something went wrong: {0}', 'အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်: {0}'],
   ['แก้ไขชื่อ PICK', 'Edit PICK name', 'PICK အမည် ပြင်ရန်'],
