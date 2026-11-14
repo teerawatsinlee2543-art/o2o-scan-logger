@@ -1488,9 +1488,9 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
 </dialog>
 
 <dialog id="raDlg" class="bigdlg pdlg" aria-labelledby="raDTitle">
-  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M18 8v6m-3-3h6"/></svg></span><div><h3 id="raDTitle">เพิ่มชื่อพนักงานประจำ</h3><p class="bdsub">ใส่เลขพนักงาน 4 หรือ 8 หลัก + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย</p></div></div>
+  <div class="bdhead"><span class="bdico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M18 8v6m-3-3h6"/></svg></span><div><h3 id="raDTitle">เพิ่มชื่อพนักงานประจำ</h3><p class="bdsub">ใส่เลขพนักงาน 8 หลัก (เลขบนบัตร) + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย</p></div></div>
   <div class="bdbody">
-    <input id="raNo" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="13" placeholder="เลขพนักงาน 4 หรือ 8 หลัก" aria-label="เลขพนักงานประจำ 4 หรือ 8 หลัก">
+    <input id="raNo" class="pdin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="8" placeholder="เลขพนักงาน 8 หลัก" aria-label="เลขพนักงานประจำ 8 หลัก">
     <input id="raName" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="60" placeholder="ชื่อ" aria-label="ชื่อพนักงานประจำ">
     <input id="raNick" class="pdin" type="text" autocomplete="off" spellcheck="false" maxlength="30" placeholder="ชื่อเล่น (ถ้ามี)" aria-label="ชื่อเล่นพนักงานประจำ">
     <div class="pdmsg" id="raDMsg" aria-live="polite" hidden></div>
@@ -1570,7 +1570,7 @@ dialog.nodatadlg{width:min(600px,94vw);padding:0;border:4px solid #fff;border-ra
       <div class="addbar">
         <span class="addlbl">เพิ่ม / แก้ทีละคน</span>
         <div class="row">
-          <input id="rAddId" type="text" inputmode="numeric" placeholder="รหัส 4 หรือ 8 หลัก" style="width:150px">
+          <input id="rAddId" type="text" inputmode="numeric" maxlength="8" placeholder="รหัส 8 หลัก" style="width:150px">
           <input id="rAddName" type="text" placeholder="ชื่อ" style="flex:1;min-width:120px">
           <input id="rAddNick" type="text" placeholder="ชื่อเล่น" style="width:130px" maxlength="30">
           <button id="rAdd" type="button">เพิ่ม / แก้</button>
@@ -2954,19 +2954,20 @@ $('rUndo').addEventListener('click', () => {
 });
 $('rSearch').addEventListener('input', renderRoster);
 $('rAdd').addEventListener('click', () => {
-  let id = $('rAddId').value.trim(), full = ''; const nm = $('rAddName').value.replace(/\s+/g, ' ').trim(), nick = $('rAddNick').value.replace(/\s+/g, ' ').trim();
-  if (EMP8_RE.test(id)) { full = id; id = id.slice(-4); }      // the whole 8-digit number: it is kept for display / cards, the person is still known by the last 4
-  if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');
-  if (!EMP_RE.test(id)) { toast('รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก'); $('rAddId').focus(); return; }
+  const full = $('rAddId').value.replace(/\D/g, ''), nm = $('rAddName').value.replace(/\s+/g, ' ').trim(), nick = $('rAddNick').value.replace(/\s+/g, ' ').trim();
+  if (!EMP8_RE.test(full)) { toast('รหัสพนักงานต้องเป็นเลข 8 หลัก'); $('rAddId').focus(); return; }      // adding / editing one person needs the whole 8 digits of the badge (the search box above is free)
+  const id = full.slice(-4), other = rosterInfo[id] && rosterInfo[id].full;      // the whole 8-digit number is kept for display / cards, the person is still known by the last 4
+  if (id in roster && other && other !== full) { toast(T('4 ตัวท้ายซ้ำกับ {0} (เลข {1}) — ระบบแยกคนที่ 4 ตัวท้ายซ้ำกันไม่ได้', roster[id] || id, other)); $('rAddId').focus(); return; }      // (two badges with the same last 4 cannot be told apart: the first person is not overwritten)
   backupRoster(); const had = id in roster; roster[id] = nm || roster[id] || ''; saveRoster();
-  if (nick || full) { rosterInfo[id] = Object.assign({}, rosterInfo[id], nick ? { nick } : {}, full ? { full } : {}); saveRInfo(); }      // the nickname (printed on the cover sheet as the picker); an empty box keeps the one that is already saved
+  rosterInfo[id] = Object.assign({}, rosterInfo[id], nick ? { nick } : {}, { full }); saveRInfo();      // the nickname (printed on the cover sheet as the picker); an empty box keeps the one that is already saved
   $('rAddId').value = ''; $('rAddName').value = ''; $('rAddNick').value = ''; renderRoster(); render(); toast(had ? `แก้ ${id} แล้ว` : `เพิ่ม ${id} แล้ว`); $('rAddId').focus();
 });
 $('rAddName').addEventListener('keydown', e => { if (e.key === 'Enter') $('rAdd').click(); });
 $('rAddNick').addEventListener('keydown', e => { if (e.key === 'Enter') $('rAdd').click(); });
 $('rAddId').addEventListener('input', () => {                                  // typing the code of someone who is already listed fills in their name and nickname, ready to be edited
-  const raw = $('rAddId').value.trim(), id = EMP8_RE.test(raw) ? raw.slice(-4) : raw;
-  if (EMP_RE.test(id) && id in roster && !$('rAddName').value && !$('rAddNick').value) { $('rAddName').value = roster[id] || ''; $('rAddNick').value = (rosterInfo[id] || {}).nick || ''; }
+  $('rAddId').value = $('rAddId').value.replace(/\D/g, '').slice(0, 8);
+  const raw = $('rAddId').value, id = EMP8_RE.test(raw) ? raw.slice(-4) : '';
+  if (id && id in roster && !$('rAddName').value && !$('rAddNick').value) { $('rAddName').value = roster[id] || ''; $('rAddNick').value = (rosterInfo[id] || {}).nick || ''; }
 });
 /* fill in the 8-digit numbers of the people who are already listed: paste the column from Excel (names are not needed), matched to the list by the last 4 digits */
 function fillScan() {
@@ -5431,7 +5432,10 @@ function empAddText(raw) {                                                 // th
     if (added.length) empSay('ok', T('✓ เพิ่ม {0}', empNameLine(x.id)));
     else if (dups.length) empSay('', T('มีเลข {0} ในรายการแล้ว', x.id));
     else if (x.kind === 'pt') empSay('bad', T('เลข {0} เป็นพนักงานชั่วคราว ({1}) — พิมพ์บัตรจากรายการในหน้าต่างบาร์โค้ดพนักงานชั่วคราว', x.id, ptime[x.id].name));
-    else if (x.kind === 'none') { empSay('bad', T('ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ใส่เลขไว้ให้แล้ว)', x.id)); if (!raNo.value) raNo.value = x.id; }      // (the number pops into the purple box, only the name is left to type)
+    else if (x.kind === 'none') {
+      if (x.full) { empSay('bad', T('ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ใส่เลขไว้ให้แล้ว)', x.id)); if (!raNo.value) raNo.value = x.full; }      // (a scanned 8-digit badge: the number pops into the pop-up)
+      else empSay('bad', T('ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ต้องใช้เลข 8 หลัก)', x.id));
+    }      // (the number pops into the purple box, only the name is left to type)
     else empSay('bad', 'ใส่เลขท้ายของเลขพนักงานอย่างน้อย 4 ตัว');
   } else {
     empSay(added.length ? 'ok' : 'bad', [added.length ? T('✓ เพิ่ม {0} คน', added.length) : '', none.length ? T('ไม่พบ {0}', none.join(', ')) : '', pts.length ? T('ชั่วคราว {0}', pts.map(x => x.id).join(', ')) : '',
@@ -5480,23 +5484,24 @@ const raDSay = text => { raDMsg.className = 'pdmsg bad'; raDMsg.textContent = te
 function resetAddSide() { raNo.value = raName.value = raNick.value = ''; raSay(''); raDSay(''); }
 function raOpen() { raDSay(''); raDlg.showModal(); (raNo.value ? raName : raNo).focus(); }
 function raAddGo() {
-  let id = raNo.value.replace(/\D/g, ''), full = '';
+  const full = raNo.value.replace(/\D/g, '');
   const nm = raName.value.replace(/\s+/g, ' ').trim().slice(0, 60), nick = raNick.value.replace(/\s+/g, ' ').trim().slice(0, 30);
-  if (EMP8_RE.test(id)) { full = id; id = id.slice(-4); }                  // the whole 8-digit number: kept for display / cards, the person is known by the last 4
-  if (/^\d{1,3}$/.test(id)) id = id.padStart(4, '0');
-  if (!EMP_RE.test(id)) { sfx.bad(); raDSay('ใส่เลขพนักงาน 4 หรือ 8 หลัก'); raNo.focus(); return; }
+  if (!EMP8_RE.test(full)) { sfx.bad(); raDSay('ต้องใส่เลขพนักงาน 8 หลัก (เลขบนบัตร)'); raNo.focus(); return; }      // exactly the 8 digits of the badge: shorter numbers are not accepted here
+  const id = full.slice(-4);                                               // the whole number is kept for display / cards; the person is known by the last 4
   if (id in ptime && !(id in roster)) { sfx.bad(); raDSay(T('เลข {0} เป็นพนักงานชั่วคราว ({1}) — ใช้เลขอื่น', id, ptime[id].name)); raNo.focus(); return; }
+  const other = rosterInfo[id] && rosterInfo[id].full;
+  if (id in roster && other && other !== full) { sfx.bad(); raDSay(T('4 ตัวท้ายซ้ำกับ {0} (เลข {1}) — ระบบแยกคนที่ 4 ตัวท้ายซ้ำกันไม่ได้', roster[id] || id, other)); raNo.focus(); return; }      // (two badges with the same last 4 cannot be told apart: the first person is not overwritten)
   if (!nm && !nick && !(id in roster)) { sfx.bad(); raDSay('ใส่ชื่อ (หรือชื่อเล่น) ก่อน'); raName.focus(); return; }
   backupRoster(); const had = id in roster; roster[id] = nm || roster[id] || nick; saveRoster();
-  if (nick || full) { rosterInfo[id] = Object.assign({}, rosterInfo[id], nick ? { nick } : {}, full ? { full } : {}); saveRInfo(); }
+  rosterInfo[id] = Object.assign({}, rosterInfo[id], nick ? { nick } : {}, { full }); saveRInfo();
   if (!empQueue.includes(id)) empQueue.push(id);                           // pops into the "to print" list
   renderEmpQueue([id]); try { renderRoster(); } catch (_) {} render(); sfx.ok();
   raSay(T(had ? '✓ แก้ {0} แล้ว — อยู่ในรายการที่จะพิมพ์แล้ว' : '✓ เพิ่ม {0} เข้าระบบแล้ว — อยู่ในรายการที่จะพิมพ์แล้ว', empNameLine(id)));
   raNo.value = raName.value = raNick.value = ''; raDSay(''); raDlg.close(); empNoIn.focus();
 }
 attachLayoutFix(raNo, false);                                              // (a Thai / Burmese keyboard layout: the digits are read from the physical keys)
-raNo.addEventListener('input', () => { raNo.value = raNo.value.replace(/\D/g, ''); const v = raNo.value, id = EMP8_RE.test(v) ? v.slice(-4) : v;
-  if (EMP_RE.test(id) && id in roster && !raName.value && !raNick.value) { raName.value = roster[id] || ''; raNick.value = (rosterInfo[id] || {}).nick || ''; } });      // (the number of someone who is listed fills in the name: ready to be corrected)
+raNo.addEventListener('input', () => { raNo.value = raNo.value.replace(/\D/g, '').slice(0, 8); const v = raNo.value, id = EMP8_RE.test(v) ? v.slice(-4) : '';
+  if (id && id in roster && !raName.value && !raNick.value) { raName.value = roster[id] || ''; raNick.value = (rosterInfo[id] || {}).nick || ''; } });      // (the 8-digit number of someone who is listed fills in the name: ready to be corrected)
 [raNo, raName, raNick].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); raAddGo(); } }));
 $('raAdd').addEventListener('click', raAddGo);
 $('raCancel').addEventListener('click', () => raDlg.close());
@@ -6141,7 +6146,9 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['พิมพ์บัตรพนักงานประจำ {0} ใบ', 'Printing {0} employee cards', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည်'],
   ['พิมพ์บัตรพนักงานประจำ {0} ใบ · ยังไม่มีเลข 8 หลัก {1} คน (บาร์โค้ด 4 หลัก)', 'Printing {0} employee cards · {1} people have no 8-digit number yet (barcode with 4 digits)', 'ဝန်ထမ်းကတ် {0} ခု ပုံနှိပ်နေသည် · {1} ဦးတွင် ဂဏန်း ၈ လုံး မရှိသေး (ဘားကုဒ် ၄ လုံး)'],
   ['รหัส 4 หรือ 8 หลัก', 'ID — 4 or 8 digits', 'ကုဒ် ၄ သို့မဟုတ် ၈ လုံး'],
+  ['รหัส 8 หลัก', 'ID — 8 digits', 'ကုဒ် ၈ လုံး'],
   ['รหัสพนักงานต้องเป็นเลข 4 หรือ 8 หลัก', 'The employee ID must be 4 or 8 digits', 'ဝန်ထမ်းကုဒ်သည် ဂဏန်း ၄ လုံး သို့မဟုတ် ၈ လုံး ဖြစ်ရမည်'],
+  ['รหัสพนักงานต้องเป็นเลข 8 หลัก', 'The employee ID must be 8 digits', 'ဝန်ထမ်းကုဒ်သည် ဂဏန်း ၈ လုံး ဖြစ်ရမည်'],
   ['เติมเลข 8 หลักให้รายชื่อเดิม', 'Fill in the 8-digit numbers of the people already listed', 'စာရင်းရှိပြီးသူများ၏ ဂဏန်း ၈ လုံး ဖြည့်ရန်'],
   ['ครบทุกคนแล้ว', 'Everyone has one', 'လူတိုင်း ရှိပြီးပါပြီ'],
   ['คัดลอกคอลัมน์เลขพนักงาน 8 หลักจาก Excel มาวางได้เลย (ไม่ต้องมีชื่อ วางทั้งคอลัมน์ได้) — ระบบจับคู่กับรายชื่อจาก 4 ตัวท้าย แล้วโชว์เลข 8 หลักในรายชื่อและพิมพ์บนบัตร ส่วนการสแกนและการค้นหาด้วย 4 ตัวท้ายยังใช้เหมือนเดิม', 'Copy the 8-digit employee-number column from Excel and paste it here (no names needed, a whole column is fine) — it is matched to the list by the last 4 digits, then the 8 digits show in the list and print on the cards. Scanning and searching by the last 4 digits work as before', 'Excel မှ ဝန်ထမ်းနံပါတ် ၈ လုံး ကော်လံကို ကူး၍ ဤနေရာတွင် ကူးထည့်ပါ (အမည်မလို၊ ကော်လံတစ်ခုလုံး ရသည်) — နောက်ဆုံး ၄ လုံးဖြင့် စာရင်းနှင့် တိုက်ဆိုင်စစ်ပြီး စာရင်းထဲတွင် ၈ လုံးပြကာ ကတ်ပေါ်တွင် ပုံနှိပ်မည်။ နောက်ဆုံး ၄ လုံးဖြင့် စကင်ဖတ်ခြင်း ရှာဖွေခြင်းများ အရင်အတိုင်း သုံးနိုင်သည်'],
@@ -6385,7 +6392,11 @@ const LEX = [   // [Thai (source), English, Burmese]
   ['เลข {0} เป็นพนักงานชั่วคราว ({1}) — พิมพ์บัตรจากรายการในหน้าต่างบาร์โค้ดพนักงานชั่วคราว', 'Number {0} is a Part-Time person ({1}) — print the card from the list in the Part-Time window', 'နံပါတ် {0} သည် ယာယီဝန်ထမ်း ({1}) ဖြစ်သည် — ယာယီဝန်ထမ်းဝင်းဒိုးရှိ စာရင်းမှ ကတ်ပုံနှိပ်ပါ'],
   ['ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ใส่เลขไว้ให้แล้ว)', 'Number {0} is not in the regular roster — press the purple button "Add a regular employee" (the number is filled in)', 'နံပါတ် {0} ကို ပုံမှန်ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ — ခရမ်းရောင်ခလုတ် "ပုံမှန်ဝန်ထမ်း ထည့်ရန်" ကို နှိပ်ပါ (နံပါတ်ကို ထည့်ပေးထားပြီး)'],
   ['เพิ่มชื่อพนักงานประจำ', 'Add a regular employee', 'ပုံမှန်ဝန်ထမ်း ထည့်ရန်'],
-  ['ใส่เลขพนักงาน 4 หรือ 8 หลัก + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย', 'Type the 4- or 8-digit employee number + the name — it goes into the employee roster at once (like Update Data → Employee names) and into the list to print', 'ဝန်ထမ်းနံပါတ် ၄ ဒါမှမဟုတ် ၈ လုံး + အမည်ကို ရိုက်ပါ — ဝန်ထမ်းစာရင်းထဲ ချက်ချင်းဝင်ပြီး ပုံနှိပ်မည့်စာရင်းတွင်လည်း ပေါ်လာမည်'],
+  ['ใส่เลขพนักงาน 8 หลัก (เลขบนบัตร) + ชื่อ — เข้าระบบรายชื่อพนักงานทันที (เหมือน Update Data → ชื่อพนักงาน) และขึ้นในรายการที่จะพิมพ์ให้เลย', 'Type the 8-digit employee number (the one on the badge) + the name — it goes into the employee roster at once (like Update Data → Employee names) and into the list to print', 'ဝန်ထမ်းနံပါတ် ၈ လုံး (ကတ်ပေါ်ရှိ နံပါတ်) + အမည်ကို ရိုက်ပါ — ဝန်ထမ်းစာရင်းထဲ ချက်ချင်းဝင်ပြီး ပုံနှိပ်မည့်စာရင်းတွင်လည်း ပေါ်လာမည်'],
+  ['เลขพนักงาน 8 หลัก', 'Employee number, 8 digits', 'ဝန်ထမ်းနံပါတ် ၈ လုံး'],
+  ['ต้องใส่เลขพนักงาน 8 หลัก (เลขบนบัตร)', 'The 8-digit employee number (the one on the badge) is required', 'ဝန်ထမ်းနံပါတ် ၈ လုံး (ကတ်ပေါ်ရှိ နံပါတ်) လိုအပ်သည်'],
+  ['4 ตัวท้ายซ้ำกับ {0} (เลข {1}) — ระบบแยกคนที่ 4 ตัวท้ายซ้ำกันไม่ได้', 'The last 4 digits are the same as {0} ({1}) — the system cannot tell two people with the same last 4 apart', 'နောက်ဆုံး ၄ လုံးသည် {0} ({1}) နှင့် တူနေသည် — နောက်ဆုံး ၄ လုံးတူသူနှစ်ဦးကို စနစ်က မခွဲခြားနိုင်ပါ'],
+  ['ไม่พบเลข {0} ในรายชื่อพนักงานประจำ — กดปุ่มสีม่วง เพิ่มชื่อพนักงานประจำ (ต้องใช้เลข 8 หลัก)', 'Number {0} is not in the regular roster — press the purple button "Add a regular employee" (the 8-digit number is needed)', 'နံပါတ် {0} ကို ပုံမှန်ဝန်ထမ်းစာရင်းတွင် မတွေ့ပါ — ခရမ်းရောင်ခလုတ် "ပုံမှန်ဝန်ထမ်း ထည့်ရန်" ကို နှိပ်ပါ (နံပါတ် ၈ လုံး လိုအပ်သည်)'],
   ['เลขพนักงาน 4 หรือ 8 หลัก', 'Employee number, 4 or 8 digits', 'ဝန်ထမ်းနံပါတ် ၄ သို့မဟုတ် ၈ လုံး'],
   ['ชื่อเล่น (ถ้ามี)', 'Nickname (if any)', 'အမည်ပြောင် (ရှိလျှင်)'],
   ['เพิ่มเข้าระบบ', 'Add to the system', 'စနစ်ထဲ ထည့်ရန်'],
